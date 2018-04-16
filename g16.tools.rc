@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# This is an example rc file
+
+# The following two lines give the location of the installation.
+# These are important to make this script work.
+# (They can be hardcoded into the script itself.)
+
+# General path to the g16 directory (this should work on every system)
+#
+  installpath_g16="/path/is/not/set"
+
+# Define where scratch files shall be written to
+#
+  g16_scratch="$TEMP"
+
+# On the RWTH cluster gaussian is loaded via a module system,
+# enter the name of the module here:
+# 
+  g16_module="gaussian/16.a03_bin"
+
+#
+# Setting some more defaults
+#
+
+# Print all information by default
+#
+  stay_quiet=0
+
+# Specify default Walltime in [[HH:]MM:]SS
+#
+  requested_walltime="72:00:00"
+
+# Specify a default value for the memory (does not include overhead)
+#
+  requested_memory=512
+
+# Set the number of professors doing the calculation
+#
+  requested_numCPU=4
+
+# The default which should be written to the inputfile
+# regarding disk space (in MB)
+#
+# requested_maxdisk=30000
+
+# Select a queueing system (pbs-gen/bsub-rwth)
+#
+  request_qsys="bsub-rwth"
+
+# Account to project (only for rwth)
+#
+# bsub_rwth_project=default
+
