@@ -1,8 +1,8 @@
 #! /bin/bash
 
 # Gaussian 16 submission script
-version="0.0.1"
-versiondate="2018-04-xx"
+version="0.0.2"
+versiondate="2018-04-17"
 
 # The following two lines give the location of the installation.
 # They can be set in the rc file, too.
@@ -797,6 +797,7 @@ validate_write_in_out_jobname ()
 write_new_inputfile ()
 {
     local verified_checkpoint
+    [[ -z $checkpoint ]] && checkpoint="${jobname}.chk"
     if verified_checkpoint=$(test_file_location "$checkpoint") ; then
       debug "verified_checkpoint=$verified_checkpoint"
       echo "%Chk=$verified_checkpoint"
@@ -860,9 +861,8 @@ process_inputfile ()
 
 write_jobscript ()
 {
-    # Needs a lot of modification
     debug "Creating a job script."
-    local queue="$1" queue_short submitscript
+    local queue="$1" queue_short 
     [[ -z $queue ]] && fatal "No queueing systen selected. Abort."
     queue_short="${queue%-*}"
     submitscript="${jobname}.${queue_short}.bash"
@@ -957,8 +957,9 @@ write_jobscript ()
     elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
       cat >&9 <<-EOF
 			source /usr/local_host/etc/init_modules.sh
-			module load CHEMISTRY
-			module load $g16_module
+			module load CHEMISTRY 2>&1
+			module load $g16_module 2>&1
+      # Module writes info messages to error! (Why?)
 			
 			EOF
     fi
@@ -989,20 +990,80 @@ write_jobscript ()
 
     # Close file descriptor
     exec 9>&-
-###
-###    message "Created submit script, use"
-###    if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
-###      message "  qsub $submitscript"
-###    elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
-###      message "  bsub < $submitscript"
-###    fi
-###    message "to start the job."
-###
     message "Written submission script '$submitscript'."
     return 0
 }
 
+submit_jobscript_hold ()
+{
+    local queue="$1" submit_id
+    if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
+      submit_id="$(qsub -h "$submitscript")" || exit_status="$?"
+      message "Submitted as $submit_id."
+      message "Use 'qrls $submit_id' to release the job."
+    elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
+      submit_id="$(bsub -H < "$submitscript" 2>&1 )" || exit_status="$?"
+      message "$submit_id"
+    fi
+}
 
+submit_jobscript_keep ()
+{
+    local queue="$1" 
+    message "Created submit script, use"
+    if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
+      message "  qsub $submitscript"
+    elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
+      message "  bsub < $submitscript"
+    fi
+    message "to start the job."
+}
+
+submit_jobscript_run  ()
+{
+    local queue="$1" submit_message
+    debug "queue=$queue; submitscript=$submitscript"
+    if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
+      submit_message="Submitted as $(qsub "$submitscript")" || exit_status="$?"
+    elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
+      submit_message="$(bsub < "$submitscript" 2>&1 )" || exit_status="$?"
+      submit_message="${submit_message#Info: }"
+    else
+      fatal "Unrecognised queueing system '$queue'."
+    fi
+    if (( exit_status > 0 )) ; then
+      warning "Submission went wrong."
+      debug "$submit_message"
+    else
+      message "$submit_message"
+    fi
+    return $exit_status
+}
+
+submit_jobscript ()
+{
+    local queue="$1" submit_status="$2" 
+    debug "queue=$queue; submit_status=$submit_status"
+    case "$submit_status" in
+    
+      [Hh][Oo][Ll][Dd]) 
+        submit_jobscript_hold "$queue" || return $?
+        ;;
+    
+      [Kk][Ee][Ee][Pp]) 
+        submit_jobscript_keep "$queue" || return $?
+        ;;
+    
+      [Rr][Uu][Nn])
+        submit_jobscript_run "$queue" || return $?
+        ;;
+    
+      *)  
+        fatal "Unrecognised status '$submit_status' requested for the job."
+        ;;
+
+    esac
+}
 
 
 #
@@ -1074,18 +1135,27 @@ process_options ()
                dependency="$OPTARG"
                ;;
 
-          #hlp     -H       submit on hold --TODO--
-            H) warning "The submission with status 'hold' is still in development." ;;
+          #hlp     -H       submit the job with status hold (PBS) or PSUSP (BSUB)
+          #hlp              --TODO--
+          #hlp
+            H) 
+               requested_submit_status="hold"
+               message "The submission with status 'hold' is still in development." 
+               warning "(BSUB) Current settings would prevent releasing the job."
+               ;;
 
-          #hlp     -k       keep, no submission --TODO--
-            k) warning "Only creating the jobscript is still in developement." ;;
+          #hlp     -k       Only create (keep) the jobscript, do not submit it.
+          #hlp
+            k) 
+               requested_submit_status="keep"
+               ;;
 
           #hlp     -q       submit to queue --TODO--
+          #hlp              
             q) warning "The submission to a specific queue is not yet possible." ;;
 
           #hlp     -Q <ARG> Which type of job script should be produced.
           #hlp              Arguments currently implemented: pbs-gen, bsub-rwth
-          #hlp              Mandatory for remote execution, can be set in rc.
           #hlp
             Q) request_qsys="$OPTARG" ;;
 
@@ -1165,13 +1235,16 @@ requested_numCPU=4
 
 # The default which should be written to the inputfile
 # regarding disk space
-requested_maxdisk=30000
+requested_maxdisk=10000
 
 # Select a queueing system (pbs-gen/bsub-rwth)
 request_qsys="pbs-gen"
 
 # Account to project (only for rwth)
 bsub_rwth_project=default
+
+# Default operation should be to run (hold/keep)
+requested_submit_status="run"
 
 # Ensure that in/outputfile variables are empty
 unset inputfile
@@ -1206,6 +1279,7 @@ fi
 process_options "$@"
 process_inputfile "$requested_inputfile"
 write_jobscript "$request_qsys"
+submit_jobscript "$request_qsys" "$requested_submit_status" 
 
 #hlp   AUTHOR    : Martin
 message "Thank you for travelling with $scriptname ($version, $versiondate)."
