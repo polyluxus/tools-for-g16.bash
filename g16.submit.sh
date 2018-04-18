@@ -1,8 +1,8 @@
 #! /bin/bash
 
 # Gaussian 16 submission script
-version="0.0.2"
-versiondate="2018-04-17"
+version="0.0.3"
+versiondate="2018-04-18"
 
 # The following two lines give the location of the installation.
 # They can be set in the rc file, too.
@@ -830,6 +830,7 @@ write_new_inputfile ()
     printf "%s\\n" "${inputfile_body[@]}"
     echo ""
     echo "!Automagically created with $scriptname"
+    echo "!$script_invocation_spell"
 }
 
 
@@ -880,14 +881,14 @@ write_jobscript ()
     # Open file descriptor 9 for writing
     exec 9> "$submitscript"
 
-    echo "#!/bin/bash" >&9
-    echo "# Submission script automatically created with $scriptname" >&9
-
     local overhead_memory
     overhead_memory=$(( requested_memory + 400/requested_numCPU ))
 
     # Header is different for the queueing systems
     if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
+      echo "#!/bin/bash" >&9
+      echo "# Submission script automatically created with $scriptname" >&9
+
       cat >&9 <<-EOF
 			#PBS -l nodes=1:ppn=$requested_numCPU
 			#PBS -l mem=${overhead_memory}m
@@ -903,6 +904,9 @@ write_jobscript ()
       echo "jobid=\"\${PBS_JOBID%%.*}\"" >&9
 
     elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
+      echo "#!/usr/bin/env bash" >&9
+      echo "# Submission script automatically created with $scriptname" >&9
+
       cat >&9 <<-EOF
 			#BSUB -n $requested_numCPU
 			#BSUB -a openmp
@@ -928,6 +932,24 @@ write_jobscript ()
       fatal "Unrecognised queueing system '$queue'."
     fi
 
+    # How Gaussian is loaded
+    if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
+      cat >&9 <<-EOF
+			g16root="$installpath_g16"
+			export g16root
+			. \$g16root/g16/bsd/g16.profile
+			EOF
+    elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
+      cat >&9 <<-EOF
+			source /usr/local_host/etc/init_modules.sh
+			module load CHEMISTRY 2>&1
+			module load $g16_module 2>&1 # Module writes info messages to error! (Why?)
+			
+			EOF
+    fi
+
+    # NBO6 ?
+
     # Some of the body is the same for all queues (so far)
     cat >&9 <<-EOF
 		
@@ -948,40 +970,21 @@ write_jobscript ()
 		
 		EOF
 
-    if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
-      cat >&9 <<-EOF
-			g16root="$installpath_g16"
-			export g16root
-			. \$g16root/g16/bsd/g16.profile
-			EOF
-    elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
-      cat >&9 <<-EOF
-			source /usr/local_host/etc/init_modules.sh
-			module load CHEMISTRY 2>&1
-			module load $g16_module 2>&1
-      # Module writes info messages to error! (Why?)
-			
-			EOF
-    fi
-
-    # NBO6 ?
-
     # Insert additional environment variables
     if [[ ! -z "$manual_env_var" ]]; then
       echo "export $manual_env_var" >&9
       debug "export $manual_env_var"
     fi
 
-    # Some of the body is the same for all queues (so far)
     cat >&9 <<-EOF
 		echo -n "Start: "
 		date
 		g16 < "$inputfile" > "$outputfile"
 		joberror=\$?
 		
-		echo "Looking for files with filesize zero and delete them."
+		echo "Looking for files with filesize zero and delete them in '\$g16_subscratch'."
 		find "\$g16_subscratch" -type f -size 0 -exec rm -v {} \\;
-		echo "Deleting scratch if empty."
+		echo "Deleting scratch '\$g16_subscratch' if empty."
 		find "\$g16_subscratch" -maxdepth 0 -empty -exec rmdir -v {} \\;
 		echo -n "End  : "
 		date
@@ -1203,6 +1206,9 @@ process_options ()
 #
 # Begin main script
 #
+
+# Save how it was called
+script_invocation_spell="$0 $*"
 
 # Sent logging information to stdout
 exec 3>&1
