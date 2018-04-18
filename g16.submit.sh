@@ -707,6 +707,12 @@ collate_keywords ()
             returncode=1
           fi
           keep_keyword="$keep_keyword=$keep_options"
+        elif [[ $keep_keyword =~ ^[Mm][Aa][Xx][Dd][Ii][Ss][Kk].* ]] ; then
+          if [[ ! $keep_options =~ ^${numerical_pattern}([KkMmGgTt][BbWw])?$ ]] ; then
+            warning "Unrecognised format for MaxDisk: $keep_options."
+            returncode=1
+          fi
+          keep_keyword="$keep_keyword=$keep_options"
         else
           keep_keyword="$keep_keyword($keep_options)"
         fi
@@ -824,7 +830,6 @@ write_new_inputfile ()
       [[ -z $molecule_charge ]] && fatal "Charge unset; somewhere, something went wrong."
       [[ -z $molecule_mult ]] && fatal "Multiplicity unset; somewhere, something went wrong."
       echo "$molecule_charge   $molecule_mult"
-      echo ""
     fi
 
     printf "%s\\n" "${inputfile_body[@]}"
@@ -924,7 +929,9 @@ write_jobscript ()
       if [[ "$PWD" =~ [Hh][Pp][Cc] ]] ; then
         echo "#BSUB -R select[hpcwork]" >&9
       fi
-      if [[ ! -z $bsub_rwth_project ]] ; then
+      if [[ "$bsub_rwth_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
+        message "No project selected."
+      else
         echo "#BSUB -P $bsub_rwth_project" >&9
       fi
       echo "jobid=\"\${LSB_JOBID}\"" >&9
@@ -1195,7 +1202,9 @@ process_options ()
     fi
 
     # If a filename is specified, it must exist, otherwise exit
-    requested_inputfile=$(is_readable_file_or_exit "$1") || exit 1 
+    # different mode let's you only use the jobname
+    #requested_inputfile=$(is_readable_file_or_exit "$1") || exit 1 
+    requested_inputfile="$1"
     shift
     debug "Specified input: $requested_inputfile"
 
