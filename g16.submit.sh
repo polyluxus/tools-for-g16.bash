@@ -842,11 +842,12 @@ process_inputfile ()
     debug "Jobname: $jobname; Input: $inputfile; Output: $outputfile."
 
     read_inputfile "$inputfile"
-    backup_if_exists "$jobname.gjf"
-    debug "Writing new input: $jobname.gjf"
+    inputfile_modified="$jobname.gjf"
+    backup_if_exists "$inputfile_modified"
+    debug "Writing new input: $$inputfile_modified"
 
-    write_new_inputfile > "$jobname.gjf"
-    message "Written modified inputfile '$jobname.gjf'."
+    write_new_inputfile > "$inputfile_modified"
+    message "Written modified inputfile '$inputfile_modified'."
 }
 
 
@@ -875,7 +876,7 @@ write_jobscript ()
       warning "File will be overwritten."
       # Backup or delete, or overwrite?
     fi
-    [[ -z $inputfile ]]   && fatal "No inputfile specified. Abort."
+    [[ -z $inputfile_modified ]]   && fatal "No inputfile specified. Abort."
     [[ -z $outputfile ]]  && fatal "No outputfile selected. Abort."
 
     # Open file descriptor 9 for writing
@@ -958,7 +959,7 @@ write_jobscript ()
 		echo "OS \$(uname -o) (\$(uname -p))"
 		echo "Running on $requested_numCPU \
 		      \$(grep 'model name' /proc/cpuinfo|uniq|cut -d ':' -f 2)."
-		echo "Calculation $inputfile from $PWD."
+		echo "Calculation $inputfile_modified from $PWD."
 		echo "Working directry is $PWD"
 		
 		cd "$PWD" || exit 1
@@ -979,7 +980,7 @@ write_jobscript ()
     cat >&9 <<-EOF
 		echo -n "Start: "
 		date
-		g16 < "$inputfile" > "$outputfile"
+		g16 < "$inputfile_modified" > "$outputfile"
 		joberror=\$?
 		
 		echo "Looking for files with filesize zero and delete them in '\$g16_subscratch'."
