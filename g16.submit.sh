@@ -1,8 +1,8 @@
 #! /bin/bash
 
 # Gaussian 16 submission script
-version="0.0.3"
-versiondate="2018-04-18"
+version="0.0.4"
+versiondate="2018-04-23"
 
 # The following two lines give the location of the installation.
 # They can be set in the rc file, too.
@@ -341,44 +341,6 @@ backup_if_exists ()
     move_target=$(test_file_location "$1") && return
     backup_file "$1" "$move_target"
 }
-
-# We don't need that?
-generate_outputfile_name ()
-{
-  local return_outfile_name="$1"
-  if [[ -z "$return_outfile_name" ]] ; then
-    debug "Nothing specified to base outputname on, will use '${scriptbasename}.out' instead."
-    echo "${scriptbasename}.out"
-  else
-    debug "Will base outputname on '$return_outfile_name'."
-    echo "${return_outfile_name%.*}.${scriptbasename}.out"
-    debug "${return_outfile_name%.*}.${scriptbasename}.out"
-  fi
-}
-
-# Maybe need that one
-replace_line ()
-{
-    debug "Enter 'replace_line'."
-    local search_pattern="$1"
-    debug "search_pattern=$search_pattern"
-    local replace_pattern="$2"
-    debug "replace_pattern=$replace_pattern"
-    local inputstring="$3"
-    debug "inputstring=$inputstring"
-
-    (( $# < 3 )) && fatal "Wrong internal call of replace function. Please report this bug."
-
-    if [[ "$inputstring" =~ ^(.*)($search_pattern)(.+)$ ]] ; then
-      debug "Found match: ${BASH_REMATCH[0]}"
-      echo "${BASH_REMATCH[1]}$replace_pattern${BASH_REMATCH[3]}"
-      debug "Leave 'replace_line' with 0."
-      return 0
-    else
-      debug "No match found. Leave 'replace_line' with 1."
-      return 1
-    fi
-}    
 
 # 
 # Routines for parsing the supplied input file
@@ -924,7 +886,20 @@ write_jobscript ()
 			#BSUB -e $submitscript.e%J
 			EOF
       if [[ ! -z $dependency ]] ; then
-        echo "#BSUB -w done($dependency)" >&9
+        debug "Resolving dependencies from '$dependency'"
+        local resolve_dependency remove_dependency
+        while [[ $dependency: =~ :([[:digit:]]+): ]]; do
+          if [[ -z $resolve_dependency ]] ; then
+            resolve_dependency="done(${BASH_REMATCH[1]})"
+            remove_dependency=":${BASH_REMATCH[1]}"
+            dependency="${dependency/$remove_dependency}"
+          else
+            resolve_dependency="$resolve_dependency && done(${BASH_REMATCH[1]})"
+            remove_dependency=":${BASH_REMATCH[1]}"
+            dependency="${dependency/$remove_dependency}"
+          fi
+        done
+        echo "#BSUB -w \"$resolve_dependency\"" >&9
       fi
       if [[ "$PWD" =~ [Hh][Pp][Cc] ]] ; then
         echo "#BSUB -R select[hpcwork]" >&9
@@ -994,6 +969,7 @@ write_jobscript ()
 		find "\$g16_subscratch" -type f -size 0 -exec rm -v {} \\;
 		echo "Deleting scratch '\$g16_subscratch' if empty."
 		find "\$g16_subscratch" -maxdepth 0 -empty -exec rmdir -v {} \\;
+		[[ -e "\$g16_subscratch" ]] && mv -v "\$g16_subscratch" "$PWD/${jobname}.scr\$jobid"
 		echo -n "End  : "
 		date
 		exit \$joberror
@@ -1131,19 +1107,25 @@ process_options ()
                ;;
 
           #hlp     -b <ARG> Specify binary --TODO--
+          #hlp
             b) warning "The binary specification is still in developement." ;;
 
-          #hlp     -e <ARG> Specify environment variable to be passed on
+          #hlp     -e <ARG> Specify environment variable to be passed on.
+          #hlp              Input should have the form 'VARIABLE=<value>'.
           #hlp                (No sanity check will be performed, 
           #hlp                 may be specified multiple times.)
+          #hlp
             e) 
                manual_env_var="$OPTARG $manual_env_var"
                ;;
 
-          #hlp     -j <ARG> Wait for <ARG> to be done. --TODO-- 
+          #hlp     -j <ARG> Wait for job with ID <ARG> (strictly numeric) to be done.
+          #hlp              Option may be specified multiple times.
+          #hlp              (BSUB) Implemented is only the use of the job ID.
+          #hlp
             j) 
                validate_integer "$OPTARG" "the job ID"
-               dependency="$OPTARG"
+               dependency="$dependency:$OPTARG"
                ;;
 
           #hlp     -H       submit the job with status hold (PBS) or PSUSP (BSUB)
