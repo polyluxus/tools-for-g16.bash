@@ -472,6 +472,7 @@ read_inputfile ()
         if link0_temp=$(parse_link0 "$line" "$pattern" "0") ; then
           link0[$link0_index]="$link0_temp"
           (( link0_index++ ))
+          continue
         else
           store_link0=2
         fi
@@ -545,8 +546,12 @@ read_inputfile ()
       
       debug "Reading rest of input file."
       line=$(remove_comment "$line") 
-      inputfile_body[$body_index]="$line" 
-      (( body_index++ ))
+      if [[ ! $line =~ ^[[:space:]]*$ ]] ; then
+        inputfile_body[$body_index]="$line" 
+        debug "Read and stored: ${inputfile_body[$body_index]}"
+        (( body_index++ ))
+        debug "Increase index to $body_index."
+      fi
 
     done < "$parsefile"
     debug "Finished reading input file."
@@ -778,6 +783,7 @@ write_new_inputfile ()
     echo "%NProcShared=$requested_numCPU"
     echo "%Mem=$(( requested_numCPU * requested_memory ))MB"
     debug "Number of additional link0 commands: ${#link0[@]}"
+    debug "Elements: ${link0[*]}"
     (( ${#link0[@]} > 0 )) && printf "%s\\n" "${link0[@]}"
 
     local use_route_section
@@ -794,6 +800,8 @@ write_new_inputfile ()
       echo "$molecule_charge   $molecule_mult"
     fi
 
+    debug "Lines till end of file: ${#inputfile_body[@]}"
+    debug "Content: ${inputfile_body[*]}"
     printf "%s\\n" "${inputfile_body[@]}"
     echo ""
     echo "!Automagically created with $scriptname"
