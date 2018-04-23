@@ -781,7 +781,7 @@ write_new_inputfile ()
       message "the directive '%OldChk=<previous_calculation>' instead."
     fi
     echo "%NProcShared=$requested_numCPU"
-    echo "%Mem=$(( requested_numCPU * requested_memory ))MB"
+    echo "%Mem=${requested_memory}MB"
     debug "Number of additional link0 commands: ${#link0[@]}"
     debug "Elements: ${link0[*]}"
     (( ${#link0[@]} > 0 )) && printf "%s\\n" "${link0[@]}"
