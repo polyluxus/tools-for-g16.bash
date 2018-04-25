@@ -10,9 +10,15 @@ versiondate="2018-04-23"
 installpath_g16="/path/is/not/set"
 # Define where scratch files shall be written to
 g16_scratch="$TEMP"
+# Define the overhead you'd like to give Gaussian in MB 
+g16_overhead=2000
+# The 2000 might be a very conservative guess, but additionally one
+# the memory will be scaled by (CPU + 1)/CPU.
+
 # On the RWTH cluster gaussian is loaded via a module system,
 # enter the name of the module here:
 g16_module="gaussian/16.a03_bin"
+# Note that this script has hardcoded to load CHEMISTRY before the above.
 
 #####
 #
@@ -857,8 +863,11 @@ write_jobscript ()
     # Open file descriptor 9 for writing
     exec 9> "$submitscript"
 
-    local overhead_memory
-    overhead_memory=$(( requested_memory + 400/requested_numCPU ))
+    local scale_memmory overhead_memory
+    # Add one more process, and give Gaussian some more space (define in rc / top of script)
+    scale_memory=$(( ( requested_numCPU + 1 ) / requested_numCPU ))
+    overhead_memory=$(( requested_memory * scale_memory + g16_overhead ))
+    message "Request a total memory of $overhead_memory MB, including overhead for Gaussian."
 
     # Header is different for the queueing systems
     if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
@@ -875,6 +884,8 @@ write_jobscript ()
 			#PBS -e $submitscript.e\${PBS_JOBID%%.*}
 			EOF
       if [[ ! -z $dependency ]] ; then
+        # Dependency is stored in the form ':jobid:jobid:jobid' 
+        # which should be recognised by PBS
         echo "#PBS -W depend=afterok$dependency" >&9
       fi
       echo "jobid=\"\${PBS_JOBID%%.*}\"" >&9
@@ -894,6 +905,8 @@ write_jobscript ()
 			#BSUB -e $submitscript.e%J
 			EOF
       if [[ ! -z $dependency ]] ; then
+        # Dependency is stored in the form ':jobid:jobid:jobid' (PBS)
+        # and needs to be transformed to LSF compatible format
         debug "Resolving dependencies from '$dependency'"
         local resolve_dependency remove_dependency
         while [[ $dependency: =~ :([[:digit:]]+): ]]; do
@@ -1076,7 +1089,9 @@ process_options ()
     while getopts :m:p:d:w:b:e:j:Hkq:Q:P:sh options ; do
         case $options in
 
-          #hlp     -m <ARG> Define memory to be used per thread in megabyte.
+          #hlp     -m <ARG> Define the total memory to be used in megabyte.
+          #hlp              The total request will be larger to account for 
+          #hlp              overhead which Gaussian may need. (Default: 512)
           #hlp
             m) 
                validate_integer "$OPTARG" "the memory"
