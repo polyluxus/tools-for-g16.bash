@@ -711,6 +711,46 @@ collate_keywords ()
     return $returncode
 }
 
+#
+# Functions to modify the route section
+#
+
+remove_any_keyword ()
+{
+    # Takes in a string (the route section) and 
+    local test_line="$1"
+    # removes the pattern (keyword) if present and 
+    local test_pattern="$2"
+    # returns the result.
+    local return_line
+    # Since spaces have been removed form within the keywords previously with collate_keywords, 
+    # and inter-keyword delimiters are set to spaces only also, 
+    # it is safe to use that as a criterion to remove unnecessary keywords.
+    # The test pattern is extended to catch the whole keyword including options.
+    local extended_test_pattern="($test_pattern[^[:space:]]*)([[:space:]]+|$)"
+    if [[ $test_line =~ $extended_test_pattern ]] ; then
+      local found_pattern=${BASH_REMATCH[1]}
+      debug "Found pattern: '$found_pattern'" 
+      message "Removed keyword '$found_pattern'."
+      return_line="${test_line/$found_pattern/}"
+      echo "$return_line"
+      return 1
+    else
+      echo "$test_line"
+      return 0 
+    fi
+}
+
+remove_maxdisk ()
+{
+    # Assigns the opt keyword to the pattern
+    local test_routesection="$1"
+    local pattern
+    pattern="[Mm][Aa][Xx][Dd][Ii][Ss][Kk]"
+    remove_any_keyword "$test_routesection" "$pattern" || return 1
+}
+
+
 validate_write_in_out_jobname ()
 {
     # Assigns the global variables inputfile outputfile jobname
@@ -794,6 +834,7 @@ write_new_inputfile ()
 
     local use_route_section
     [[ -z $requested_maxdisk ]] && fatal "Keyword 'MaxDisk' is unset, probably compromised rc."
+    while ! route_section=$(remove_maxdisk "$route_section") ; do : ; done
     use_route_section=$(collate_keywords "$route_section MaxDisk=${requested_maxdisk}MB")
     fold -w80 -c -s <<< "$use_route_section"
     echo ""
@@ -863,10 +904,12 @@ write_jobscript ()
     # Open file descriptor 9 for writing
     exec 9> "$submitscript"
 
-    local scale_memmory overhead_memory
+    local scale_memory_percent overhead_memory
     # Add one more process, and give Gaussian some more space (define in rc / top of script)
-    scale_memory=$(( ( requested_numCPU + 1 ) / requested_numCPU ))
-    overhead_memory=$(( requested_memory * scale_memory + g16_overhead ))
+    scale_memory_percent=$(( 100 * ( requested_numCPU + 1 ) / requested_numCPU ))
+    debug "Scaling memory by $scale_memory_percent% (requested_numCPU=$requested_numCPU)."
+    overhead_memory=$(( requested_memory * scale_memory_percent / 100 + g16_overhead ))
+    debug "requested_memory=$requested_memory; g16_overhead=$g16_overhead"
     message "Request a total memory of $overhead_memory MB, including overhead for Gaussian."
 
     # Header is different for the queueing systems
