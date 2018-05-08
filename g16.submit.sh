@@ -1,13 +1,13 @@
 #! /bin/bash
 
 # Gaussian 16 submission script
-version="0.0.4"
-versiondate="2018-04-23"
+version="0.0.5"
+versiondate="2018-05-08"
 
 # The following two lines give the location of the installation.
 # They can be set in the rc file, too.
 # General path to the g16 directory (this should work on every system)
-installpath_g16="/path/is/not/set"
+g16_installpath="/path/is/not/set"
 # Define where scratch files shall be written to
 g16_scratch="$TEMP"
 # Define the overhead you'd like to give Gaussian in MB 
@@ -16,9 +16,9 @@ g16_overhead=2000
 # the memory will be scaled by (CPU + 1)/CPU.
 
 # On the RWTH cluster gaussian is loaded via a module system,
-# enter the name of the module here:
-g16_module="gaussian/16.a03_bin"
-# Note that this script has hardcoded to load CHEMISTRY before the above.
+# enter the names of the modules to load here:
+g16_modules[0]="CHEMISTRY"
+g16_modules[1]="gaussian/16.a03_bin"
 
 #####
 #
@@ -711,46 +711,6 @@ collate_keywords ()
     return $returncode
 }
 
-#
-# Functions to modify the route section
-#
-
-remove_any_keyword ()
-{
-    # Takes in a string (the route section) and 
-    local test_line="$1"
-    # removes the pattern (keyword) if present and 
-    local test_pattern="$2"
-    # returns the result.
-    local return_line
-    # Since spaces have been removed form within the keywords previously with collate_keywords, 
-    # and inter-keyword delimiters are set to spaces only also, 
-    # it is safe to use that as a criterion to remove unnecessary keywords.
-    # The test pattern is extended to catch the whole keyword including options.
-    local extended_test_pattern="($test_pattern[^[:space:]]*)([[:space:]]+|$)"
-    if [[ $test_line =~ $extended_test_pattern ]] ; then
-      local found_pattern=${BASH_REMATCH[1]}
-      debug "Found pattern: '$found_pattern'" 
-      message "Removed keyword '$found_pattern'."
-      return_line="${test_line/$found_pattern/}"
-      echo "$return_line"
-      return 1
-    else
-      echo "$test_line"
-      return 0 
-    fi
-}
-
-remove_maxdisk ()
-{
-    # Assigns the opt keyword to the pattern
-    local test_routesection="$1"
-    local pattern
-    pattern="[Mm][Aa][Xx][Dd][Ii][Ss][Kk]"
-    remove_any_keyword "$test_routesection" "$pattern" || return 1
-}
-
-
 validate_write_in_out_jobname ()
 {
     # Assigns the global variables inputfile outputfile jobname
@@ -812,6 +772,47 @@ validate_write_in_out_jobname ()
     message "Output will be written to '$outputfile'."
 
 }
+
+#
+# Functions to modify the route section
+#
+
+remove_any_keyword ()
+{
+    # Takes in a string (the route section) and 
+    local test_line="$1"
+    # removes the pattern (keyword) if present and 
+    local test_pattern="$2"
+    # returns the result.
+    local return_line
+    # Since spaces have been removed form within the keywords previously with collate_keywords, 
+    # and inter-keyword delimiters are set to spaces only also, 
+    # it is safe to use that as a criterion to remove unnecessary keywords.
+    # The test pattern is extended to catch the whole keyword including options.
+    local extended_test_pattern="($test_pattern[^[:space:]]*)([[:space:]]+|$)"
+    if [[ $test_line =~ $extended_test_pattern ]] ; then
+      local found_pattern=${BASH_REMATCH[1]}
+      debug "Found pattern: '$found_pattern'" 
+      message "Removed keyword '$found_pattern'."
+      return_line="${test_line/$found_pattern/}"
+      echo "$return_line"
+      return 1
+    else
+      echo "$test_line"
+      return 0 
+    fi
+}
+
+remove_maxdisk ()
+{
+    # Assigns the opt keyword to the pattern
+    local test_routesection="$1"
+    local pattern
+    pattern="[Mm][Aa][Xx][Dd][Ii][Ss][Kk]"
+    remove_any_keyword "$test_routesection" "$pattern" || return 1
+}
+
+# Others (?)
 
 write_new_inputfile ()
 {
@@ -979,18 +980,22 @@ write_jobscript ()
       fatal "Unrecognised queueing system '$queue'."
     fi
 
+    echo "" >&9
+
     # How Gaussian is loaded
     if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
       cat >&9 <<-EOF
-			g16root="$installpath_g16"
+			g16root="$g16_installpath"
 			export g16root
 			. \$g16root/g16/bsd/g16.profile
 			EOF
     elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
+      (( ${#g16_modules[*]} == 0 )) && fatal "No modules to load."
       cat >&9 <<-EOF
+      # Might only be necessary for rwth (?)
 			source /usr/local_host/etc/init_modules.sh
-			module load CHEMISTRY 2>&1
-			module load $g16_module 2>&1 # Module writes info messages to error! (Why?)
+			module load ${g16_modules[*]} 2>&1
+			# Because otherwise it would go to the error output.
 			
 			EOF
     fi
@@ -999,7 +1004,6 @@ write_jobscript ()
 
     # Some of the body is the same for all queues (so far)
     cat >&9 <<-EOF
-		
 		# Get some information o the platform
 		echo "This is \$(uname -n)"
 		echo "OS \$(uname -o) (\$(uname -p))"
