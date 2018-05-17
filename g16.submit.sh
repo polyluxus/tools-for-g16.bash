@@ -1,8 +1,8 @@
 #! /bin/bash
 
 # Gaussian 16 submission script
-version="0.0.5"
-versiondate="2018-05-08"
+version="0.0.6"
+versiondate="2018-05-17"
 
 # The following two lines give the location of the installation.
 # They can be set in the rc file, too.
@@ -354,7 +354,7 @@ backup_if_exists ()
 
 parse_link0 ()
 {
-    #Lin0 directives are before the route section
+    #link0 directives are before the route section
     local parseline="$1"
     local pattern="$2"
     local index="$3"
@@ -385,8 +385,13 @@ warn_nprocs_directive ()
     local nprocs_read
     debug "Testing for NProcShared."
 
-    nprocs_read=$(parse_link0 "$parseline" "$pattern" "$rematch_index") || return 1
-    warning "Link0 directive '$nprocs_read' will be substituted with script settings."
+    if nprocs_read=$(parse_link0 "$parseline" "$pattern" "$rematch_index") ; then
+      warning "Link0 directive '$nprocs_read' will be substituted with script settings."
+      return 0
+    else
+      debug "Not a NProcShared statement."
+      return 1
+    fi
 }
 
 warn_mem_directive ()
@@ -397,8 +402,13 @@ warn_mem_directive ()
     local memory_read
     debug "Testing for memory."
 
-    memory_read=$(parse_link0 "$parseline" "$pattern" "$rematch_index") || return 1
-    warning "Link0 directive '$memory_read' will be substituted with script settings."
+    if memory_read=$(parse_link0 "$parseline" "$pattern" "$rematch_index") ; then 
+      warning "Link0 directive '$memory_read' will be substituted with script settings."
+      return 0
+    else
+      debug "Not a memory statement."
+      return 1
+    fi
 }
 
 # other link0 derectives may be appended here
@@ -867,7 +877,7 @@ process_inputfile ()
     read_inputfile "$inputfile"
     inputfile_modified="$jobname.gjf"
     backup_if_exists "$inputfile_modified"
-    debug "Writing new input: $$inputfile_modified"
+    debug "Writing new input: $inputfile_modified"
 
     write_new_inputfile > "$inputfile_modified"
     message "Written modified inputfile '$inputfile_modified'."
