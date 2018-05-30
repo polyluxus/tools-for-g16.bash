@@ -549,7 +549,7 @@ read_inputfile ()
       if (( store_charge_mult == 1 )) ; then
         debug "Reading charge and multiplicity."
         appendline=$(remove_comment "$line") 
-        pattern="^[[:space:]]*([0-9]+)[[:space:]]+([0-9]+)[[:space:]]*$"
+        pattern="^[[:space:]]*([+-]?[0-9]+)[[:space:]]+([0-9]+)[[:space:]]*$"
         if [[ $appendline =~ $pattern ]] ; then
           molecule_charge="${BASH_REMATCH[1]}"
           molecule_mult="${BASH_REMATCH[2]}"
