@@ -424,12 +424,14 @@ remove_comment ()
       # Return the line without the comment part
       echo "${BASH_REMATCH[1]}"
       [[ ! -z ${BASH_REMATCH[2]} ]] && message "Removed comment: ${BASH_REMATCH[2]}"
+      debug "Return 0."
       return 0
     elif [[ $parseline =~ ^!(.*)$ ]] ; then
       message "Removed comment: ${BASH_REMATCH[1]}"
+      debug "Return 0."
       return 0
     else
-      debug "Line is blank."
+      debug "Line is blank. Return 1."
       return 1 # Return false if blank line
     fi
 }
@@ -561,13 +563,17 @@ read_inputfile ()
       fi
       
       debug "Reading rest of input file."
-      line=$(remove_comment "$line") 
-      if [[ ! $line =~ ^[[:space:]]*$ ]] ; then
-        inputfile_body[$body_index]="$line" 
-        debug "Read and stored: ${inputfile_body[$body_index]}"
-        (( body_index++ ))
-        debug "Increase index to $body_index."
+      if line=$(remove_comment "$line") ; then
+        debug "Checking line '$line' is empty after removing comment."
+        # If after removing the comment the line is empty, skip to the next line
+        [[ $line =~ ^[[:space:]]*$ ]] && continue
+        debug "Line will be kept."
       fi
+
+      inputfile_body[$body_index]="$line" 
+      debug "Read and stored: ${inputfile_body[$body_index]}"
+      (( body_index++ ))
+      debug "Increase index to $body_index."
 
     done < "$parsefile"
     debug "Finished reading input file."
