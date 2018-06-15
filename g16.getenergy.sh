@@ -3,7 +3,7 @@
 #hlp   This is $scriptname!
 #hlp
 #hlp   It finds energy statements from Gaussian 16 calculations,
-#hlp   or find energy statements from all G09 log files in the 
+#hlp   or find energy statements from all G16 log files in the 
 #hlp   working directory.
 #hlp 
 #hlp   This software comes with absolutely no warrenty. None. Nada.
@@ -15,67 +15,11 @@
 # Related Review of original code:
 # http://codereview.stackexchange.com/q/129854/92423
 # Thanks to janos and 200_success
-# 
-# This was last updated with 
-version="0.0.6"
-versiondate="2018-05-17"
-# of tools-for-g16.bash
 
 #
-# Print some helping commands
-# The lines are distributed throughout the script and grepped for
+# Generic functions to find the scripts 
+# (Copy of ./resources/locations.sh)
 #
- 
-helpme ()
-{
-    local line
-    local pattern="^[[:space:]]*#hlp[[:space:]]?(.*)?$"
-    while read -r line; do
-      [[ "$line" =~ $pattern ]] && eval "echo \"${BASH_REMATCH[1]}\""
-    done < <(grep "#hlp" "$0")
-    exit 0
-}
-
-#
-# Print logging information and warnings nicely.
-# If there is an unrecoverable error: display a message and exit.
-#
-
-message ()
-{
-    if (( stay_quiet <= 0 )) ; then
-      echo "INFO   : " "$*" >&3
-    else
-      debug "(info   ) " "$*"
-    fi
-}
-
-warning ()
-{
-    if (( stay_quiet <= 1 )) ; then
-      echo "WARNING: " "$*" >&2
-    else
-      debug "(warning) " "$*"
-    fi
-    return 1
-}
-
-fatal ()
-{
-    if (( stay_quiet <= 2 )) ; then 
-      echo "ERROR  : " "$*" >&2
-    else
-      debug "(error  ) " "$*"
-    fi
-    exit 1
-}
-
-debug ()
-{
-    echo "DEBUG  : " "$*" >&4
-}    
-
-# 
 # Let's know where the script is and how it is actually called
 #
 
@@ -133,6 +77,11 @@ get_absolute_dirname ()
     echo "$return_dirname"
 }
 
+#
+# Specific functions for this script only
+#
+
+# Maybe worth putting in lib
 match_output_suffix ()
 {
   local   allowed_input_suffix=(com in  inp gjf COM IN  INP GJF)
@@ -244,11 +193,21 @@ process_directory ()
 # Begin main script
 #
 
-# Save how it was called
+# If this script is sourced, return before executing anything
+(( ${#BASH_SOURCE[*]} > 1 )) && return 0
+
+# Save how script was called
 script_invocation_spell="$0 $*"
 
 # Sent logging information to stdout
 exec 3>&1
+
+# Need to define debug function if unknown
+if ! command -v debug ; then
+  debug () {
+    echo "DEBUG  : " "$*" >&4
+  }
+fi
 
 # Secret debugging switch
 if [[ "$1" == "debug" ]] ; then
@@ -259,16 +218,6 @@ else
   exec 4> /dev/null
 fi
 
-#
-# Setting some defaults
-#
-
-# Print all information by default
-stay_quiet=0
-input_suffix="com"
-process_input_files="true"
-output_suffix="log"
-
 # Who are we and where are we?
 scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
 debug "Script is called '$scriptname'"
@@ -277,6 +226,23 @@ scriptbasename=${scriptname%.sh}
 debug "Base name of the script is '$scriptbasename'"
 scriptpath="$(get_absolute_dirname  "${BASH_SOURCE[0]}" "installdirectory")"
 debug "Script is located in '$scriptpath'"
+
+# Import default variables
+#shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/default_variables.sh
+source $scriptpath/resources/default_variables.sh
+
+# Set more default variables
+# exit_status=0 #(Not used.)
+stay_quiet=0
+process_input_files="true"
+
+# Import other functions
+#shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
+source $scriptpath/resources/messaging.sh
+#shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/rcfiles.sh
+source $scriptpath/resources/rcfiles.sh
+#shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
+source $scriptpath/resources/test_files.sh
 
 # Get options
 # Initialise options
@@ -300,16 +266,16 @@ while getopts :hqi:o: options ; do
     q) (( stay_quiet++ )) ;; 
 
     #hlp     -i <ARG>  Specify input suffix if processing a directory.
-    #hlp               (Will look for input files with given suffiy and
+    #hlp               (Will look for input files with given suffix and
     #hlp                automatically match suitable output file suffix.)
     #hlp
-    i) input_suffix="$OPTARG"
+    i) g16_input_suffix="$OPTARG"
        process_input_files="true"
        ;;
 
     #hlp     -o <ARG>  Specify output suffix if processing a directory.
     #hlp
-    o) output_suffix="$OPTARG" 
+    o) g16_output_suffix="$OPTARG" 
        process_input_files="false"
        ;;
 
@@ -325,15 +291,15 @@ shift $(( OPTIND - 1 ))
 
 if (( $# == 0 )) ; then
   if [[ $process_input_files =~ [Tt][Rr][Uu][Ee] ]] ; then
-    debug "Processing inputfiles with suffix '$input_suffix'."
-    process_directory "$input_suffix" 
+    debug "Processing inputfiles with suffix '$g16_input_suffix'."
+    process_directory "$g16_input_suffix" 
   else
-    if use_output_suffix=$(match_output_suffix "$output_suffix") ; then
-      debug "Recognised output suffix '$use_output_suffix'."
+    if use_g16_output_suffix=$(match_output_suffix "$g16_output_suffix") ; then
+      debug "Recognised output suffix '$use_g16_output_suffix'."
     else
-      fatal "Unrecognised output suffix '$output_suffix'."
+      fatal "Unrecognised output suffix '$g16_output_suffix'."
     fi
-    process_directory "$use_output_suffix"
+    process_directory "$use_g16_output_suffix"
   fi
 else
   # Print a header if more than one file specified
@@ -345,4 +311,4 @@ fi
 
 message "Created with '$script_invocation_spell'."
 #hlp (Martin; $version; $versiondate.)
-message "$scriptname is part of tools-for-g16.bash $version ($versiondate)"
+message "$scriptname is part of $softwarename $version ($versiondate)"
