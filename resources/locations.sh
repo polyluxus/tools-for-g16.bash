@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# If this script is not sourced, return before executing anything
+if (( ${#BASH_SOURCE[*]} == 1 )) ; then
+  echo "This script is only meant to be sourced."
+  exit 0
+fi
+
 # 
 # Let's know where the script is and how it is actually called
 #

@@ -29,12 +29,17 @@
 #   Tools-for-g16 wrapper (if found in path)
 #   g16_formchk_cmd="g16.wrapper.sh formchk" # ( - TO DO - )
 #   A command that executes formchk
-#   (-3 for verson 3 fchk; that is the default in the wrapper above)
-    g16_formchk_cmd="wrapper.g16 formchk -3" # ( Current workaround )
+    g16_formchk_cmd="wrapper.g16 formchk" # ( Current workaround )
 #   Local install with formchk found in PATH
-#   g16_formchk_cmd="formchk -3" 
+#   g16_formchk_cmd="formchk" 
 #   The hard coded path to the binary works also.
-#   bin_formchk_cmd="/path/to/g09/formchk -3"
+#   bin_formchk_cmd="/path/to/g09/formchk"
+#
+#   No options should be included in the above, but can be set:
+    g16_formchk_opts="-3"
+#   If no options should be given to fromchk, the leave set it to empty,
+#   g16_formchk_opts=""
+#   otherwise the scripts will use '-3' as option.
 #
 
 # This script requires an installation of Open Babel.
