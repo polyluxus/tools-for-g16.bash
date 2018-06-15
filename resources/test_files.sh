@@ -24,12 +24,14 @@ is_readable_file_or_exit ()
 {
     is_file "$1"     || fatal "Specified file '$1' is no file or does not exist."
     is_readable "$1" || fatal "Specified file '$1' is not readable."
+    echo "$1"
 }
 
 is_readable_file_and_warn ()
 {
     is_file "$1"     || warning "Specified file '$1' is no file or does not exist."
     is_readable "$1" || warning "Specified file '$1' is not readable."
+    echo "$1"
 }
 
 #

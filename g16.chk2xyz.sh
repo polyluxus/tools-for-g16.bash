@@ -81,25 +81,27 @@ format_one_checkpoint ()
 {
     local returncode=0
     local input_chk="$1"
-    local output_fchk="${input_chk%.*}.fchk"
-    local output_xyz="${input_chk%.*}.xyz"
-    local g16_output g16_formchk_args obabel_output
-    debug "global variables used: 'g16_formchk_cmd=$g16_formchk_cmd' 'g16_formchk_opts=$g16_formchk_opts'"
+    local use_input_chk
 
-    if is_readable_file_and_warn "$input_chk" ; then
-      debug "Operating on '$input_chk'."
+    if use_input_chk=$(is_readable_file_and_warn "$input_chk") ; then
+      debug "Operating on '$use_input_chk'."
     else
+      debug "Failed on '$use_input_chk'."
       return 1
     fi
     
+    local output_fchk="${use_input_chk%.*}.fchk"
+    local output_xyz="${use_input_chk%.*}.xyz"
+    local g16_output g16_formchk_args obabel_output
+    debug "global variables used: 'g16_formchk_cmd=$g16_formchk_cmd' 'g16_formchk_opts=$g16_formchk_opts'"
+
     backup_if_exists "$output_fchk"
     backup_if_exists "$output_xyz"
     
     # Run the programs
-    g16_formchk_args=( "$g16_formchk_opts" "$input_chk" "$output_fchk" )
+    g16_formchk_args=( "$g16_formchk_opts" "$use_input_chk" "$output_fchk" )
 
-    debug "Command: \"$g16_formchk_cmd $g16_formchk_opts\" \"$input_chk\" \"$output_fchk\" 2>&1"
-
+    debug "Command: $g16_formchk_cmd \"${g16_formchk_args[@]}\" 2>&1"
     g16_output=$($g16_formchk_cmd "${g16_formchk_args[@]}" 2>&1) || returncode="$?"
     if (( returncode != 0 )) ; then
       warning "There was an issue with formatting the checkpointfile."

@@ -1,37 +1,14 @@
 #! /bin/bash
 
 # Gaussian 16 submission script
-version="0.0.6"
-versiondate="2018-05-17"
-
-# The following two lines give the location of the installation.
-# They can be set in the rc file, too.
-# General path to the g16 directory (this should work on every system)
-g16_installpath="/path/is/not/set"
-# Define where scratch files shall be written to
-g16_scratch="$TEMP"
-# Define the overhead you'd like to give Gaussian in MB 
-g16_overhead=2000
-# The 2000 might be a very conservative guess, but additionally one
-# the memory will be scaled by (CPU + 1)/CPU.
-
-# On the RWTH cluster gaussian is loaded via a module system,
-# enter the names of the modules to load here:
-g16_modules[0]="CHEMISTRY"
-g16_modules[1]="gaussian/16.a03_bin"
-
-#####
 #
-# The actual script begins here. 
 # You might not want to make modifications here.
 # If you do improve it, I would be happy to learn about it.
 #
 
+# 
+# The help lines are distributed throughout the script and grepped for
 #
-# Print some helping commands
-# The lines are distributed throughout the script and grepped for
-#
-
 #hlp   This is $scriptname!
 #hlp
 #hlp   It will sumbit a gaussian input file to the queueing system.
@@ -46,56 +23,10 @@ g16_modules[1]="gaussian/16.a03_bin"
 #hlp   USAGE      :   $scriptname [options] [IPUT_FILE]
 #hlp
 
-helpme ()
-{
-    local line
-    local pattern="^[[:space:]]*#hlp[[:space:]]?(.*)?$"
-    while read -r line; do
-      [[ "$line" =~ $pattern ]] && eval "echo \"${BASH_REMATCH[1]}\""
-    done < <(grep "#hlp" "$0")
-    exit 0
-}
-
 #
-# Print logging information and warnings nicely.
-# If there is an unrecoverable error: display a message and exit.
+# Generic functions to find the scripts 
+# (Copy of ./resources/locations.sh)
 #
-
-message ()
-{
-    if (( stay_quiet <= 0 )) ; then
-      echo "INFO   : " "$*" >&3
-    else
-      debug "(info   ) " "$*"
-    fi
-}
-
-warning ()
-{
-    if (( stay_quiet <= 1 )) ; then
-      echo "WARNING: " "$*" >&2
-    else
-      debug "(warning) " "$*"
-    fi
-    return 1
-}
-
-fatal ()
-{
-    if (( stay_quiet <= 2 )) ; then 
-      echo "ERROR  : " "$*" >&2
-    else
-      debug "(error  ) " "$*"
-    fi
-    exit 1
-}
-
-debug ()
-{
-    echo "DEBUG  : " "$*" >&4
-}    
-
-# 
 # Let's know where the script is and how it is actually called
 #
 
@@ -152,6 +83,11 @@ get_absolute_dirname ()
     return_dirname=${return_dirname%/*}
     echo "$return_dirname"
 }
+
+#
+# Specific functions for this script only
+#
+
 
 #
 # Test if a given value is an integer
@@ -231,71 +167,6 @@ format_duration_or_exit ()
                           "$final_duration_seconds"
 }
 
-#
-# Get settings from configuration file
-#
-
-test_rc_file ()
-{
-  local test_runrc="$1"
-  debug "Testing '$test_runrc' ..."
-  if [[ -f "$test_runrc" && -r "$test_runrc" ]] ; then
-    echo "$test_runrc"
-    return 0
-  else
-    debug "... missing."
-    return 1
-  fi
-}
-
-get_rc ()
-{
-  local test_runrc_dir test_runrc_loc return_runrc_loc runrc_basename
-  # The rc should have some similarity with the actual scriptname
-  local runrc_basename="$scriptbasename" runrc_bundle="g16.tools"
-  while [[ ! -z $1 ]] ; do
-    test_runrc_dir="$1"
-    shift
-    if test_runrc_loc="$(test_rc_file "$test_runrc_dir/.${runrc_basename}rc")" ; then
-      return_runrc_loc="$test_runrc_loc" 
-      debug "   (found) return_runrc_loc=$return_runrc_loc"
-      continue
-    elif test_runrc_loc="$(test_rc_file "$test_runrc_dir/${runrc_basename}.rc")" ; then 
-      return_runrc_loc="$test_runrc_loc"
-      debug "   (found) return_runrc_loc=$return_runrc_loc"
-    elif test_runrc_loc="$(test_rc_file "$test_runrc_dir/.${runrc_bundle}rc")" ; then 
-      return_runrc_loc="$test_runrc_loc"
-      debug "   (found) return_runrc_loc=$return_runrc_loc"
-    elif test_runrc_loc="$(test_rc_file "$test_runrc_dir/${runrc_bundle}.rc")" ; then 
-      return_runrc_loc="$test_runrc_loc"
-      debug "   (found) return_runrc_loc=$return_runrc_loc"
-    fi
-  done
-  debug "(returned) return_runrc_loc=$return_runrc_loc"
-  echo "$return_runrc_loc"
-}
-
-#
-# Test, whether we can access the given file/directory
-#
-
-is_file ()
-{
-    [[ -f $1 ]]
-}
-
-is_readable ()
-{
-    [[ -r $1 ]]
-}
-
-is_readable_file_or_exit ()
-{
-    is_file "$1"     || fatal "Specified file '$1' is no file or does not exist."
-    is_readable "$1" || fatal "Specified file '$1' is not readable."
-    echo "$1"
-}
-
 # 
 # Issue warning if options are ignored.
 #
@@ -306,46 +177,6 @@ warn_additional_args ()
       warning "Specified option $1 will be ignored."
       shift
     done
-}
-
-#
-# Determine or validate outputfiles
-#
-
-test_file_location ()
-{
-    local savesuffix=1 file_return="$1"
-    debug "Checking file: $file_return"
-    if ! is_file "$file_return" ; then
-      echo "$file_return"
-      debug "There is no file '$file_return'. Return 0."
-      return 0
-    else
-      while is_file "${file_return}.${savesuffix}" ; do
-        (( savesuffix++ ))
-        debug "The file '${file_return}.${savesuffix}' exists."
-      done
-      warning "File '$file_return' exists."
-      echo "${file_return}.${savesuffix}"
-        debug "There is no file '${file_return}.${savesuffix}'. Return 1."
-      return 1
-    fi
-}
-
-backup_file ()
-{
-    local move_message move_source="$1" move_target="$2"
-    debug "Will attempt: mv -v $move_source $move_target"
-    move_message="$(mv -v "$move_source" "$move_target")" || fatal "Backup went wrong."
-    message "File will be backed up."
-    message "$move_message"
-}
-
-backup_if_exists ()
-{
-    local move_target
-    move_target=$(test_file_location "$1") && return
-    backup_file "$1" "$move_target"
 }
 
 # 
@@ -985,10 +816,10 @@ write_jobscript ()
       if [[ "$PWD" =~ [Hh][Pp][Cc] ]] ; then
         echo "#BSUB -R select[hpcwork]" >&9
       fi
-      if [[ "$bsub_rwth_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
+      if [[ "$bsub_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
         message "No project selected."
       else
-        echo "#BSUB -P $bsub_rwth_project" >&9
+        echo "#BSUB -P $bsub_project" >&9
       fi
       echo "jobid=\"\${LSB_JOBID}\"" >&9
 
@@ -1242,7 +1073,7 @@ process_options ()
           #hlp              Automatically selects '-Q bsub-rwth' and remote execution.
           #hlp
             P) 
-               bsub_rwth_project="$OPTARG"
+               bsub_project="$OPTARG"
                request_qsys="bsub-rwth"  
                ;;
 
@@ -1280,16 +1111,25 @@ process_options ()
     warn_additional_args "$@"
 }
 
-
 #
-# Begin main script
+# MAIN SCRIPT
 #
 
-# Save how it was called
+# If this script is sourced, return before executing anything
+(( ${#BASH_SOURCE[*]} > 1 )) && return 0
+
+# Save how script was called
 script_invocation_spell="$0 $*"
 
 # Sent logging information to stdout
 exec 3>&1
+
+# Need to define debug function if unknown
+if ! command -v debug ; then
+  debug () {
+    echo "DEBUG  : " "$*" >&4
+  }
+fi
 
 # Secret debugging switch
 if [[ "$1" == "debug" ]] ; then
@@ -1300,40 +1140,6 @@ else
   exec 4> /dev/null
 fi
 
-#
-# Setting some defaults
-#
-
-# Print all information by default
-stay_quiet=0
-
-# Specify default Walltime, this is only relevant for remote
-# execution as a header line for the queueing system
-requested_walltime="24:00:00"
-
-# Specify a default value for the memory
-requested_memory=512
-
-# This corresponds to  nthreads=<digit(s)> in the settings.ini
-requested_numCPU=4
-
-# The default which should be written to the inputfile
-# regarding disk space
-requested_maxdisk=10000
-
-# Select a queueing system (pbs-gen/bsub-rwth)
-request_qsys="pbs-gen"
-
-# Account to project (only for rwth)
-bsub_rwth_project=default
-
-# Default operation should be to run (hold/keep)
-requested_submit_status="run"
-
-# Ensure that in/outputfile variables are empty
-unset inputfile
-unset outputfile
-
 # Who are we and where are we?
 scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
 debug "Script is called '$scriptname'"
@@ -1343,17 +1149,36 @@ debug "Base name of the script is '$scriptbasename'"
 scriptpath="$(get_absolute_dirname  "${BASH_SOURCE[0]}" "installdirectory")"
 debug "Script is located in '$scriptpath'"
 
+# Import default variables
+#shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/default_variables.sh
+source $scriptpath/resources/default_variables.sh
+
+# Set more default variables
+exit_status=0
+stay_quiet=0
+# Ensure that in/outputfile variables are empty
+unset inputfile
+unset outputfile
+
+# Import other functions
+#shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
+source $scriptpath/resources/messaging.sh
+#shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/rcfiles.sh
+source $scriptpath/resources/rcfiles.sh
+#shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
+source $scriptpath/resources/test_files.sh
+
 # Check for settings in three default locations (increasing priority):
 #   install path of the script, user's home directory, current directory
-subg16_rc_loc="$(get_rc "$scriptpath" "/home/$USER" "$PWD")"
-debug "subg16_rc_loc=$subg16_rc_loc"
+g16_tools_rc_loc="$(get_rc "$scriptpath" "/home/$USER" "$PWD")"
+debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 
 # Load custom settings from the rc
 
-if [[ ! -z $subg16_rc_loc ]] ; then
+if [[ ! -z $g16_tools_rc_loc ]] ; then
   #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
-  . "$subg16_rc_loc"
-  message "Configuration file '$subg16_rc_loc' applied."
+  . "$g16_tools_rc_loc"
+  message "Configuration file '$g16_tools_rc_loc' applied."
 else
   debug "No custom settings found."
 fi
@@ -1366,6 +1191,5 @@ write_jobscript "$request_qsys"
 submit_jobscript "$request_qsys" "$requested_submit_status" 
 
 #hlp   AUTHOR    : Martin
-message "Thank you for travelling with $scriptname ($version, $versiondate)."
-exit 0
-
+message "$scriptname is part of $softwarename $version ($versiondate)"
+debug "$script_invocation_spell"
