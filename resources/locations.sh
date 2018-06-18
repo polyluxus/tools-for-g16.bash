@@ -64,3 +64,56 @@ get_absolute_dirname ()
     echo "$return_dirname"
 }
 
+
+get_scriptpath_and_source_files ()
+{
+    local error_count tmplog line tmpmsg
+    tmplog=$(mktemp tmp.XXXXXXXX) 
+    # Who are we and where are we?
+    scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
+    debug "Script is called '$scriptname'"
+    # remove scripting ending (if present)
+    scriptbasename=${scriptname%.sh} 
+    debug "Base name of the script is '$scriptbasename'"
+    scriptpath="$(get_absolute_dirname  "${BASH_SOURCE[0]}" "installdirectory")"
+    debug "Script is located in '$scriptpath'"
+    resourcespath="$scriptpath/resources"
+    
+    if [[ -d "$resourcespath" ]] ; then
+      debug "Found library in '$resourcespath'."
+    else
+      (( error_count++ ))
+    fi
+    
+    # Import default variables
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/default_variables.sh
+    source "$resourcespath/default_variables.sh" &> "$tmplog" || (( error_count++ ))
+    
+    # Set more default variables
+    exit_status=0
+    stay_quiet=0
+    
+    # Import other functions
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
+    source "$resourcespath/messaging.sh" &> "$tmplog" || (( error_count++ ))
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/rcfiles.sh
+    source "$resourcespath/rcfiles.sh" &> "$tmplog" || (( error_count++ ))
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
+    source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
+
+    if (( error_count > 0 )) ; then
+      echo "ERROR: Unable to locate library functions. Check installation." >&2
+      echo "ERROR: Expect functions in '$resourcespath'."
+      debug "Errors caused by:"
+      while read -r line || [[ -n "$line" ]] ; do
+        debug "$line"
+      done < "$tmplog"
+      tmpmsg=$(rm -v "$tmplog")
+      debug "$tmpmsg"
+      exit 1
+    else
+      tmpmsg=$(rm -v "$tmplog")
+      debug "$tmpmsg"
+    fi
+}
+

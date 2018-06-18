@@ -42,8 +42,13 @@ fatal ()
 
 debug ()
 {
-    echo "DEBUG  : " "$*" >&4
+    local line
+    while read -r line || [[ -n "$line" ]] ; do
+      echo "DEBUG  : " "$line" >&4
+    done <<< "$*"
 }    
+
+
 
 #
 # Print some helping commands

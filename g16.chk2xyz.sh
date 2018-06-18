@@ -68,6 +68,58 @@ get_absolute_dirname ()
     echo "$return_dirname"
 }
 
+get_scriptpath_and_source_files ()
+{
+    local error_count tmplog line tmpmsg
+    tmplog=$(mktemp tmp.XXXXXXXX) 
+    # Who are we and where are we?
+    scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
+    debug "Script is called '$scriptname'"
+    # remove scripting ending (if present)
+    scriptbasename=${scriptname%.sh} 
+    debug "Base name of the script is '$scriptbasename'"
+    scriptpath="$(get_absolute_dirname  "${BASH_SOURCE[0]}" "installdirectory")"
+    debug "Script is located in '$scriptpath'"
+    resourcespath="$scriptpath/resources"
+    
+    if [[ -d "$resourcespath" ]] ; then
+      debug "Found library in '$resourcespath'."
+    else
+      (( error_count++ ))
+    fi
+    
+    # Import default variables
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/default_variables.sh
+    source "$resourcespath/default_variables.sh" &> "$tmplog" || (( error_count++ ))
+    
+    # Set more default variables
+    exit_status=0
+    stay_quiet=0
+    
+    # Import other functions
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
+    source "$resourcespath/messaging.sh" &> "$tmplog" || (( error_count++ ))
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/rcfiles.sh
+    source "$resourcespath/rcfiles.sh" &> "$tmplog" || (( error_count++ ))
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
+    source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
+
+    if (( error_count > 0 )) ; then
+      echo "ERROR: Unable to locate library functions. Check installation." >&2
+      echo "ERROR: Expect functions in '$resourcespath'."
+      debug "Errors caused by:"
+      while read -r line || [[ -n "$line" ]] ; do
+        debug "$line"
+      done < "$tmplog"
+      tmpmsg=$(rm -v "$tmplog")
+      debug "$tmpmsg"
+      exit 1
+    else
+      tmpmsg=$(rm -v "$tmplog")
+      debug "$tmpmsg"
+    fi
+}
+
 #
 # Specific functions for this script only
 #
@@ -101,7 +153,7 @@ format_one_checkpoint ()
     # Run the programs
     g16_formchk_args=( "$g16_formchk_opts" "$use_input_chk" "$output_fchk" )
 
-    debug "Command: $g16_formchk_cmd \"${g16_formchk_args[@]}\" 2>&1"
+    debug "Command: $g16_formchk_cmd ${g16_formchk_args[*]} 2>&1"
     g16_output=$($g16_formchk_cmd "${g16_formchk_args[@]}" 2>&1) || returncode="$?"
     if (( returncode != 0 )) ; then
       warning "There was an issue with formatting the checkpointfile."
@@ -192,30 +244,7 @@ else
   exec 4> /dev/null
 fi
 
-# Who are we and where are we?
-scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
-debug "Script is called '$scriptname'"
-# remove scripting ending (if present)
-scriptbasename=${scriptname%.sh} 
-debug "Base name of the script is '$scriptbasename'"
-scriptpath="$(get_absolute_dirname  "${BASH_SOURCE[0]}" "installdirectory")"
-debug "Script is located in '$scriptpath'"
-
-# Import default variables
-#shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/default_variables.sh
-source $scriptpath/resources/default_variables.sh
-
-# Set more default variables
-exit_status=0
-stay_quiet=0
-
-# Import other functions
-#shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
-source $scriptpath/resources/messaging.sh
-#shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/rcfiles.sh
-source $scriptpath/resources/rcfiles.sh
-#shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
-source $scriptpath/resources/test_files.sh
+get_scriptpath_and_source_files || exit 1
 
 # Abort if neither options nor a file list is given
 (( $# == 0 )) &&  fatal "No checkpointfile specified."
@@ -236,6 +265,7 @@ else
 fi
 
 # Initialise options
+debug "Initialising option index."
 OPTIND="1"
 
 while getopts :fh options ; do
@@ -244,7 +274,10 @@ while getopts :fh options ; do
     #hlp   -f      Formats all checkpointfiles that are found in the current directory
     f) 
        ### get_all_checkpoint checkpoint_list # Needs Bash > 4.3
-       mapfile -t checkpoint_list < <(ls ./*.chk 2> /dev/null || exit 1)
+       debug "Executing for directory; looking for all checkpoint files."
+       mapfile -t checkpoint_list < <( ls ./*.chk 2> /dev/null ) 
+       debug "Found: ${checkpoint_list[*]}"
+       (( ${#checkpoint_list[*]} == 0 )) &&  warning "No checkpoint files found in this directory."
        ;;
     #hlp   -h      Prints this help text
     h) helpme ;; 
@@ -256,14 +289,21 @@ while getopts :fh options ; do
   esac
 done
 
+debug "Reading options completed."
+
 shift $(( OPTIND - 1 ))
 
 # Assume all other arguments are filenames
 checkpoint_list+=("$@")
 
-format_list "${checkpoint_list[@]}" || exit_status=$?
-
-(( exit_status == 0 )) || fatal "There have been one or more errors."
+if (( ${#checkpoint_list[*]} == 0 )) ; then
+  warning "No checkpoint files to operate on."
+  (( exit_status++ ))
+else
+  format_list "${checkpoint_list[@]}" || exit_status=$?
+fi
 
 message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"
+
+(( exit_status == 0 )) || fatal "There have been one or more errors."
