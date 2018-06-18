@@ -113,6 +113,8 @@ get_scriptpath_and_source_files ()
     source "$resourcespath/rcfiles.sh" &> "$tmplog" || (( error_count++ ))
     #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
     source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/process_gaussian.sh
+    source "$resourcespath/process_gaussian.sh" &> "$tmplog" || (( error_count++ ))
 
     if (( error_count > 0 )) ; then
       echo "ERROR: Unable to locate library functions. Check installation." >&2
@@ -134,112 +136,39 @@ get_scriptpath_and_source_files ()
 # Specific functions for this script only
 #
 
-# Maybe worth putting in lib
-match_output_suffix ()
-{
-  local   allowed_input_suffix=(com in  inp gjf COM IN  INP GJF)
-  local matching_output_suffix=(log out log log LOG OUT LOG LOG)
-  local choices=${#allowed_input_suffix[*]} count
-  local test_suffix="$1" return_suffix
-  debug "test_suffix=$test_suffix; choices=$choices"
-  
-  # Assign matching outputfile
-  for (( count=0 ; count < choices ; count++ )) ; do
-    debug "count=$count"
-    if [[ "$test_suffix" == "${matching_output_suffix[$count]}" ]]; then
-      return_suffix="$extract_suffix"
-      debug "Recognised output suffix: $return_suffix."
-      break
-    elif [[ "$test_suffix" == "${allowed_input_suffix[$count]}" ]]; then
-      return_suffix="${matching_output_suffix[$count]}"
-      debug "Matched output suffix: $return_suffix."
-      break
-    else
-      debug "No match for $test_suffix; $count; ${allowed_input_suffix[$count]}; ${matching_output_suffix[$count]}"
-    fi
-  done
-
-  [[ -z $return_suffix ]] && return 1
-
-  echo "$return_suffix"
-}
-
-match_output_file ()
-{
-  # Check what was supplied and if it is read/writeable
-  # Returns a filename
-  local extract_suffix return_suffix basename
-  local testfile="$1" return_file
-  debug "Validating: $testfile"
-
-  basename="${testfile%.*}"
-  extract_suffix="${testfile##*.}"
-  debug "basename=$basename; extract_suffix=$extract_suffix"
-
-  if return_suffix=$(match_output_suffix "$extract_suffix") ; then
-    return_file="$basename.$return_suffix"
-  else
-    return 1
-  fi
-
-  [[ -r $return_file ]] || return 1
-
-  echo "$return_file"    
-}
-
-
-find_energy ()
-{
-    local logfile="$1"
-    # Initiate variables necessary for parsing output
-    local readline pattern functional energy cycles
-    # Find match from the end of the file 
-    # Ref: http://unix.stackexchange.com/q/112159/160000
-    # This is the slowest part. 
-    # If the calulation is a single point with a properties block it might 
-    # perform slower than $(grep -m1 'SCF Done'c $logfile | tail -n 1).
-    readline=$(tac "$logfile" | grep -m1 'SCF Done')
-    # Gaussian output has following format, trap important information:
-    # Method, Energy, Cycles
-    # Example taken from BP86/cc-pVTZ for water (H2O): 
-    #  SCF Done:  E(RB-P86) =  -76.4006006969     A.U. after   10 cycles
-    pattern="(E\\(.+\\)) = (.+) [aA]\\.[uU]\\.[^0-9]+([0-9]+) cycles"
-    if [[ $readline =~ $pattern ]]
-    then 
-      functional="${BASH_REMATCH[1]}"
-      energy="${BASH_REMATCH[2]}"
-      cycles="${BASH_REMATCH[3]}"
-
-      # Print the line, format it for table like structure
-      printf '%-25s %-15s = %20s ( %6s )\n' "${logfile%.*}" "$functional" "$energy" "$cycles"
-    else
-      printf '%-25s No energy statement found.\n' "${logfile%.*}"
-    fi
-}
-
 process_one_file ()
 {
   # run only for one file at the time
   local testfile="$1" logfile
   if logfile="$(match_output_file "$testfile")" ; then
-    find_energy "$logfile"
+    find_energy "$logfile" || return 1
   else
     printf '%-25s No output file found.\n' "${testfile%.*}"
+    return 1
   fi
 }
 
 process_directory ()
 {
   # Find all files in a directory
-  local suffix="$1" process_file
+  local suffix="$1" returncode=0
+  local -a file_list
+  local process_file 
   printf '%-25s %s\n' "Summary for " "${PWD#\/*\/*\/}" 
   printf '%-25s %s\n\n' "Created " "$(date +"%Y/%m/%d %k:%M:%S")"
   # Print a header
   printf '%-25s %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
-  for process_file in *."$suffix" ; do
-    [[ "$process_file" == "*.$suffix" ]] && fatal "No files found matching '$process_file'."
-    process_one_file "$process_file"
+  mapfile -t file_list < <( ls ./*."$suffix" 2> /dev/null ) 
+  if (( ${#file_list[*]} == 0 )) ; then
+    warning "No output files found in this directory."
+    return 1
+  else
+    debug "Files found: ${#file_list[*]}"
+  fi
+  for process_file in "${file_list[@]}" ; do
+    process_one_file "$process_file" || (( returncode++ ))
   done
+  return $returncode
 }
 
 #
