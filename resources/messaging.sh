@@ -13,30 +13,39 @@ fi
 
 message ()
 {
-    if (( stay_quiet <= 0 )) ; then
-      echo "INFO   : " "$*" >&3
-    else
-      debug "(info   ) " "$*"
-    fi
+    local line
+    while read -r line || [[ -n "$line" ]] ; do
+      if (( stay_quiet <= 0 )) ; then
+        echo "INFO   : " "$line" >&3
+      else
+        debug "(info   ) " "$line"
+      fi
+    done <<< "$*"
 }
 
 warning ()
 {
-    if (( stay_quiet <= 1 )) ; then
-      echo "WARNING: " "$*" >&2
-    else
-      debug "(warning) " "$*"
-    fi
+    local line
+    while read -r line || [[ -n "$line" ]] ; do
+      if (( stay_quiet <= 1 )) ; then
+        echo "WARNING: " "$line" >&2
+      else
+        debug "(warning) " "$line"
+      fi
+    done <<< "$*"
     return 1
 }
 
 fatal ()
 {
-    if (( stay_quiet <= 2 )) ; then 
-      echo "ERROR  : " "$*" >&2
-    else
-      debug "(error  ) " "$*"
-    fi
+    local line
+    while read -r line || [[ -n "$line" ]] ; do
+      if (( stay_quiet <= 2 )) ; then 
+        echo "ERROR  : " "$line" >&2
+      else
+        debug "(error  ) " "$line"
+      fi
+    done <<< "$*"
     exit 1
 }
 
@@ -47,8 +56,6 @@ debug ()
       echo "DEBUG  : " "$line" >&4
     done <<< "$*"
 }    
-
-
 
 #
 # Print some helping commands
@@ -63,5 +70,17 @@ helpme ()
       [[ "$line" =~ $pattern ]] && eval "echo \"${BASH_REMATCH[1]}\""
     done < <(grep "#hlp" "$0")
     exit 0
+}
+
+# 
+# Issue warning if options are ignored.
+#
+
+warn_additional_args ()
+{
+    while [[ ! -z $1 ]]; do
+      warning "Specified option $1 will be ignored."
+      shift
+    done
 }
 
