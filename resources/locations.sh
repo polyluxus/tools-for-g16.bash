@@ -1,25 +1,12 @@
 #!/bin/bash
 
-#hlp   This is $scriptname!
-#hlp
-#hlp   It finds energy statements from Gaussian 16 calculations,
-#hlp   or find energy statements from all G16 log files in the 
-#hlp   working directory.
-#hlp 
-#hlp   This software comes with absolutely no warrenty. None. Nada.
-#hlp
-#hlp   VERSION    :   $version
-#hlp   DATE       :   $versiondate
-#hlp
+# If this script is not sourced, return before executing anything
+if (( ${#BASH_SOURCE[*]} == 1 )) ; then
+  echo "This script is only meant to be sourced."
+  exit 0
+fi
 
-# Related Review of original code:
-# http://codereview.stackexchange.com/q/129854/92423
-# Thanks to janos and 200_success
-
-#
-# Generic functions to find the scripts 
-# (Copy of ./resources/locations.sh)
-#
+# 
 # Let's know where the script is and how it is actually called
 #
 
@@ -77,6 +64,7 @@ get_absolute_dirname ()
     echo "$return_dirname"
 }
 
+
 get_scriptpath_and_source_files ()
 {
     local error_count tmplog line tmpmsg
@@ -102,9 +90,8 @@ get_scriptpath_and_source_files ()
     source "$resourcespath/default_variables.sh" &> "$tmplog" || (( error_count++ ))
     
     # Set more default variables
-    # exit_status=0
+    exit_status=0
     stay_quiet=0
-    process_input_files="true"
     
     # Import other functions
     #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
@@ -115,6 +102,8 @@ get_scriptpath_and_source_files ()
     source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
     #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/process_gaussian.sh
     source "$resourcespath/process_gaussian.sh" &> "$tmplog" || (( error_count++ ))
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/validate_numbers.sh
+    source "$resourcespath/validate_numbers.sh" &> "$tmplog" || (( error_count++ ))
 
     if (( error_count > 0 )) ; then
       echo "ERROR: Unable to locate library functions. Check installation." >&2
@@ -132,141 +121,3 @@ get_scriptpath_and_source_files ()
     fi
 }
 
-#
-# Specific functions for this script only
-#
-
-process_one_file ()
-{
-  # run only for one file at the time
-  local testfile="$1" logfile
-  if logfile="$(match_output_file "$testfile")" ; then
-    find_energy "$logfile" || return 1
-  else
-    printf '%-25s No output file found.\n' "${testfile%.*}"
-    return 1
-  fi
-}
-
-process_directory ()
-{
-  # Find all files in a directory
-  local suffix="$1" returncode=0
-  local -a file_list
-  local process_file 
-  printf '%-25s %s\n' "Summary for " "${PWD#\/*\/*\/}" 
-  printf '%-25s %s\n\n' "Created " "$(date +"%Y/%m/%d %k:%M:%S")"
-  # Print a header
-  printf '%-25s %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
-  mapfile -t file_list < <( ls ./*."$suffix" 2> /dev/null ) 
-  if (( ${#file_list[*]} == 0 )) ; then
-    warning "No output files found in this directory."
-    return 1
-  else
-    debug "Files found: ${#file_list[*]}"
-  fi
-  for process_file in "${file_list[@]}" ; do
-    process_one_file "$process_file" || (( returncode++ ))
-  done
-  return $returncode
-}
-
-#
-# Begin main script
-#
-
-# If this script is sourced, return before executing anything
-(( ${#BASH_SOURCE[*]} > 1 )) && return 0
-
-# Save how script was called
-script_invocation_spell="$0 $*"
-
-# Sent logging information to stdout
-exec 3>&1
-
-# Need to define debug function if unknown
-if ! command -v debug ; then
-  debug () {
-    echo "DEBUG  : " "$*" >&4
-  }
-fi
-
-# Secret debugging switch
-if [[ "$1" == "debug" ]] ; then
-  exec 4>&1
-  stay_quiet=0 
-  shift 
-else
-  exec 4> /dev/null
-fi
-
-get_scriptpath_and_source_files || exit 1
-
-# Get options
-# Initialise options
-OPTIND="1"
-
-while getopts :hqi:o: options ; do
-  #hlp   USAGE      :   $scriptname [options] <filenames>
-  #hlp
-  #hlp   If no filenames are specified, the script looks for all '*.com'
-  #hlp   files and assumes there is a matching '*.log' file.
-  #hlp
-  #hlp   OPTIONS:
-  case $options in
-    #hlp     -h        Prints this help text
-    #hlp
-    h) helpme ;; 
-
-    #hlp     -q        Suppress messages, warnings, and errors
-    #hlp               (May be specified multiple times.)
-    #hlp
-    q) (( stay_quiet++ )) ;; 
-
-    #hlp     -i <ARG>  Specify input suffix if processing a directory.
-    #hlp               (Will look for input files with given suffix and
-    #hlp                automatically match suitable output file suffix.)
-    #hlp
-    i) g16_input_suffix="$OPTARG"
-       process_input_files="true"
-       ;;
-
-    #hlp     -o <ARG>  Specify output suffix if processing a directory.
-    #hlp
-    o) g16_output_suffix="$OPTARG" 
-       process_input_files="false"
-       ;;
-
-    #hlp More options in preparation.
-   \?) fatal "Invalid option: -$OPTARG." ;;
-
-    :) fatal "Option -$OPTARG requires an argument." ;;
-
-  esac
-done
-
-shift $(( OPTIND - 1 ))
-
-if (( $# == 0 )) ; then
-  if [[ $process_input_files =~ [Tt][Rr][Uu][Ee] ]] ; then
-    debug "Processing inputfiles with suffix '$g16_input_suffix'."
-    process_directory "$g16_input_suffix" 
-  else
-    if use_g16_output_suffix=$(match_output_suffix "$g16_output_suffix") ; then
-      debug "Recognised output suffix '$use_g16_output_suffix'."
-    else
-      fatal "Unrecognised output suffix '$g16_output_suffix'."
-    fi
-    process_directory "$use_g16_output_suffix"
-  fi
-else
-  # Print a header if more than one file specified
-  (( $# > 1 )) && printf '%-25s %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
-  for inputfile in "$@"; do
-    process_one_file "$inputfile"
-  done
-fi
-
-message "Created with '$script_invocation_spell'."
-#hlp (Martin; $version; $versiondate.)
-message "$scriptname is part of $softwarename $version ($versiondate)"

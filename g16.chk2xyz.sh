@@ -4,72 +4,13 @@
 #hlp to a formatted checkpointfile and then to xyz 
 #hlp coordinates using Open Babel.
 #hlp Usage: $scriptname [option] <checkpointfile(s)>
-#hlp Distributed with tools-for-g16.bash $version ($versiondate)
+#hlp Distributed with $softwarename $version ($versiondate)
 # 
-# This was last updated with 
-version="0.0.5"
-versiondate="2018-05-08"
-# of tools-for-g16.bash
-
-#standard commands:
-g16_formchk_cmd="wrapper.g16 formchk -3" # ( Current workaround )
-obabel_cmd="obabel"
 
 #
-# Print logging information and warnings nicely.
-# If there is an unrecoverable error: display a message and exit.
+# Generic functions to find the scripts 
+# (Copy of ./resources/locations.sh)
 #
-
-message ()
-{
-    if (( stay_quiet <= 0 )) ; then
-      echo "INFO   : " "$*" >&3
-    else
-      debug "(info   ) " "$*"
-    fi
-}
-
-warning ()
-{
-    if (( stay_quiet <= 1 )) ; then
-      echo "WARNING: " "$*" >&2
-    else
-      debug "(warning) " "$*"
-    fi
-    return 1
-}
-
-fatal ()
-{
-    if (( stay_quiet <= 2 )) ; then 
-      echo "ERROR  : " "$*" >&2
-    else
-      debug "(error  ) " "$*"
-    fi
-    exit 1
-}
-
-debug ()
-{
-    echo "DEBUG  : " "$*" >&4
-}    
-
-#
-# Print some helping commands
-# The lines are distributed throughout the script and grepped for
-#
-
-helpme ()
-{
-    local line
-    local pattern="^[[:space:]]*#hlp[[:space:]]?(.*)?$"
-    while read -r line; do
-      [[ "$line" =~ $pattern ]] && eval "echo \"${BASH_REMATCH[1]}\""
-    done < <(grep "#hlp" "$0")
-    exit 0
-}
-
-# 
 # Let's know where the script is and how it is actually called
 #
 
@@ -127,115 +68,61 @@ get_absolute_dirname ()
     echo "$return_dirname"
 }
 
-#
-# Get settings from configuration file
-#
-
-test_rc_file ()
+get_scriptpath_and_source_files ()
 {
-  local test_runrc="$1"
-  debug "Testing '$test_runrc' ..."
-  if [[ -f "$test_runrc" && -r "$test_runrc" ]] ; then
-    echo "$test_runrc"
-    return 0
-  else
-    debug "... missing."
-    return 1
-  fi
-}
-
-get_rc ()
-{
-  local test_runrc_dir test_runrc_loc return_runrc_loc runrc_basename
-  # The rc should have some similarity with the actual scriptname
-  local runrc_basename="$scriptbasename" runrc_bundle="g16.tools"
-  while [[ ! -z $1 ]] ; do
-    test_runrc_dir="$1"
-    shift
-    if test_runrc_loc="$(test_rc_file "$test_runrc_dir/.${runrc_basename}rc")" ; then
-      return_runrc_loc="$test_runrc_loc" 
-      debug "   (found) return_runrc_loc=$return_runrc_loc"
-      continue
-    elif test_runrc_loc="$(test_rc_file "$test_runrc_dir/${runrc_basename}.rc")" ; then 
-      return_runrc_loc="$test_runrc_loc"
-      debug "   (found) return_runrc_loc=$return_runrc_loc"
-    elif test_runrc_loc="$(test_rc_file "$test_runrc_dir/.${runrc_bundle}rc")" ; then 
-      return_runrc_loc="$test_runrc_loc"
-      debug "   (found) return_runrc_loc=$return_runrc_loc"
-    elif test_runrc_loc="$(test_rc_file "$test_runrc_dir/${runrc_bundle}.rc")" ; then 
-      return_runrc_loc="$test_runrc_loc"
-      debug "   (found) return_runrc_loc=$return_runrc_loc"
-    fi
-  done
-  debug "(returned) return_runrc_loc=$return_runrc_loc"
-  echo "$return_runrc_loc"
-}
-
-#
-# Test, whether we can access the given file/directory
-#
-
-is_file ()
-{
-    [[ -f $1 ]]
-}
-
-is_readable ()
-{
-    [[ -r $1 ]]
-}
-
-is_readable_file_or_exit ()
-{
-    is_file "$1"     || fatal "Specified file '$1' is no file or does not exist."
-    is_readable "$1" || fatal "Specified file '$1' is not readable."
-}
-
-is_readable_file_and_warn ()
-{
-    is_file "$1"     || warning "Specified file '$1' is no file or does not exist."
-    is_readable "$1" || warning "Specified file '$1' is not readable."
-}
-
-#
-# Check if file exists and prevent overwriting
-#
-
-test_file_location ()
-{
-    local savesuffix=1 file_return="$1"
-    debug "Checking file: $file_return"
-    if ! is_file "$file_return" ; then
-      echo "$file_return"
-      debug "There is no file '$file_return'. Return 0."
-      return 0
+    local error_count tmplog line tmpmsg
+    tmplog=$(mktemp tmp.XXXXXXXX) 
+    # Who are we and where are we?
+    scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
+    debug "Script is called '$scriptname'"
+    # remove scripting ending (if present)
+    scriptbasename=${scriptname%.sh} 
+    debug "Base name of the script is '$scriptbasename'"
+    scriptpath="$(get_absolute_dirname  "${BASH_SOURCE[0]}" "installdirectory")"
+    debug "Script is located in '$scriptpath'"
+    resourcespath="$scriptpath/resources"
+    
+    if [[ -d "$resourcespath" ]] ; then
+      debug "Found library in '$resourcespath'."
     else
-      while is_file "${file_return}.${savesuffix}" ; do
-        (( savesuffix++ ))
-        debug "The file '${file_return}.${savesuffix}' exists."
-      done
-      warning "File '$file_return' exists."
-      echo "${file_return}.${savesuffix}"
-        debug "There is no file '${file_return}.${savesuffix}'. Return 1."
-      return 1
+      (( error_count++ ))
+    fi
+    
+    # Import default variables
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/default_variables.sh
+    source "$resourcespath/default_variables.sh" &> "$tmplog" || (( error_count++ ))
+    
+    # Set more default variables
+    exit_status=0
+    stay_quiet=0
+    
+    # Import other functions
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
+    source "$resourcespath/messaging.sh" &> "$tmplog" || (( error_count++ ))
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/rcfiles.sh
+    source "$resourcespath/rcfiles.sh" &> "$tmplog" || (( error_count++ ))
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
+    source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
+
+    if (( error_count > 0 )) ; then
+      echo "ERROR: Unable to locate library functions. Check installation." >&2
+      echo "ERROR: Expect functions in '$resourcespath'."
+      debug "Errors caused by:"
+      while read -r line || [[ -n "$line" ]] ; do
+        debug "$line"
+      done < "$tmplog"
+      tmpmsg=$(rm -v "$tmplog")
+      debug "$tmpmsg"
+      exit 1
+    else
+      tmpmsg=$(rm -v "$tmplog")
+      debug "$tmpmsg"
     fi
 }
 
-backup_file ()
-{
-    local move_message move_source="$1" move_target="$2"
-    debug "Will attempt: mv -v $move_source $move_target"
-    move_message="$(mv -v "$move_source" "$move_target")" || fatal "Backup went wrong."
-    message "File will be backed up."
-    message "$move_message"
-}
-
-backup_if_exists ()
-{
-    local move_target
-    move_target=$(test_file_location "$1") && return
-    backup_file "$1" "$move_target"
-}
+#
+# Specific functions for this script only
+#
 
 #
 # Format checkpoint file, write xyz coordinates
@@ -246,15 +133,28 @@ format_one_checkpoint ()
 {
     local returncode=0
     local input_chk="$1"
-    local output_fchk="${input_chk%.*}.fchk"
-    local output_xyz="${input_chk%.*}.xyz"
-    local g16_output obabel_output
+    local use_input_chk
+
+    if use_input_chk=$(is_readable_file_and_warn "$input_chk") ; then
+      debug "Operating on '$use_input_chk'."
+    else
+      debug "Failed on '$use_input_chk'."
+      return 1
+    fi
     
+    local output_fchk="${use_input_chk%.*}.fchk"
+    local output_xyz="${use_input_chk%.*}.xyz"
+    local g16_output g16_formchk_args obabel_output
+    debug "global variables used: 'g16_formchk_cmd=$g16_formchk_cmd' 'g16_formchk_opts=$g16_formchk_opts'"
+
     backup_if_exists "$output_fchk"
     backup_if_exists "$output_xyz"
     
     # Run the programs
-    g16_output=$($g16_formchk_cmd "$input_chk" "$output_fchk" 2>&1) || returncode="$?"
+    g16_formchk_args=( "$g16_formchk_opts" "$use_input_chk" "$output_fchk" )
+
+    debug "Command: $g16_formchk_cmd ${g16_formchk_args[*]} 2>&1"
+    g16_output=$($g16_formchk_cmd "${g16_formchk_args[@]}" 2>&1) || returncode="$?"
     if (( returncode != 0 )) ; then
       warning "There was an issue with formatting the checkpointfile."
       debug "Output: $g16_output"
@@ -264,6 +164,10 @@ format_one_checkpoint ()
       debug "$g16_output"
     fi
 
+    debug "Global variables used: 'obabel_cmd=$obabel_cmd'"
+    debug "Command: $obabel_cmd -ifchk \"$output_fchk\" -oxyz -O\"$output_xyz\" 2>&1"
+    # Options for obabel to read a formatted checkpoint and output xyz coordinates
+    
     obabel_output=$($obabel_cmd -ifchk "$output_fchk" -oxyz -O"$output_xyz" 2>&1) || (( returncode+=$? ))
     if (( returncode != 0 )) ; then
       warning "There was an issue with writing the coordinates."
@@ -281,14 +185,31 @@ format_only ()
     is_readable_file_and_warn "$1" && format_one_checkpoint "$1" || return $?
 }
 
-format_all ()
+###   get_all_checkpoint ()
+###   {
+###       # See [How to return an array in bash without using globals?](https://stackoverflow.com/a/49971213/3180795)
+###       # Works only in Bash 4.3 :(
+###       local -n arrayname="$1"
+###       # run over all checkpoint files
+###       local test_chk returncode=0
+###       # truncate first two directories 
+###       message "Finding all checkpoint files in ${PWD#\/*\/*\/}." 
+###       for test_chk in *.chk; do
+###         if [[ "$test_chk" == "*.chk" ]] ; then
+###           warning "There are no checkpointfiles in this directory."
+###           returncode=1
+###         fi
+###         arrayname+=("$test_chk")
+###       done
+###       return $returncode
+###   }
+
+format_list ()
 {
     # run over all checkpoint files
     local input_chk returncode=0
     # truncate first two directories 
-    message "Working on all checkpoint files in ${PWD#\/*\/*\/}." 
-    for input_chk in *.chk; do
-      [[ "$input_chk" == "*.chk" ]] && fatal "There are no checkpointfiles in this directory."
+    for input_chk in "$@" ; do
       format_only "$input_chk" || (( returncode+=$? ))
     done
     return $returncode
@@ -298,11 +219,21 @@ format_all ()
 # MAIN SCRIPT
 #
 
-# Save how it was called
+# If this script is sourced, return before executing anything
+(( ${#BASH_SOURCE[*]} > 1 )) && return 0
+
+# Save how script was called
 script_invocation_spell="$0 $*"
 
 # Sent logging information to stdout
 exec 3>&1
+
+# Need to define debug function if unknown
+if ! command -v debug ; then
+  debug () {
+    echo "DEBUG  : " "$*" >&4
+  }
+fi
 
 # Secret debugging switch
 if [[ "$1" == "debug" ]] ; then
@@ -313,47 +244,40 @@ else
   exec 4> /dev/null
 fi
 
-# Set defaults
-exit_status=0
-skip_list="false"
-stay_quiet=0
+get_scriptpath_and_source_files || exit 1
 
-# Who are we and where are we?
-scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
-debug "Script is called '$scriptname'"
-# remove scripting ending (if present)
-scriptbasename=${scriptname%.sh} 
-debug "Base name of the script is '$scriptbasename'"
-scriptpath="$(get_absolute_dirname  "${BASH_SOURCE[0]}" "installdirectory")"
-debug "Script is located in '$scriptpath'"
+# Abort if neither options nor a file list is given
+(( $# == 0 )) &&  fatal "No checkpointfile specified."
 
 # Check for settings in three default locations (increasing priority):
 #   install path of the script, user's home directory, current directory
-subg16_rc_loc="$(get_rc "$scriptpath" "/home/$USER" "$PWD")"
-debug "subg16_rc_loc=$subg16_rc_loc"
+g16_tools_rc_loc="$(get_rc "$scriptpath" "/home/$USER" "$PWD")"
+debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 
 # Load custom settings from the rc
 
-if [[ ! -z $subg16_rc_loc ]] ; then
+if [[ ! -z $g16_tools_rc_loc ]] ; then
   #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
-  . "$subg16_rc_loc"
-  message "Configuration file '$subg16_rc_loc' applied."
+  . "$g16_tools_rc_loc"
+  message "Configuration file '$g16_tools_rc_loc' applied."
 else
   debug "No custom settings found."
 fi
 
-
-(( $# == 0 )) &&  fatal "No checkpointfile specified."
-
 # Initialise options
+debug "Initialising option index."
 OPTIND="1"
 
 while getopts :fh options ; do
   case $options in
     #hlp OPTIONS:
     #hlp   -f      Formats all checkpointfiles that are found in the current directory
-    f) format_all || exit_status=$?
-       skip_list="true"
+    f) 
+       ### get_all_checkpoint checkpoint_list # Needs Bash > 4.3
+       debug "Executing for directory; looking for all checkpoint files."
+       mapfile -t checkpoint_list < <( ls ./*.chk 2> /dev/null ) 
+       debug "Found: ${checkpoint_list[*]}"
+       (( ${#checkpoint_list[*]} == 0 )) &&  warning "No checkpoint files found in this directory."
        ;;
     #hlp   -h      Prints this help text
     h) helpme ;; 
@@ -365,16 +289,21 @@ while getopts :fh options ; do
   esac
 done
 
+debug "Reading options completed."
+
 shift $(( OPTIND - 1 ))
 
-if [[ $skip_list != "true" ]] ; then
-  while [[ ! -z $1 ]] ; do
-    format_only "$1" || (( exit_status+=$? ))
-    shift
-  done
+# Assume all other arguments are filenames
+checkpoint_list+=("$@")
+
+if (( ${#checkpoint_list[*]} == 0 )) ; then
+  warning "No checkpoint files to operate on."
+  (( exit_status++ ))
+else
+  format_list "${checkpoint_list[@]}" || exit_status=$?
 fi
 
-(( exit_status == 0 )) || fatal "There have been one or more errors."
-
-message "$scriptname is part of tools-for-g16.bash $version ($versiondate)"
+message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"
+
+(( exit_status == 0 )) || fatal "There have been one or more errors."

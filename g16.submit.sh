@@ -1,37 +1,14 @@
 #! /bin/bash
 
 # Gaussian 16 submission script
-version="0.0.6"
-versiondate="2018-05-17"
-
-# The following two lines give the location of the installation.
-# They can be set in the rc file, too.
-# General path to the g16 directory (this should work on every system)
-g16_installpath="/path/is/not/set"
-# Define where scratch files shall be written to
-g16_scratch="$TEMP"
-# Define the overhead you'd like to give Gaussian in MB 
-g16_overhead=2000
-# The 2000 might be a very conservative guess, but additionally one
-# the memory will be scaled by (CPU + 1)/CPU.
-
-# On the RWTH cluster gaussian is loaded via a module system,
-# enter the names of the modules to load here:
-g16_modules[0]="CHEMISTRY"
-g16_modules[1]="gaussian/16.a03_bin"
-
-#####
 #
-# The actual script begins here. 
 # You might not want to make modifications here.
 # If you do improve it, I would be happy to learn about it.
 #
 
+# 
+# The help lines are distributed throughout the script and grepped for
 #
-# Print some helping commands
-# The lines are distributed throughout the script and grepped for
-#
-
 #hlp   This is $scriptname!
 #hlp
 #hlp   It will sumbit a gaussian input file to the queueing system.
@@ -46,56 +23,10 @@ g16_modules[1]="gaussian/16.a03_bin"
 #hlp   USAGE      :   $scriptname [options] [IPUT_FILE]
 #hlp
 
-helpme ()
-{
-    local line
-    local pattern="^[[:space:]]*#hlp[[:space:]]?(.*)?$"
-    while read -r line; do
-      [[ "$line" =~ $pattern ]] && eval "echo \"${BASH_REMATCH[1]}\""
-    done < <(grep "#hlp" "$0")
-    exit 0
-}
-
 #
-# Print logging information and warnings nicely.
-# If there is an unrecoverable error: display a message and exit.
+# Generic functions to find the scripts 
+# (Copy of ./resources/locations.sh)
 #
-
-message ()
-{
-    if (( stay_quiet <= 0 )) ; then
-      echo "INFO   : " "$*" >&3
-    else
-      debug "(info   ) " "$*"
-    fi
-}
-
-warning ()
-{
-    if (( stay_quiet <= 1 )) ; then
-      echo "WARNING: " "$*" >&2
-    else
-      debug "(warning) " "$*"
-    fi
-    return 1
-}
-
-fatal ()
-{
-    if (( stay_quiet <= 2 )) ; then 
-      echo "ERROR  : " "$*" >&2
-    else
-      debug "(error  ) " "$*"
-    fi
-    exit 1
-}
-
-debug ()
-{
-    echo "DEBUG  : " "$*" >&4
-}    
-
-# 
 # Let's know where the script is and how it is actually called
 #
 
@@ -153,719 +84,68 @@ get_absolute_dirname ()
     echo "$return_dirname"
 }
 
-#
-# Test if a given value is an integer
-#
-
-is_integer()
+get_scriptpath_and_source_files ()
 {
-    [[ $1 =~ ^[[:digit:]]+$ ]]
-}
-
-validate_integer () 
-{
-    if ! is_integer "$1"; then
-        [ ! -z "$2" ] && fatal "Value for $2 ($1) is no integer."
-          [ -z "$2" ] && fatal "Value \"$1\" is no integer."
-    fi
-}
-
-# 
-# Test whether a given walltime is in the correct format
-#
-
-format_duration_or_exit ()
-{
-    local check_duration="$1"
-    # Split time in HH:MM:SS
-    # Strips away anything up to and including the rightmost colon
-    # strips nothing if no colon present
-    # and tests if the value is numeric
-    # this is assigned to seconds
-    local trunc_duration_seconds=${check_duration##*:}
-    validate_integer "$trunc_duration_seconds" "seconds"
-    # If successful value is stored for later assembly
-    #
-    # Check if the value is given in seconds
-    # "${check_duration%:*}" strips shortest match ":*" from back
-    # If no colon is present, the strings are identical
-    if [[ ! "$check_duration" == "${check_duration%:*}" ]]; then
-        # Strip seconds and colon
-        check_duration="${check_duration%:*}"
-        # Strips away anything up to and including the rightmost colon
-        # this is assigned as minutes
-        # and tests if the value is numeric
-        local trunc_duration_minutes=${check_duration##*:}
-        validate_integer "$trunc_duration_minutes" "minutes"
-        # If successful value is stored for later assembly
-        #
-        # Check if value was given as MM:SS same procedure as above
-        if [[ ! "$check_duration" == "${check_duration%:*}" ]]; then
-            #Strip minutes and colon
-            check_duration="${check_duration%:*}"
-            # # Strips away anything up to and including the rightmost colon
-            # this is assigned as hours
-            # and tests if the value is numeric
-            local trunc_duration_hours=${check_duration##*:}
-            validate_integer "$trunc_duration_hours" "hours"
-            # Check if value was given as HH:MM:SS if not, then exit
-            if [[ ! "$check_duration" == "${check_duration%:*}" ]]; then
-                fatal "Unrecognised duration format."
-            fi
-        fi
-    fi
-
-    # Modify the duration to have the format HH:MM:SS
-    # disregarding the format of the user input
-    # keep only 0-59 seconds stored, let rest overflow to minutes
-    local final_duration_seconds=$((trunc_duration_seconds % 60))
-    # Add any multiple of 60 seconds to the minutes given as input
-    trunc_duration_minutes=$((trunc_duration_minutes + trunc_duration_seconds / 60))
-    # save as minutes what cannot overflow as hours
-    local final_duration_minutes=$((trunc_duration_minutes % 60))
-    # add any multiple of 60 minutes to the hours given as input
-    local final_duration_hours=$((trunc_duration_hours + trunc_duration_minutes / 60))
-
-    # Format string and print it
-    printf "%d:%02d:%02d" "$final_duration_hours" "$final_duration_minutes" \
-                          "$final_duration_seconds"
-}
-
-#
-# Get settings from configuration file
-#
-
-test_rc_file ()
-{
-  local test_runrc="$1"
-  debug "Testing '$test_runrc' ..."
-  if [[ -f "$test_runrc" && -r "$test_runrc" ]] ; then
-    echo "$test_runrc"
-    return 0
-  else
-    debug "... missing."
-    return 1
-  fi
-}
-
-get_rc ()
-{
-  local test_runrc_dir test_runrc_loc return_runrc_loc runrc_basename
-  # The rc should have some similarity with the actual scriptname
-  local runrc_basename="$scriptbasename" runrc_bundle="g16.tools"
-  while [[ ! -z $1 ]] ; do
-    test_runrc_dir="$1"
-    shift
-    if test_runrc_loc="$(test_rc_file "$test_runrc_dir/.${runrc_basename}rc")" ; then
-      return_runrc_loc="$test_runrc_loc" 
-      debug "   (found) return_runrc_loc=$return_runrc_loc"
-      continue
-    elif test_runrc_loc="$(test_rc_file "$test_runrc_dir/${runrc_basename}.rc")" ; then 
-      return_runrc_loc="$test_runrc_loc"
-      debug "   (found) return_runrc_loc=$return_runrc_loc"
-    elif test_runrc_loc="$(test_rc_file "$test_runrc_dir/.${runrc_bundle}rc")" ; then 
-      return_runrc_loc="$test_runrc_loc"
-      debug "   (found) return_runrc_loc=$return_runrc_loc"
-    elif test_runrc_loc="$(test_rc_file "$test_runrc_dir/${runrc_bundle}.rc")" ; then 
-      return_runrc_loc="$test_runrc_loc"
-      debug "   (found) return_runrc_loc=$return_runrc_loc"
-    fi
-  done
-  debug "(returned) return_runrc_loc=$return_runrc_loc"
-  echo "$return_runrc_loc"
-}
-
-#
-# Test, whether we can access the given file/directory
-#
-
-is_file ()
-{
-    [[ -f $1 ]]
-}
-
-is_readable ()
-{
-    [[ -r $1 ]]
-}
-
-is_readable_file_or_exit ()
-{
-    is_file "$1"     || fatal "Specified file '$1' is no file or does not exist."
-    is_readable "$1" || fatal "Specified file '$1' is not readable."
-    echo "$1"
-}
-
-# 
-# Issue warning if options are ignored.
-#
-
-warn_additional_args ()
-{
-    while [[ ! -z $1 ]]; do
-      warning "Specified option $1 will be ignored."
-      shift
-    done
-}
-
-#
-# Determine or validate outputfiles
-#
-
-test_file_location ()
-{
-    local savesuffix=1 file_return="$1"
-    debug "Checking file: $file_return"
-    if ! is_file "$file_return" ; then
-      echo "$file_return"
-      debug "There is no file '$file_return'. Return 0."
-      return 0
-    else
-      while is_file "${file_return}.${savesuffix}" ; do
-        (( savesuffix++ ))
-        debug "The file '${file_return}.${savesuffix}' exists."
-      done
-      warning "File '$file_return' exists."
-      echo "${file_return}.${savesuffix}"
-        debug "There is no file '${file_return}.${savesuffix}'. Return 1."
-      return 1
-    fi
-}
-
-backup_file ()
-{
-    local move_message move_source="$1" move_target="$2"
-    debug "Will attempt: mv -v $move_source $move_target"
-    move_message="$(mv -v "$move_source" "$move_target")" || fatal "Backup went wrong."
-    message "File will be backed up."
-    message "$move_message"
-}
-
-backup_if_exists ()
-{
-    local move_target
-    move_target=$(test_file_location "$1") && return
-    backup_file "$1" "$move_target"
-}
-
-# 
-# Routines for parsing the supplied input file
-#
-
-parse_link0 ()
-{
-    #link0 directives are before the route section
-    local parseline="$1"
-    local pattern="$2"
-    local index="$3"
-    if [[ $parseline =~ $pattern ]]; then
-        echo "${BASH_REMATCH[$index]}"
-    else 
-        return 1
-    fi
-}
-
-get_chk_file ()
-{
-    # The checkpointfile should be indicated in the original input file
-    # (It is a link 0 command and should therefore be before the route section.)
-    local parseline="$1"
-    local pattern="^[[:space:]]*%[Cc][Hh][Kk]=([^[:space:]]+)([[:space:]]+|$)"
-    local rematch_index=1
-    debug "Testing for checkpoint file."
-    checkpoint=$(parse_link0 "$parseline" "$pattern" "$rematch_index") || return 1
-    debug "Checkpoint file is '$checkpoint'"
-}
-
-warn_nprocs_directive ()
-{
-    local parseline="$1"
-    local pattern="^[[:space:]]*%[Nn][Pp][Rr][Oo][Cc][Ss][Hh][Aa][Rr][Ee][Dd]=([^[:space:]]+)([[:space:]]+|$)"
-    local rematch_index=0
-    local nprocs_read
-    debug "Testing for NProcShared."
-
-    if nprocs_read=$(parse_link0 "$parseline" "$pattern" "$rematch_index") ; then
-      warning "Link0 directive '$nprocs_read' will be substituted with script settings."
-      return 0
-    else
-      debug "Not a NProcShared statement."
-      return 1
-    fi
-}
-
-warn_mem_directive ()
-{
-    local parseline="$1"
-    local pattern="^[[:space:]]*%[Mm][Ee][Mm]=([^[:space:]]+)([[:space:]]+|$)"
-    local rematch_index=0
-    local memory_read
-    debug "Testing for memory."
-
-    if memory_read=$(parse_link0 "$parseline" "$pattern" "$rematch_index") ; then 
-      warning "Link0 directive '$memory_read' will be substituted with script settings."
-      return 0
-    else
-      debug "Not a memory statement."
-      return 1
-    fi
-}
-
-# other link0 derectives may be appended here
-
-remove_comment ()
-{
-    debug "Attempting to remove comment."
-    local parseline="$1"
-    debug "Parsing: '$parseline'"
-    local pattern="^[[:space:]]*([^!]+)[!]*[[:space:]]*(.*)$"
-    if [[ $parseline =~ $pattern ]] ; then
-      debug "Matched: ${BASH_REMATCH[0]}"
-      # Return the line without the comment part
-      echo "${BASH_REMATCH[1]}"
-      [[ ! -z ${BASH_REMATCH[2]} ]] && message "Removed comment: ${BASH_REMATCH[2]}"
-      return 0
-    elif [[ $parseline =~ ^!(.*)$ ]] ; then
-      message "Removed comment: ${BASH_REMATCH[1]}"
-      return 0
-    else
-      debug "Line is blank."
-      return 1 # Return false if blank line
-    fi
-}
-
-# check for AllCheck because then we have to omit title and multiplicity
-check_allcheck_option ()
-{   
-    debug "Checking if we can skip reading title, charge, and multiplicity."
-    local parseline="$1"
-    local pattern="[Aa][Ll][Ll][Cc][Hh][Ee][Cc][Kk]"
-    if [[ $parseline =~ $pattern ]] ; then
-      message "Found 'AllCheck', skipping reading title, charge, and multiplicity."
-      debug "Return 0."
-      return 0
-    fi
-    debug "Title, charge, and multiplicity need to be read. (Return 1)"
-    return 1
-}
-
-# Parsing happens now
-
-read_inputfile ()
-{
-    # The route section contains one or more lines.
-    # It always starts with # folowed by a space or the various verbosity levels 
-    # NPT (case insensitive). The route section is terminated by a blank line.
-    # This must always be present. 
-    # The next two entries may be present (but only together).
-    # It is immediately followed by the title section, which can also consist of 
-    # multiple lines made up of (almost) anything. It is also terminated by a blank line.
-    # Following that is the charge and multiplicity.
-    # After that come geometry and other input sections, we trust the user knows how to
-    # specify these and read them as they are.
-    local parsefile="$1" line appendline pattern
-    debug "Working on: $parsefile"
-    # The hash marks the beginning of the route
-    local route_start_pattern="^[[:space:]]*#[nNpPtT]?([[:space:]]|$)"
-    # We need to store link0 as an array
-    local store_link0=1 link0_index=0 link0_temp
-    # Flags when to read what
-    local store_route=0 store_title=0 store_charge_mult=0 
-    # The remainder aslo goes into an array
-    local body_index=0
-
-    while read -r line; do
-      debug "Read line: $line"
-      if (( store_link0 == 1 )) ; then
-        line=$(remove_comment "$line") || fatal "There appears to be a blank line in Link0. Abort."
-        # There is only one directive per line
-        if [[ -z $checkpoint ]] ; then
-          get_chk_file "$line" && continue
-        fi
-        warn_nprocs_directive "$line" && continue
-        warn_mem_directive "$line" && continue
-        pattern="^[[:space:]]*%(.+)=([^[:space:]]+)([[:space:]]+|$)"
-        if link0_temp=$(parse_link0 "$line" "$pattern" "0") ; then
-          link0[$link0_index]="$link0_temp"
-          (( link0_index++ ))
-          continue
-        else
-          store_link0=2
-        fi
-      fi
-      if (( store_route == 0 )) ; then
-        if [[ $line =~ $route_start_pattern ]] ; then
-          debug "Start reading route section."
-          # Start reading the route section end reading link0 directives
-          store_route=1
-          store_link0=2
-          route_section=$(remove_comment "$line")
-          # Read next line
-          continue
-        fi
-      fi
-      if (( store_route == 1 )) ; then
-        debug "Reading route section."
-        # Still reading the route section
-        if [[ $line =~ ^[[:space:]]*$ ]]; then
-          # End reading route when blank line is encountered
-          # and start reading the title
-          store_title=1
-          store_route=2
-          debug "Finished route section."
-          if check_allcheck_option "$route_section" ; then
-            store_title=2
-            store_charge_mult=2
-          fi
-          continue
-        fi
-        appendline=$(remove_comment "$line") 
-        # there might be comment only lines which can be removed
-        [[ ! -z $appendline ]] && route_section="$route_section $appendline"
-        # prepare for next read (just to be sure)
-        unset appendline
-        # Read next line
-        continue
-      fi
-      if (( store_title == 1 )) ; then
-        debug "Reading title section."
-        if [[ $line =~ ^[[:space:]]*$ ]]; then
-          # End reading title after blank line is encountered
-          store_title=2
-          store_charge_mult=1
-          debug "Finished title section: $title_section"
-          continue
-        fi
-        # The title section is free form
-        appendline="$line"
-        if [[ -z $title_section ]] ; then 
-          title_section="$appendline"
-        else
-          title_section="$title_section $appendline"
-        fi
-        unset appendline
-        continue
-      fi
-      if (( store_charge_mult == 1 )) ; then
-        debug "Reading charge and multiplicity."
-        appendline=$(remove_comment "$line") 
-        pattern="^[[:space:]]*([0-9]+)[[:space:]]+([0-9]+)[[:space:]]*$"
-        if [[ $appendline =~ $pattern ]] ; then
-          molecule_charge="${BASH_REMATCH[1]}"
-          molecule_mult="${BASH_REMATCH[2]}"
-        fi
-        debug "Finished reading charge ($molecule_charge) and multiplicity ($molecule_mult)."
-        store_charge_mult=2
-        # Next should be geometry and stuff
-        continue
-      fi
-      
-      debug "Reading rest of input file."
-      line=$(remove_comment "$line") 
-      if [[ ! $line =~ ^[[:space:]]*$ ]] ; then
-        inputfile_body[$body_index]="$line" 
-        debug "Read and stored: ${inputfile_body[$body_index]}"
-        (( body_index++ ))
-        debug "Increase index to $body_index."
-      fi
-
-    done < "$parsefile"
-    debug "Finished reading input file."
-}
-
-collate_keyword_opts ()
-{
-    # The function takes an inputstring and removes any unnecessary spaces
-    # needed for collate_keywords
-    debug "Collating keyword options."
-    local inputstring="$1"
-    debug "Input: $inputstring"
-    # The collated section will be saved to
-    local keepstring transformstring
-    # Any combination of spaces, equals signs, and opening parentheses
-    # can and need to be removed
-    local remove_front="[[:space:]]*[=]?[[:space:]]*[\\(]?"
-    # Any trailing closing parentheses and spaces need to be cut
-    local remove_end="[\\)]?[[:space:]]*"
-    local pattern="$remove_front([^\\)]+)$remove_end"
-    [[ $inputstring =~ $pattern ]] && inputstring="${BASH_REMATCH[1]}"
+    local error_count tmplog line tmpmsg
+    tmplog=$(mktemp tmp.XXXXXXXX) 
+    # Who are we and where are we?
+    scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
+    debug "Script is called '$scriptname'"
+    # remove scripting ending (if present)
+    scriptbasename=${scriptname%.sh} 
+    debug "Base name of the script is '$scriptbasename'"
+    scriptpath="$(get_absolute_dirname  "${BASH_SOURCE[0]}" "installdirectory")"
+    debug "Script is located in '$scriptpath'"
+    resourcespath="$scriptpath/resources"
     
-    # Spaces, tabs, or commas can be used in any combination
-    # to separate items within the options.
-    # Does massacre IOPs.
-    pattern="[^[:space:],]+([[:space:]]*=[[:space:]]*[^[:space:],]+)?([[:space:],]+|$)"
-    while [[ $inputstring =~ $pattern ]] ; do
-      transformstring="${BASH_REMATCH[0]}"
-      inputstring="${inputstring//${BASH_REMATCH[0]}/}"
-      # remove stuff
-      transformstring="${transformstring// /}"
-      transformstring="${transformstring//,/}"
-      if [[ -z $keepstring ]] ; then
-        keepstring="$transformstring"
-      else
-        keepstring="$keepstring,$transformstring"
-      fi
-    done
-    echo "$keepstring"
-    debug "Returned: $keepstring"
-}
-
-collate_keywords ()
-{
-    # This function removes spaces which have been entered in the original input
-    # so that the folding (to 80 characters) doesn't break a keyword.
-    debug "Entering collate_keywords."
-    local inputstring="$1"
-    debug "Input: $inputstring"
-    # The collated section will be saved to
-    local keepstring
-    # If we encounter a long keyword stack, we need to set a different returncode
-    local returncode=0
-    # extract the hashtag of the route section
-    local route_start_pattern="^[[:space:]]*(#[nNpPtT]?)[[:space:]]"
-    if [[ $inputstring =~ $route_start_pattern ]] ; then
-      keepstring="${BASH_REMATCH[1]}"
-      inputstring="${inputstring//${BASH_REMATCH[0]}/}"
+    if [[ -d "$resourcespath" ]] ; then
+      debug "Found library in '$resourcespath'."
+    else
+      (( error_count++ ))
     fi
-
-    # The following formats for the input of keywords are given in the manual:
-    #   keyword = option
-    #   keyword(option)
-    #   keyword=(option1, option2, …)
-    #   keyword(option1, option2, …)
-    # Spaces can be added or left out, I could also confirm that the following will work, too:
-    #   keyword (option[1, option2, …])
-    #   keyword = (option[1, option2, …])
-    # Spaces, tabs, commas, or forward slashes can be used in any combination 
-    # to separate items within a line. 
-    # Multiple spaces are treated as a single delimiter.
-    # see http://gaussian.com/input/?tabid=1
-    # The ouptput of this function should only use the keywords without any options, or
-    # the following format: keyword=(option1,option2,…) [no spaces]
-    # Exeptions to the above: temperature=500 and pressure=2, 
-    # where the equals is the only accepted form.
-    # This is probably because they can also be options to 'freq'.
-
-    # Note: double backslash in double quotes https://github.com/koalaman/shellcheck/wiki/SC1117
     
-    local keyword_pattern="[^[:space:],/\\(=]+"
-    local option_pattern_equals="[[:space:]]*=[[:space:]]*[^[:space:],/\\(\\)]+"
-    local option_pattern_parens="[[:space:]]*[=]?[[:space:]]*\\([^\\)]+\\)"
-    local keyword_options="$option_pattern_equals|$option_pattern_parens"
-    local keyword_terminate="[[:space:],/]+|$"
-    local test_pattern="($keyword_pattern)($keyword_options)?($keyword_terminate)"
-    local keep_keyword keep_options
-    local numerical_pattern="[[:digit:]]+\\.?[[:digit:]]*"
-    while [[ $inputstring =~ $test_pattern ]] ; do
-      # Unify input pattern and remove unnecessary spaces
-      # Remove found portion from inputstring:
-      inputstring="${inputstring//${BASH_REMATCH[0]}/}"
-      # Keep keword, options, and how it was terminated
-      keep_keyword="${BASH_REMATCH[1]}"
-      keep_options="${BASH_REMATCH[2]}"
-      keep_terminate="${BASH_REMATCH[3]}"
+    # Import default variables
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/default_variables.sh
+    source "$resourcespath/default_variables.sh" &> "$tmplog" || (( error_count++ ))
+    
+    # Set more default variables
+    exit_status=0
+    stay_quiet=0
+    # Ensure that in/outputfile variables are empty
+    unset inputfile
+    unset outputfile
+    
+    # Import other functions
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
+    source "$resourcespath/messaging.sh" &> "$tmplog" || (( error_count++ ))
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/rcfiles.sh
+    source "$resourcespath/rcfiles.sh" &> "$tmplog" || (( error_count++ ))
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
+    source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/process_gaussian.sh
+    source "$resourcespath/process_gaussian.sh" &> "$tmplog" || (( error_count++ ))
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/validate_numbers.sh
+    source "$resourcespath/validate_numbers.sh" &> "$tmplog" || (( error_count++ ))
 
-      # Remove spaces from IOPs (only evil people use them there)
-      if [[ $keep_keyword =~ ^[Ii][Oo][Pp]$ ]] ; then
-        keep_keyword="$keep_keyword$keep_options"
-        keep_keyword="${keep_keyword// /}"
-        unset keep_options # unset to not run into next 'if'
-      fi
-
-      if [[ ! -z $keep_options ]] ; then 
-        # remove spaces, equals, parens from front and end
-        # substitute option separating spaces with commas
-        keep_options=$(collate_keyword_opts "$keep_options")
-
-        # Check for the exceptions to the desired format
-        if [[ $keep_keyword =~ ^[Tt][Ee][Mm][Pp].*$ ]] ; then
-          if [[ ! $keep_options =~ ^$numerical_pattern$ ]] ; then
-            warning "Unrecognised format for temperature: $keep_options."
-            returncode=1
-          fi
-          keep_keyword="$keep_keyword=$keep_options"
-        elif [[ $keep_keyword =~ ^[Pp][Rr][Ee].*$ ]] ; then
-          if [[ ! $keep_options =~ ^$numerical_pattern$ ]] ; then
-            warning "Unrecognised format for pressure: $keep_options."
-            returncode=1
-          fi
-          keep_keyword="$keep_keyword=$keep_options"
-        elif [[ $keep_keyword =~ ^[Mm][Aa][Xx][Dd][Ii][Ss][Kk].* ]] ; then
-          if [[ ! $keep_options =~ ^${numerical_pattern}([KkMmGgTt][BbWw])?$ ]] ; then
-            warning "Unrecognised format for MaxDisk: $keep_options."
-            returncode=1
-          fi
-          keep_keyword="$keep_keyword=$keep_options"
-        else
-          keep_keyword="$keep_keyword($keep_options)"
-        fi
-      fi
-      if [[ $keep_terminate =~ / ]] ; then
-        keep_keyword="$keep_keyword/"
-      fi
-      if (( ${#keep_keyword} > 80 )) ; then
-        returncode=1
-        warning "Found extremely long keyword, folding route section might break input."
-      fi
-      if [[ $keepstring =~ /$ ]] ; then
-        keepstring="$keepstring$keep_keyword"
-      elif [[ -z $keepstring ]] ; then
-        keepstring="$keep_keyword"
-      else
-        keepstring="$keepstring $keep_keyword"
-      fi
-    done
-
-    echo "$keepstring"
-    debug "Return: $keepstring"
-    return $returncode
-}
-
-validate_write_in_out_jobname ()
-{
-    # Assigns the global variables inputfile outputfile jobname
-    # Checks is locations are read/writeable
-    local allowed_input_suffix=(com in inp gjf COM IN INP GJF)
-    local match_output_suffix=(log out log log LOG OUT LOG LOG)
-    local input_suffix output_suffix
-    local choices=${#allowed_input_suffix[*]} count
-    local testfile="$1"
-    debug "Validating: $testfile"
-
-    # Check if supplied inputfile is readable, extract suffix and title
-    if inputfile=$(is_readable_file_or_exit "$testfile") ; then
-      jobname="${inputfile%.*}"
-      input_suffix="${inputfile##*.}"
-      debug "Jobname: $jobname; Input suffix: $input_suffix."
-      # Assign matching outputfile
-      for ((count=0; count<choices; count++)) ; do
-        if [[ "$input_suffix" == "${allowed_input_suffix[$count]}" ]]; then
-          output_suffix="${match_output_suffix[$count]}"
-          debug "Output suffix: $output_suffix."
-          break
-        fi
-      done
-      # Abort when input-suffix cannot be identified
-      if [[ -z $output_suffix ]] ; then
-          fatal "Unrecognised suffix of inputfile '$testfile'."
-      fi
+    if (( error_count > 0 )) ; then
+      echo "ERROR: Unable to locate library functions. Check installation." >&2
+      echo "ERROR: Expect functions in '$resourcespath'."
+      debug "Errors caused by:"
+      while read -r line || [[ -n "$line" ]] ; do
+        debug "$line"
+      done < "$tmplog"
+      tmpmsg=$(rm -v "$tmplog")
+      debug "$tmpmsg"
+      exit 1
     else
-      # Check if only the jobtitle was given
-      for ((count=0; count<choices; count++)); do
-        if inputfile=$(is_readable_file_or_exit "$testfile.${allowed_input_suffix[$count]}") ; then
-          jobname="$testfile"
-          input_suffix="${allowed_input_suffix[$count]}"
-          output_suffix="${match_output_suffix[$count]}"
-          debug "Jobname: $jobname; Input suffix: $input_suffix; Output suffix: $output_suffix."
-          break
-        fi
-      done
-      # Abort if no suitable inputfile was found
-      if [[ -z $input_suffix ]] ; then
-          fatal "Unable to access '$testfile'."
-      fi
+      tmpmsg=$(rm -v "$tmplog")
+      debug "$tmpmsg"
     fi
-
-    # Check special ending of input file
-    if [[ "$input_suffix" == "gjf" ]] ; then
-      warning "The chosen inputfile will be overwritten."
-      backup_file "$inputfile" "${inputfile}.bak"
-      inputfile="${inputfile}.bak"
-    fi
-
-    # Check if an outputfile exists and prevent overwriting
-    outputfile="$jobname.$output_suffix"
-    backup_if_exists "$outputfile"
-
-    # Display short logging message
-    message "Will process Inputfile '$inputfile'."
-    message "Output will be written to '$outputfile'."
-
 }
 
 #
-# Functions to modify the route section
+# Specific functions for this script only
 #
-
-remove_any_keyword ()
-{
-    # Takes in a string (the route section) and 
-    local test_line="$1"
-    # removes the pattern (keyword) if present and 
-    local test_pattern="$2"
-    # returns the result.
-    local return_line
-    # Since spaces have been removed form within the keywords previously with collate_keywords, 
-    # and inter-keyword delimiters are set to spaces only also, 
-    # it is safe to use that as a criterion to remove unnecessary keywords.
-    # The test pattern is extended to catch the whole keyword including options.
-    local extended_test_pattern="($test_pattern[^[:space:]]*)([[:space:]]+|$)"
-    if [[ $test_line =~ $extended_test_pattern ]] ; then
-      local found_pattern=${BASH_REMATCH[1]}
-      debug "Found pattern: '$found_pattern'" 
-      message "Removed keyword '$found_pattern'."
-      return_line="${test_line/$found_pattern/}"
-      echo "$return_line"
-      return 1
-    else
-      echo "$test_line"
-      return 0 
-    fi
-}
-
-remove_maxdisk ()
-{
-    # Assigns the opt keyword to the pattern
-    local test_routesection="$1"
-    local pattern
-    pattern="[Mm][Aa][Xx][Dd][Ii][Ss][Kk]"
-    remove_any_keyword "$test_routesection" "$pattern" || return 1
-}
-
-# Others (?)
-
-write_new_inputfile ()
-{
-    local verified_checkpoint
-    [[ -z $checkpoint ]] && checkpoint="${jobname}.chk"
-    if verified_checkpoint=$(test_file_location "$checkpoint") ; then
-      debug "verified_checkpoint=$verified_checkpoint"
-      echo "%Chk=$verified_checkpoint"
-    else
-      warning "Checkpoint file '$checkpoint' exists and will very likely be overwritten."
-      warning "This may lead to an unusable file and loss of data."
-      message "If you are attempting to read in data from a previous run, use"
-      message "the directive '%OldChk=<previous_calculation>' instead."
-    fi
-    echo "%NProcShared=$requested_numCPU"
-    echo "%Mem=${requested_memory}MB"
-    debug "Number of additional link0 commands: ${#link0[@]}"
-    debug "Elements: ${link0[*]}"
-    (( ${#link0[@]} > 0 )) && printf "%s\\n" "${link0[@]}"
-
-    local use_route_section
-    [[ -z $requested_maxdisk ]] && fatal "Keyword 'MaxDisk' is unset, probably compromised rc."
-    while ! route_section=$(remove_maxdisk "$route_section") ; do : ; done
-    use_route_section=$(collate_keywords "$route_section MaxDisk=${requested_maxdisk}MB")
-    fold -w80 -c -s <<< "$use_route_section"
-    echo ""
-
-    if [[ ! -z $title_section ]] ; then
-      fold -w80 -c -s <<< "$title_section"
-      echo ""
-      [[ -z $molecule_charge ]] && fatal "Charge unset; somewhere, something went wrong."
-      [[ -z $molecule_mult ]] && fatal "Multiplicity unset; somewhere, something went wrong."
-      echo "$molecule_charge   $molecule_mult"
-    fi
-
-    debug "Lines till end of file: ${#inputfile_body[@]}"
-    debug "Content: ${inputfile_body[*]}"
-    printf "%s\\n" "${inputfile_body[@]}"
-    echo ""
-    echo "!Automagically created with $scriptname"
-    echo "!$script_invocation_spell"
-}
-
 
 process_inputfile ()
 {
@@ -874,21 +154,14 @@ process_inputfile ()
     validate_write_in_out_jobname "$testfile"
     debug "Jobname: $jobname; Input: $inputfile; Output: $outputfile."
 
-    read_inputfile "$inputfile"
+    read_g16_input_file "$inputfile"
     inputfile_modified="$jobname.gjf"
     backup_if_exists "$inputfile_modified"
     debug "Writing new input: $inputfile_modified"
 
-    write_new_inputfile > "$inputfile_modified"
+    write_g16_input_file > "$inputfile_modified"
     message "Written modified inputfile '$inputfile_modified'."
 }
-
-
-
-
-
-
-
 
 #
 # Routine(s) for writing the submission script
@@ -979,10 +252,10 @@ write_jobscript ()
       if [[ "$PWD" =~ [Hh][Pp][Cc] ]] ; then
         echo "#BSUB -R select[hpcwork]" >&9
       fi
-      if [[ "$bsub_rwth_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
+      if [[ "$bsub_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
         message "No project selected."
       else
-        echo "#BSUB -P $bsub_rwth_project" >&9
+        echo "#BSUB -P $bsub_project" >&9
       fi
       echo "jobid=\"\${LSB_JOBID}\"" >&9
 
@@ -1130,7 +403,6 @@ submit_jobscript ()
     esac
 }
 
-
 #
 # Process Options
 #
@@ -1236,7 +508,7 @@ process_options ()
           #hlp              Automatically selects '-Q bsub-rwth' and remote execution.
           #hlp
             P) 
-               bsub_rwth_project="$OPTARG"
+               bsub_project="$OPTARG"
                request_qsys="bsub-rwth"  
                ;;
 
@@ -1274,16 +546,25 @@ process_options ()
     warn_additional_args "$@"
 }
 
-
 #
-# Begin main script
+# MAIN SCRIPT
 #
 
-# Save how it was called
+# If this script is sourced, return before executing anything
+(( ${#BASH_SOURCE[*]} > 1 )) && return 0
+
+# Save how script was called
 script_invocation_spell="$0 $*"
 
 # Sent logging information to stdout
 exec 3>&1
+
+# Need to define debug function if unknown
+if ! command -v debug ; then
+  debug () {
+    echo "DEBUG  : " "$*" >&4
+  }
+fi
 
 # Secret debugging switch
 if [[ "$1" == "debug" ]] ; then
@@ -1294,60 +575,19 @@ else
   exec 4> /dev/null
 fi
 
-#
-# Setting some defaults
-#
-
-# Print all information by default
-stay_quiet=0
-
-# Specify default Walltime, this is only relevant for remote
-# execution as a header line for the queueing system
-requested_walltime="24:00:00"
-
-# Specify a default value for the memory
-requested_memory=512
-
-# This corresponds to  nthreads=<digit(s)> in the settings.ini
-requested_numCPU=4
-
-# The default which should be written to the inputfile
-# regarding disk space
-requested_maxdisk=10000
-
-# Select a queueing system (pbs-gen/bsub-rwth)
-request_qsys="pbs-gen"
-
-# Account to project (only for rwth)
-bsub_rwth_project=default
-
-# Default operation should be to run (hold/keep)
-requested_submit_status="run"
-
-# Ensure that in/outputfile variables are empty
-unset inputfile
-unset outputfile
-
-# Who are we and where are we?
-scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
-debug "Script is called '$scriptname'"
-# remove scripting ending (if present)
-scriptbasename=${scriptname%.sh} 
-debug "Base name of the script is '$scriptbasename'"
-scriptpath="$(get_absolute_dirname  "${BASH_SOURCE[0]}" "installdirectory")"
-debug "Script is located in '$scriptpath'"
+get_scriptpath_and_source_files || exit 1
 
 # Check for settings in three default locations (increasing priority):
 #   install path of the script, user's home directory, current directory
-subg16_rc_loc="$(get_rc "$scriptpath" "/home/$USER" "$PWD")"
-debug "subg16_rc_loc=$subg16_rc_loc"
+g16_tools_rc_loc="$(get_rc "$scriptpath" "/home/$USER" "$PWD")"
+debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 
 # Load custom settings from the rc
 
-if [[ ! -z $subg16_rc_loc ]] ; then
+if [[ ! -z $g16_tools_rc_loc ]] ; then
   #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
-  . "$subg16_rc_loc"
-  message "Configuration file '$subg16_rc_loc' applied."
+  . "$g16_tools_rc_loc"
+  message "Configuration file '$g16_tools_rc_loc' applied."
 else
   debug "No custom settings found."
 fi
@@ -1360,6 +600,5 @@ write_jobscript "$request_qsys"
 submit_jobscript "$request_qsys" "$requested_submit_status" 
 
 #hlp   AUTHOR    : Martin
-message "Thank you for travelling with $scriptname ($version, $versiondate)."
-exit 0
-
+message "$scriptname is part of $softwarename $version ($versiondate)"
+debug "$script_invocation_spell"
