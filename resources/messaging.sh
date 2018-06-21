@@ -53,7 +53,7 @@ debug ()
 {
     local line
     while read -r line || [[ -n "$line" ]] ; do
-      echo "DEBUG  : " "$line" >&4
+      echo "DEBUG  : " "(${FUNCNAME[1]}) $line" >&4
     done <<< "$*"
 }    
 

@@ -105,6 +105,7 @@ get_scriptpath_and_source_files ()
     # Set more default variables
     exit_status=0
     stay_quiet=0
+
     # Ensure that in/outputfile variables are empty
     unset inputfile
     unset outputfile
@@ -142,8 +143,145 @@ get_scriptpath_and_source_files ()
 #
 
 
+process_one_file ()
+{
+  # run only for one file at the time
+  local testfile="$1" printlevel="$2" logfile logname
+  local readline returned_array
+  local functional energy cycles
+  local temperature pressure zero_point_corr
+  local thermal_corr_energy thermal_corr_enthalpy
+  local thermal_corr_gibbs entropy_tot heatcap_tot
+  if logfile="$(match_output_file "$testfile")" ; then
+    logname=${logfile%.*}
+    logname=${logname/\.\//}
+    (( ${#logname} > 25 )) && logname="${logname:0:10}*${logname:(-14)}"
 
+    if (( printlevel > 2 )) ; then
+      extracted_route=$(getlines_route_g16_output_file "$logfile")
+      echo "The following route was extracted (first one encountered):"
+      fold -w80 -c -s <<< "$extracted_route"
+      echo "----------"
+    fi
 
+    debug "$(getlines_energy_g16_output_file "$logfile")"
+
+    while read -r readline || [[ -n "$readline" ]] ; do
+
+      debug "processing: $readline"
+
+      mapfile -t returned_array < <( find_energy "$readline" )
+      if (( ${#returned_array[@]} > 0 )) ; then
+        debug "Array written, ${#returned_array[@]} elements"
+        functional="${returned_array[0]}"
+        energy="${returned_array[1]}"
+        cycles="${returned_array[2]}"
+        debug "functional=$functional; energy=$energy;"
+        debug "cycles=$cycles"
+        continue
+        unset returned_array
+      fi
+      
+      mapfile -t returned_array < <( find_temp_press "$readline" )
+      if (( ${#returned_array[@]} > 0 )) ; then
+        debug "Array written, ${#returned_array[@]} elements"
+        temperature="${returned_array[0]}"
+        pressure="${returned_array[1]}"
+        debug "temperature=$temperature; pressure=$pressure"
+        continue
+        unset returned_array
+      fi
+
+      if [[ -z $zero_point_corr       ]] ; then 
+        zero_point_corr=$(find_zero_point_corr "$readline") && continue 
+      fi
+      if [[ -z $thermal_corr_energy   ]] ; then 
+        thermal_corr_energy=$(find_thermal_corr_energy "$readline") && continue 
+      fi
+      if [[ -z $thermal_corr_enthalpy ]] ; then 
+        thermal_corr_enthalpy=$(find_thermal_corr_enthalpy "$readline") && continue 
+      fi
+      if [[ -z $thermal_corr_gibbs    ]] ; then 
+        thermal_corr_gibbs=$(find_thermal_corr_gibbs "$readline") && continue 
+      fi
+      if [[ -z $entropy_tot           ]] ; then 
+        # Placeholder
+        entropy_tot="0123456.789" 
+      fi
+      if [[ -z $heatcap_tot           ]] ; then 
+        # Placeholder
+        heatcap_tot="0123456.789" 
+      fi
+
+    done < <(getlines_energy_g16_output_file "$logfile")
+
+    if (( printlevel > 1 )) ; then
+      print_energies_table \
+        "$logfile" \
+        "$functional" \
+        "$temperature" \
+        "$pressure" \
+        "$energy" \
+        "$zero_point_corr" \
+        "$thermal_corr_energy" \
+        "$thermal_corr_enthalpy" \
+        "$thermal_corr_gibbs" \
+        "$entropy_tot" \
+        "$heatcap_tot"
+    elif (( printlevel == 1 )) ; then
+      print_energies_inline \
+        "$logfile" \
+        "$functional" \
+        "$temperature" \
+        "$pressure" \
+        "$energy" \
+        "$zero_point_corr" \
+        "$thermal_corr_energy" \
+        "$thermal_corr_enthalpy" \
+        "$thermal_corr_gibbs" \
+        "$entropy_tot" \
+        "$heatcap_tot"
+    elif (( printlevel == 0 )) ; then
+      print_energies_inline \
+        "$logfile" \
+        "$energy" \
+        "$zero_point_corr" \
+        "$thermal_corr_enthalpy" \
+        "$thermal_corr_gibbs" 
+    fi
+
+  else
+    printf '%-25s No output file found.\n' "${testfile%.*}"
+    return 1
+  fi
+}
+
+print_energies_table ()
+{
+    echo "Calculation details:"
+    printf '%-25s %8s: %-20s %-12s\n'    "File name"             ""       "${1}"  ""
+    printf '%-25s %8s: %-20s %-12s\n'    "Functional"            ""       "${2}"  ""
+    printf '%-25s %8s: %20.3f %-12s\n'   "Temperature"           "T"      "${3}"  "K"
+    printf '%-25s %8s: %20.5f %-12s\n'   "Pressure"              "p"      "${4}"  "atm"
+    printf '%-25s %8s: %+20.10f %-12s\n' "electronic en."        "E"      "${5}"  "Ha"
+    printf '%-25s %8s: %+20.6f %-12s\n'  "zero-point corr."      "ZPE"    "${6}"  "Ha"
+    printf '%-25s %8s: %+20.6f %-12s\n'  "thermal corr."         "U"      "${7}"  "Ha"
+    printf '%-25s %8s: %+20.6f %-12s\n'  "ther. corr. enthalpy"  "H"      "${8}"  "Ha"
+    printf '%-25s %8s: %+20.6f %-12s\n'  "ther. corr. Gibbs en." "G"      "${9}"  "Ha"
+    printf '%-25s %8s: %+20.3f %-12s\n'  "entropy (total)"       "S tot"  "${10}" "cal/(mol K)"
+    printf '%-25s %8s: %+20.3f %-12s\n'  "heat capacity (total)" "Cv tot" "${11}" "cal/(mol K)"
+}
+
+print_energies_inline ()
+{
+    local element printstring 
+    local format="%s%-*s$separate_values"
+    for element in "$@" ; do
+      # shellcheck disable=SC2059
+      printf -v printstring "$format" "$printstring" ${#element} "$element" 
+    done
+    echo "$printstring"
+}
 
 
 
@@ -217,8 +355,8 @@ fi
 
 # testing in progress
 
-getlines_g16_output_file "$1"
-
+LC_NUMERIC="en_US.utf8"
+process_one_file "$1" 0
 
 
 

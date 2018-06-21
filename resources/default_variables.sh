@@ -47,7 +47,12 @@ g16_input_suffix="com"
 g16_output_suffix="log"
 
 #
-# Default valuesfor queueing system submission
+# Default options for printing
+#
+separate_values=" " # (space separated values)
+
+#
+# Default values for queueing system submission
 #
 # Select a queueing system (pbs-gen/bsub-rwth) # TODO: bsub-gen
 request_qsys="pbs-gen"
