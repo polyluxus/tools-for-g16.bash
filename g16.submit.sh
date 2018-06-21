@@ -334,15 +334,18 @@ write_jobscript ()
 
 submit_jobscript_hold ()
 {
-    local queue="$1" submit_id
+    local queue="$1" submit_id submit_message
     if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
       submit_id="$(qsub -h "$submitscript")" || exit_status="$?"
-      message "Submitted as $submit_id."
-      message "Use 'qrls $submit_id' to release the job."
+      submit_message="
+        Submitted as $submit_id.
+        Use 'qrls $submit_id' to release the job."
     elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
-      submit_id="$(bsub -H < "$submitscript" 2>&1 )" || exit_status="$?"
-      message "$submit_id"
+      submit_message="$(bsub -H < "$submitscript" 2>&1 )" || exit_status="$?"
     fi
+    (( exit_status > 0 )) && warning "Submission went wrong."
+    message "$submit_message"
+    return $exit_status
 }
 
 submit_jobscript_keep ()
@@ -368,12 +371,8 @@ submit_jobscript_run  ()
     else
       fatal "Unrecognised queueing system '$queue'."
     fi
-    if (( exit_status > 0 )) ; then
-      warning "Submission went wrong."
-      debug "$submit_message"
-    else
-      message "$submit_message"
-    fi
+    (( exit_status > 0 )) && warning "Submission went wrong."
+    message "$submit_message"
     return $exit_status
 }
 

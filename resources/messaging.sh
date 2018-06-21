@@ -29,10 +29,12 @@ message ()
           [Ww][Aa][Rr][Nn][Ii][Nn][Gg])
             warning "(External) $external_message" 
             exit_status=$?
+            continue
             ;;
           [Ee][Rr][Rr][Oo][Rr])
             fatal "(External) $external_message"
             exit_status=$?
+            continue
             ;;
           *)
             line="(External $external_identifier) $external_message"
