@@ -6,6 +6,10 @@ if (( ${#BASH_SOURCE[*]} == 1 )) ; then
   exit 0
 fi
 
+#
+# Filename related functions
+#
+
 match_output_suffix ()
 {
   local   allowed_input_suffix=(com in  inp gjf COM IN  INP GJF)
@@ -58,34 +62,108 @@ match_output_file ()
   echo "$return_file"    
 }
 
-find_energy ()
+#
+# Parsing functions
+#
+
+getlines_g16_output_file ()
 {
     local logfile="$1" logname
     logname=${logfile%.*}
     logname=${logname/\.\//}
+
+    # Get the line for the electronic energy
+    # Find match from the end of the file
+    # Ref: http://unix.stackexchange.com/q/112159/160000
+    # This is the slowest part.
+    # If the calulation is a single point with a properties block it might
+    # perform slower than $(grep -m1 'SCF Done' $logfile | tail -n 1).
+    tac "$logfile" | grep -m1 "SCF Done"
+
+    # Find all statements regarding the thermochemistry which are inline
+    grep -e 'Temperature.*Pressure' \
+      -e 'Zero-point correction' \
+      -e 'Thermal correction to Energy' \
+      -e 'Thermal correction to Enthalpy' \
+      -e 'Thermal correction to Gibbs Free Energy' \
+      "$logfile"
+    # In the entropy block the given table needs to be transposed.
+    # Heat capacity and the break up of the internal energy are usually not that important,
+    # but they come as a freebie.
+    local line pattern pattern_unit pattern_num index=0
+    local -a header unit names thermal heatcap entropy
+    while read -r line || [[ -n "$line" ]] ; do
+      debug "Line: $line"
+      pattern="^[[:space:]]*(E \\(Thermal\\))[[:space:]]+(CV)[[:space:]]+(S)"
+      if [[ "$line" =~ $pattern ]] ; then
+        header[1]="${BASH_REMATCH[1]}" # thermal
+        header[2]="${BASH_REMATCH[2]}" # heatcap
+        header[3]="${BASH_REMATCH[3]}" # entropy
+        debug "Header: ${header[*]}"
+        continue
+      fi
+      pattern_unit="[a-zA-Z/-]+"
+      pattern="^[[:space:]]*($pattern_unit)[[:space:]]+($pattern_unit)[[:space:]]+($pattern_unit)[[:space:]]*$"
+      if [[ "$line" =~ $pattern ]] ; then
+        unit[1]="${BASH_REMATCH[1]}"
+        unit[2]="${BASH_REMATCH[2]}"
+        unit[3]="${BASH_REMATCH[3]}"
+        debug "Units: ${unit[*]}"
+        continue
+      fi
+      pattern_num="[-]?[0-9]+\\.[0-9]+"
+      pattern="^[[:space:]]*([a-zA-Z]+)[[:space:]]+($pattern_num)[[:space:]]+($pattern_num)[[:space:]]+($pattern_num)[[:space:]]*$"
+      if [[ "$line" =~ $pattern ]]; then
+        names[$index]=${BASH_REMATCH[1]}
+        thermal[$index]=${BASH_REMATCH[2]}
+        heatcap[$index]=${BASH_REMATCH[3]}
+        entropy[$index]=${BASH_REMATCH[4]}
+        (( index++ ))
+      fi
+    done < <(grep -A6 -e 'E (Thermal)[[:space:]]\+CV[[:space:]]\+S' "$logfile")
+    # Print them rearranged one value at the time
+    index=0
+    local format="%-15s [%-15s]= %20s %-10s\n"
+    while (( index < ${#names[@]} )) ; do
+      printf "$format" "${header[1]}" "${names[$index]}" "${thermal[$index]}" "${unit[1]}"
+      printf "$format" "${header[2]}" "${names[$index]}" "${heatcap[$index]}" "${unit[2]}"
+      printf "$format" "${header[3]}" "${names[$index]}" "${entropy[$index]}" "${unit[3]}"
+      (( index ++ ))
+    done
+}
+
+find_energy ()
+{
+    local readline="$1"
     # Initiate variables necessary for parsing output
-    local readline pattern functional energy cycles
+    local readline pattern pattern_num equals unit
+    local functional energy cycles
     # Find match from the end of the file 
     # Ref: http://unix.stackexchange.com/q/112159/160000
     # This is the slowest part. 
     # If the calulation is a single point with a properties block it might 
     # perform slower than $(grep -m1 'SCF Done' $logfile | tail -n 1).
-    readline=$(tac "$logfile" | grep -m1 'SCF Done')
     # Gaussian output has following format, trap important information:
     # Method, Energy, Cycles
     # Example taken from BP86/cc-pVTZ for water (H2O): 
     #  SCF Done:  E(RB-P86) =  -76.4006006969     A.U. after   10 cycles
-    pattern="(E\\(.+\\)) = (.+) [aA]\\.[uU]\\.[^0-9]+([0-9]+) cycles"
-    if [[ $readline =~ $pattern ]]
-    then 
+    pattern_num="[-]?[0-9]+\\.[0-9]+"
+    equals="[[:space:]]+=[[:space:]]+"
+    unit="[[:space:]]+[aA]\\.[uU]\\.[^0-9]+"
+    pattern="E\\(([^\\)]+)\\)$equals($pattern_num)$unit([0-9]+) cycles"
+    debug "$pattern"
+    if [[ $readline =~ $pattern ]] ; then 
       functional="${BASH_REMATCH[1]}"
       energy="${BASH_REMATCH[2]}"
       cycles="${BASH_REMATCH[3]}"
 
+      debug "functional='$functional'; energy='$energy'; cycles='$cycles'"
       # Print the line, format it for table like structure
-      printf '%-25s %-15s = %20s ( %6s )\n' "$logname" "$functional" "$energy" "$cycles"
+      echo "$functional" 
+      echo "$energy" 
+      echo "$cycles"
     else
-      printf '%-25s No energy statement found.\n' "${logfile%.*}"
+      debug "No energy statement found."
       return 1
     fi
 }
@@ -203,8 +281,6 @@ remove_g16_input_comment ()
     fi
 }
 
-# Parsing happens now
-
 #was read_inputfile ()
 read_g16_input_file ()
 {
@@ -234,7 +310,7 @@ read_g16_input_file ()
     # which is a global variable called 'inputfile_body'
     local body_index=0
 
-    while read -r line; do
+    while read -r line || [[ -n "$line" ]] ; do
       debug "Read line: $line"
       if (( store_link0 == 1 )) ; then
         line=$(remove_g16_input_comment "$line") || fatal "There appears to be a blank line in Link0. Abort."
@@ -577,14 +653,10 @@ check_allcheck_option ()
 # modified input files
 #
 
-# parts need to be replaced with standard function
 validate_write_in_out_jobname ()
 {
     # Assigns the global variables inputfile outputfile jobname
     # Checks is locations are read/writeable
-    local allowed_input_suffix=(com in inp gjf COM IN INP GJF)
-    local match_output_suffix=(log out log log LOG OUT LOG LOG)
-    local choices=${#allowed_input_suffix[*]} count
     local testfile="$1"
     local input_suffix output_suffix
     local -a test_possible_inputfiles
