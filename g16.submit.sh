@@ -365,7 +365,6 @@ submit_jobscript_run  ()
       submit_message="Submitted as $(qsub "$submitscript")" || exit_status="$?"
     elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
       submit_message="$(bsub < "$submitscript" 2>&1 )" || exit_status="$?"
-      submit_message="${submit_message#Info: }"
     else
       fatal "Unrecognised queueing system '$queue'."
     fi

@@ -13,14 +13,39 @@ fi
 
 message ()
 {
-    local line
+    local line exit_status=0
+    local pattern="^[[:space:]]*([^:[:space:]]+)[[:space:]]*:[[:space:]]*(.+)$"
+    local external_identifier external_message
     while read -r line || [[ -n "$line" ]] ; do
+      if [[ $line =~ $pattern ]] ; then
+        external_identifier="${BASH_REMATCH[1]}"
+        debug "external_identifier='$external_identifier'"
+        external_message="${BASH_REMATCH[2]}"
+        debug "external_message='$external_message'"
+        case "$external_identifier" in
+          [Ii][Nn][Ff][Oo])
+            line="(External) $external_message"
+            ;;
+          [Ww][Aa][Rr][Nn][Ii][Nn][Gg])
+            warning "(External) $external_message" 
+            exit_status=$?
+            ;;
+          [Ee][Rr][Rr][Oo][Rr])
+            fatal "(External) $external_message"
+            exit_status=$?
+            ;;
+          *)
+            line="(External $external_identifier) $external_message"
+            ;;
+        esac
+      fi
       if (( stay_quiet <= 0 )) ; then
         echo "INFO   : " "$line" >&3
       else
         debug "(info   ) " "$line"
       fi
     done <<< "$*"
+    return $exit_status
 }
 
 warning ()
