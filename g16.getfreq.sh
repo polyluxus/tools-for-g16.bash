@@ -5,12 +5,7 @@
 #hlp It will, however, not fail if it is not one. 
 #hlp It looks for a defined set of keywords and writes them to the screen.
 #hlp
-#hlp   This software comes with absolutely no warrenty. None. Nada.
-#hlp
-#hlp   VERSION    :   $version
-#hlp   DATE       :   $versiondate
-#hlp
-#hlp   USAGE      :   $scriptname [options] [IPUT_FILE]
+#hlp This software comes with absolutely no warrenty. None. Nada.
 #hlp
 
 # An old version of this script was reviewed:
@@ -170,33 +165,40 @@ process_one_file ()
 
       debug "processing: $readline"
 
-      mapfile -t returned_array < <( find_energy "$readline" )
-      if (( ${#returned_array[@]} > 0 )) ; then
-        debug "Array written, ${#returned_array[@]} elements"
-        functional="${returned_array[0]}"
-        energy="${returned_array[1]}"
-        cycles="${returned_array[2]}"
-        debug "functional=$functional; energy=$energy;"
-        debug "cycles=$cycles"
-        continue
-        unset returned_array
+      if [[ -z $functional            ]] ; then 
+        mapfile -t returned_array < <( find_energy "$readline" )
+        if (( ${#returned_array[@]} > 0 )) ; then
+          debug "Array written, ${#returned_array[@]} elements"
+          functional="${returned_array[0]}"
+          energy="${returned_array[1]}"
+          cycles="${returned_array[2]}"
+          debug "functional=$functional; energy=$energy;"
+          debug "cycles=$cycles"
+          continue
+          unset returned_array
+        fi
       fi
       
-      mapfile -t returned_array < <( find_temp_press "$readline" )
-      if (( ${#returned_array[@]} > 0 )) ; then
-        debug "Array written, ${#returned_array[@]} elements"
-        temperature="${returned_array[0]}"
-        pressure="${returned_array[1]}"
-        debug "temperature=$temperature; pressure=$pressure"
-        continue
-        unset returned_array
+      if [[ -z $temperature           ]] ; then 
+        mapfile -t returned_array < <( find_temp_press "$readline" )
+        if (( ${#returned_array[@]} > 0 )) ; then
+          debug "Array written, ${#returned_array[@]} elements"
+          temperature="${returned_array[0]}"
+          pressure="${returned_array[1]}"
+          debug "temperature=$temperature; pressure=$pressure"
+          continue
+          unset returned_array
+        fi
       fi
 
       if [[ -z $zero_point_corr       ]] ; then 
         zero_point_corr=$(find_zero_point_corr "$readline") && continue 
+        # Debug doesn't work as continue before
+        debug "zero_point_corr=$zero_point_corr"
       fi
       if [[ -z $thermal_corr_energy   ]] ; then 
         thermal_corr_energy=$(find_thermal_corr_energy "$readline") && continue 
+        debug "thermal_corr_energy=$thermal_corr_energy"
       fi
       if [[ -z $thermal_corr_enthalpy ]] ; then 
         thermal_corr_enthalpy=$(find_thermal_corr_enthalpy "$readline") && continue 
@@ -206,13 +208,27 @@ process_one_file ()
       fi
       if [[ -z $entropy_tot           ]] ; then 
         # Placeholder
-        entropy_tot="0123456.789" 
+        entropy_tot=$(find_entropy "$readline") && continue 
       fi
       if [[ -z $heatcap_tot           ]] ; then 
         # Placeholder
-        heatcap_tot="0123456.789" 
+        heatcap_tot=$(find_heatcapacity "$readline") && continue 
       fi
 
+      if (( printlevel > 3 )) ; then
+        #get the contributions only if really necessary
+
+
+
+
+  ##       local -a contributions
+  ##       contributions[${#contributions[@]}]=$(find_entropy_electronic "$readline") && continue
+  ##       con=( "electronic" "translational" "rotational" "vibrational" )
+  ##       for item in "${con[@]}" , do
+  ##       done
+
+
+      fi
     done < <(getlines_energy_g16_output_file "$logfile")
 
     if (( printlevel > 1 )) ; then
@@ -249,6 +265,13 @@ process_one_file ()
         "$thermal_corr_enthalpy" \
         "$thermal_corr_gibbs" 
     fi
+    if (( printlevel > 3 )) ; then
+      echo "----------"
+      echo "Composition into electronic, translational,"
+      echo "rotational, and vibrational contributions:"
+      #printf '%s\n' "${contributions[@]}"
+      echo "Work in progress."
+    fi
 
   else
     printf '%-25s No output file found.\n' "${testfile%.*}"
@@ -275,7 +298,7 @@ print_energies_table ()
 print_energies_inline ()
 {
     local element printstring 
-    local format="%s%-*s$separate_values"
+    local format="%s%-*s$values_separator"
     for element in "$@" ; do
       # shellcheck disable=SC2059
       printf -v printstring "$format" "$printstring" ${#element} "$element" 
@@ -306,6 +329,78 @@ print_energies_inline ()
 
 
 
+
+process_options ()
+{
+    local ignore_verbosity_switch=false
+    local printlevel
+    # Evaluate options
+    while getopts :vV:cqh options ; do
+      #hlp Usage  : $scriptname [options] filenames(s)
+      #hlp 
+      #hlp Options:
+        case $options in
+          #hlp   -v         incrementally increase verbosity 
+          v) 
+            if [[ "$ignore_verbosity_switch" == "false" ]] ; then
+              (( printlevel++ )) 
+            elif [[ "$ignore_verbosity_switch" == "true" ]] ; then
+              warning "Verbosity has been set explicitly to '$printlevel'."
+            else
+              debug "printlevel=$printlevel"
+              fatal "Unknown verbosity level."
+            fi
+            ;;
+    
+          #hlp   -V [ARG]   set level of verbosity directly, ARG may be
+          #hlp                0: (default) display only the filename, electronic energy, zero-point correction,
+          #hlp                   enthalpy correction, and correction to the Gibbs energy in a single line
+          #hlp                1: display a single line of most values (equal to -v)
+          #hlp                2: display a short table of most important values (equal to -vv)
+          #hlp                3: like 2, also repeats the route section (equal to -vvv)
+          #hlp                4: like 3, also includes the decomposition of the entropy, thermal
+          #hlp                   energy and heat capacity into electronic, translational, 
+          #hlp                   rotational, and vibrational contributions (equal to -vvvv)
+          #hlp                If this option is found, -v will be ignored.
+          #hlp
+          V)
+            validate_integer "$OPTARG"
+            printlevel="$OPTARG" 
+            ignore_verbosity_switch="true"
+            ;;
+    
+          #hlp   -c         Separate values with comma (only affects -V0, -V1)
+          #hlp
+          c) 
+            values_separator="," 
+            ;;
+    
+          #hlp   -q         Suppress messages, warnings, and errors of this script
+          #hlp              (May be specified multiple times.)
+          #hlp
+          q) (( stay_quiet++ )) ;; 
+
+          #hlp   -h         display this help
+          #hlp
+          h) 
+            helpme 
+            ;;
+    
+          \?) 
+            warning "Invalid option: -$OPTARG." 
+            ;;
+          
+          :) 
+            fatal "Option -$OPTARG requires an argument." 
+            ;;
+        esac
+    done
+    
+    shift $((OPTIND-1))
+    
+    file_list="$@"
+    output_verbosity="$printlevel"
+}
 
 #
 # MAIN SCRIPT
@@ -353,14 +448,20 @@ else
   debug "No custom settings found."
 fi
 
-# testing in progress
+process_options "$@"
 
-LC_NUMERIC="en_US.utf8"
-process_one_file "$1" 0
+# Check if filename is specified
+if (( ${#file_list[@]} == 0 )) ; then 
+  fatal "No output file(s) specified. Nothing to do. Use $scriptname -h for more information."
+fi
 
+warn_and_set_locale
+for file in "${file_list[@]}" ; do
+  process_one_file "$file" "$output_verbosity"
+done
 
-
-#hlp   AUTHOR    : Martin
+#hlp 
+#hlp $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"
 exit $exit_status

@@ -123,14 +123,14 @@ getlines_energy_g16_output_file ()
     done < <(grep -A6 -e 'E (Thermal)[[:space:]]\+CV[[:space:]]\+S' "$logfile")
     # Print them rearranged one value at the time
     index=0
-    local format="%-15s [%-15s]= %20s %-10s\\n"
+    local format="%-30s= %20s %-10s\\n"
     while (( index < ${#names[@]} )) ; do
       # shellcheck disable=SC2059
-      printf "$format" "${header[1]}" "${names[$index]}" "${thermal[$index]}" "${unit[1]}"
+      printf "$format" "${header[3]}[${names[$index]}]" "${entropy[$index]}" "${unit[3]}"
       # shellcheck disable=SC2059
-      printf "$format" "${header[2]}" "${names[$index]}" "${heatcap[$index]}" "${unit[2]}"
+      printf "$format" "${header[2]}[${names[$index]}]" "${heatcap[$index]}" "${unit[2]}"
       # shellcheck disable=SC2059
-      printf "$format" "${header[3]}" "${names[$index]}" "${entropy[$index]}" "${unit[3]}"
+      printf "$format" "${header[1]}[${names[$index]}]" "${thermal[$index]}" "${unit[1]}"
       (( index ++ ))
     done
 }
@@ -260,9 +260,102 @@ find_thermal_corr_gibbs ()
 
 find_entropy ()
 {
-    local readline="$1" pattern
-    # A bit clueless here ?___?
+    # This function doubles as a means to find the total entropy,
+    # as well as the contributions
+    # this is in principle just a safeguard if I get my code a bit wrong
+    local readline="$1" pattern subpattern
+    debug "Read: $readline"
+    if [[ -z $2 ]] ; then 
+      subpattern="Total"
+    elif [[ $2 =~ (Total|Electronic|Translational|Rotational|Vibrational) ]] ; then
+      subpattern="${BASH_REMATCH[1]}"
+    fi
+    # the line has already been transformed from the g16 original output
+    pattern="S\\[($subpattern)\\][[:space:]]+=[[:space:]]+([-]?[0-9]+\\.[0-9]+)"
+    debug "Matching: '$pattern'"
+    if [[ $readline =~ $pattern ]] ; then
+      debug "Found entropy (${BASH_REMATCH[1]}): ${BASH_REMATCH[2]}"
+      echo "${BASH_REMATCH[2]}" 
+    else
+      debug "Entropy not within this line."
+      return 1
+    fi
+}
 
+find_entropy_total ()
+{
+    #This is just an explicit alias
+    find_entropy "$1" "Total"
+}
+
+find_entropy_electronic ()
+{
+    find_entropy "$1" "Electronic"
+}
+
+find_entropy_translational ()
+{
+    find_entropy "$1" "Translational"
+}
+
+find_entropy_rotational ()
+{
+    find_entropy "$1" "Rotational"
+}
+
+find_entropy_vibrational ()
+{
+    find_entropy "$1" "Vibrational"
+}
+
+find_heatcapacity ()
+{
+    # This function doubles as a means to find the total heat capacity,
+    # as well as the contributions,
+    # this is in principle just a safeguard if I get my code a bit wrong
+    local readline="$1" pattern subpattern
+    debug "Read: $readline"
+    if [[ -z $2 ]] ; then 
+      subpattern="Total"
+    elif [[ $2 =~ (Total|Electronic|Translational|Rotational|Vibrational) ]] ; then
+      subpattern="${BASH_REMATCH[1]}"
+    fi
+    # the line has already been transformed from the g16 original output
+    pattern="CV\\[($subpattern)\\][[:space:]]+=[[:space:]]+([-]?[0-9]+\\.[0-9]+)"
+    debug "Matching: '$pattern'"
+    if [[ $readline =~ $pattern ]] ; then
+      debug "Found heat capacity (${BASH_REMATCH[1]}): ${BASH_REMATCH[2]}"
+      echo "${BASH_REMATCH[2]}" 
+    else
+      debug "Heat capacity not within this line."
+      return 1
+    fi
+}
+
+find_heatcapacity_total ()
+{
+    #This is just an explicit alias
+    find_heatcapacity "$1" "Total"
+}
+
+find_heatcapacity_electronic ()
+{
+    find_heatcapacity "$1" "Electronic"
+}
+
+find_heatcapacity_translational ()
+{
+    find_heatcapacity "$1" "Translational"
+}
+
+find_heatcapacity_rotational ()
+{
+    find_heatcapacity "$1" "Rotational"
+}
+
+find_heatcapacity_vibrational ()
+{
+    find_heatcapacity "$1" "Vibrational"
 }
 
 

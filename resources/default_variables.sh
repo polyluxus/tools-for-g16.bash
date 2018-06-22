@@ -49,7 +49,8 @@ g16_output_suffix="log"
 #
 # Default options for printing
 #
-separate_values=" " # (space separated values)
+values_separator=" " # (space separated values)
+output_verbosity=0
 
 #
 # Default values for queueing system submission
