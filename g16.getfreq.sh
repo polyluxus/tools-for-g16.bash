@@ -145,8 +145,9 @@ process_one_file ()
   local readline returned_array
   local functional energy cycles
   local temperature pressure zero_point_corr
-  local thermal_corr_energy thermal_corr_enthalpy
-  local thermal_corr_gibbs entropy_tot heatcap_tot
+  local thermal_corr_energy thermal_corr_enthalpy thermal_corr_gibbs 
+  local name_index descriptor print_format
+  local -A entropy heatcap thermal print_entropy print_heatcap print_thermal
   if logfile="$(match_output_file "$testfile")" ; then
     logname=${logfile%.*}
     logname=${logname/\.\//}
@@ -206,28 +207,32 @@ process_one_file ()
       if [[ -z $thermal_corr_gibbs    ]] ; then 
         thermal_corr_gibbs=$(find_thermal_corr_gibbs "$readline") && continue 
       fi
-      if [[ -z $entropy_tot           ]] ; then 
-        # Placeholder
-        entropy_tot=$(find_entropy "$readline") && continue 
+      if [[ -z ${entropy[tot]}        ]] ; then 
+        entropy[tot]=$(find_entropy "$readline") && continue 
       fi
-      if [[ -z $heatcap_tot           ]] ; then 
-        # Placeholder
-        heatcap_tot=$(find_heatcapacity "$readline") && continue 
+      if [[ -z ${heatcap[tot]}        ]] ; then 
+        heatcap[tot]=$(find_heatcapacity "$readline") && continue 
       fi
 
+      debug "Done with anything necessary upt to -V2"
       if (( printlevel > 3 )) ; then
-        #get the contributions only if really necessary
-
-
-
-
-  ##       local -a contributions
-  ##       contributions[${#contributions[@]}]=$(find_entropy_electronic "$readline") && continue
-  ##       con=( "electronic" "translational" "rotational" "vibrational" )
-  ##       for item in "${con[@]}" , do
-  ##       done
-
-
+        debug "Printlevel set to '$printlevel'; looking for decomposition."
+        for name_index in tot ele tra rot vib ; do
+          #get the contributions only if really necessary
+          debug "name_index=$name_index"
+          if [[ -z ${entropy[$name_index]} ]] ; then 
+            entropy[$name_index]=$(find_entropy "$readline" "$name_index") && continue 
+          fi
+          if [[ -z ${heatcap[$name_index]} ]] ; then 
+            heatcap[$name_index]=$(find_heatcapacity "$readline" "$name_index") && continue 
+          fi
+          if [[ -z ${thermal[$name_index]} ]] ; then 
+            thermal[$name_index]=$(find_thermal_corr "$readline" "$name_index") && continue 
+          fi
+        done
+        debug "entropy keys: ${!entropy[*]}"
+        debug "heatcap keys: ${!heatcap[*]}"
+        debug "thermal keys: ${!thermal[*]}"
       fi
     done < <(getlines_energy_g16_output_file "$logfile")
 
@@ -242,8 +247,8 @@ process_one_file ()
         "$thermal_corr_energy" \
         "$thermal_corr_enthalpy" \
         "$thermal_corr_gibbs" \
-        "$entropy_tot" \
-        "$heatcap_tot"
+        "${entropy[tot]}" \
+        "${heatcap[tot]}"
     elif (( printlevel == 1 )) ; then
       print_energies_inline \
         "$logfile" \
@@ -255,8 +260,8 @@ process_one_file ()
         "$thermal_corr_energy" \
         "$thermal_corr_enthalpy" \
         "$thermal_corr_gibbs" \
-        "$entropy_tot" \
-        "$heatcap_tot"
+        "${entropy[tot]}" \
+        "${heatcap[tot]}"
     elif (( printlevel == 0 )) ; then
       print_energies_inline \
         "$logfile" \
@@ -269,10 +274,40 @@ process_one_file ()
       echo "----------"
       echo "Composition into electronic, translational,"
       echo "rotational, and vibrational contributions:"
-      #printf '%s\n' "${contributions[@]}"
       echo "Work in progress."
+      print_format="%-25s %8s: %+20.3f %-12s"
+      for name_index in tot ele tra rot vib ; do
+        debug "name_index=$name_index"
+        case "$name_index" in
+          [Tt][Oo][Tt]*)
+            descriptor="total" ;;
+          [Ee][Ll][Ee]*)
+            descriptor="electron." ;;
+          [Tt][Rr][Aa]*)
+            descriptor="translat." ;;
+          [Rr][Oo][Tt]*)
+            descriptor="rotat." ;;
+          [Vv][Ii][Bb]*)
+            descriptor="vibrat." ;;
+        esac
+        # shellcheck disable=SC2059
+        printf -v print_entropy[$name_index] "$print_format" \
+          "entropy ($descriptor)" "S $name_index" \
+          "${entropy[$name_index]}" "cal/(mol K)"
+        debug "print_entropy[$name_index]=${print_entropy[$name_index]}"
+        # shellcheck disable=SC2059
+        printf -v print_heatcap[$name_index] "$print_format" \
+          "heat capacity ($descriptor)" "Cv $name_index" \
+          "${heatcap[$name_index]}" "cal/(mol K)"
+        debug "print_heatcap[$name_index]=${print_heatcap[$name_index]}"
+        # shellcheck disable=SC2059
+        printf -v print_thermal[$name_index] "$print_format" \
+          "thermal corr. ($descriptor)" "U $name_index" \
+          "${thermal[$name_index]}" "kcal/mol"
+        debug "print_thermal[$name_index]=${print_thermal[$name_index]}"
+      done
+      printf '%s\n' "${print_entropy[@]}" "${print_heatcap[@]}" "${print_thermal[@]}"
     fi
-
   else
     printf '%-25s No output file found.\n' "${testfile%.*}"
     return 1
@@ -281,12 +316,23 @@ process_one_file ()
 
 print_energies_table ()
 {
+    local func="$2" enrg="$5" enrg_format
+    [[ -z "$func" ]] && func="not available"
+    if [[ -z "$enrg" ]] ; then
+      enrg="not available"
+      enrg_format="%-25s %8s: %-20s %-12s\\n"
+      enrg_unit=""
+    else
+      enrg_format="%-25s %8s: %+20.10f %-12s\\n"
+      enrg_unit="Ha"
+    fi
     echo "Calculation details:"
     printf '%-25s %8s: %-20s %-12s\n'    "File name"             ""       "${1}"  ""
-    printf '%-25s %8s: %-20s %-12s\n'    "Functional"            ""       "${2}"  ""
+    printf '%-25s %8s: %-20s %-12s\n'    "Functional"            ""       "$func" ""
     printf '%-25s %8s: %20.3f %-12s\n'   "Temperature"           "T"      "${3}"  "K"
     printf '%-25s %8s: %20.5f %-12s\n'   "Pressure"              "p"      "${4}"  "atm"
-    printf '%-25s %8s: %+20.10f %-12s\n' "electronic en."        "E"      "${5}"  "Ha"
+    # shellcheck disable=SC2059
+    printf "$enrg_format"                "electronic en."        "E"      "$enrg" "$enrg_unit"
     printf '%-25s %8s: %+20.6f %-12s\n'  "zero-point corr."      "ZPE"    "${6}"  "Ha"
     printf '%-25s %8s: %+20.6f %-12s\n'  "thermal corr."         "U"      "${7}"  "Ha"
     printf '%-25s %8s: %+20.6f %-12s\n'  "ther. corr. enthalpy"  "H"      "${8}"  "Ha"
@@ -306,6 +352,31 @@ print_energies_inline ()
     echo "$printstring"
 }
 
+print_header_inline ()
+{
+    local printlevel="$1"
+    if (( printlevel == 1 )) ; then
+      print_energies_inline \
+        "File name" "Method" "Temperature" "Pressure" \
+        "El. Energy" "ZPE corr." "U corr." "H corr." "G corr." \
+        "S [tot]}" "Cv [tot]}"
+    elif (( printlevel == 0 )) ; then
+      print_energies_inline \
+        "File name" "El. Energy" "ZPE corr." "H corr." "G corr."
+    fi
+}
+
+print_footer_inline ()
+{
+    local printlevel="$1"
+    if (( printlevel == 1 )) ; then
+      print_energies_inline \
+        "-" "-" "K" "atm" "Ha" "Ha" "Ha" "Ha" "Ha" "cal/(mol K)" "cal/(mol K)"
+    elif (( printlevel == 0 )) ; then
+      print_energies_inline \
+        "-" "Ha" "Ha" "Ha" "Ha"
+    fi
+}
 
 
 
@@ -398,7 +469,7 @@ process_options ()
     
     shift $((OPTIND-1))
     
-    file_list="$@"
+    file_list=( "$@" )
     output_verbosity="$printlevel"
 }
 
@@ -456,9 +527,11 @@ if (( ${#file_list[@]} == 0 )) ; then
 fi
 
 warn_and_set_locale
+print_header_inline "$output_verbosity"
 for file in "${file_list[@]}" ; do
   process_one_file "$file" "$output_verbosity"
 done
+print_footer_inline "$output_verbosity"
 
 #hlp 
 #hlp $scriptname is part of $softwarename $version ($versiondate) 
