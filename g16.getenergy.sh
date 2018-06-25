@@ -139,9 +139,26 @@ get_scriptpath_and_source_files ()
 process_one_file ()
 {
   # run only for one file at the time
-  local testfile="$1" logfile
+  local testfile="$1" logfile logname
+  local readline returned_array
+  local functional energy cycles
   if logfile="$(match_output_file "$testfile")" ; then
-    find_energy "$logfile" || return 1
+    logname=${logfile%.*}
+    logname=${logname/\.\//}
+    (( ${#logname} > 25 )) && logname="${logname:0:10}*${logname:(-14)}"
+    # Could also be achived with getlines_g16_output_file but would be overkill
+    readline=$(tac "$logfile" | grep -m1 'SCF Done')
+    mapfile -t returned_array < <( find_energy "$readline" )
+    debug "Array written, ${#returned_array[@]} elements"
+    functional="${returned_array[0]}"
+    energy="${returned_array[1]}"
+    cycles="${returned_array[2]}"
+    if (( ${#returned_array[@]} > 0 )) ; then
+      printf '%-25s %-15s = %20s ( %6s )\n' "$logname" "$functional" "$energy" "$cycles"
+    else
+      printf '%-25s No energy found.\n' "$logname"
+      return 1
+    fi
   else
     printf '%-25s No output file found.\n' "${testfile%.*}"
     return 1

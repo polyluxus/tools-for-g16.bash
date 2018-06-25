@@ -13,8 +13,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-g16.bash"
-version="0.0.7"
-versiondate="2018-06-xx"
+version="0.0.8"
+versiondate="2018-06-25"
 
 #
 # Standard commands for external software:
@@ -47,7 +47,13 @@ g16_input_suffix="com"
 g16_output_suffix="log"
 
 #
-# Default valuesfor queueing system submission
+# Default options for printing
+#
+values_separator=" " # (space separated values)
+output_verbosity=0
+
+#
+# Default values for queueing system submission
 #
 # Select a queueing system (pbs-gen/bsub-rwth) # TODO: bsub-gen
 request_qsys="pbs-gen"

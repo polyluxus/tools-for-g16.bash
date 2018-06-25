@@ -2,4 +2,4 @@
 backup
 examples
 .tmp*
-tmp*
+tmp.*
