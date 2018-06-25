@@ -827,18 +827,53 @@ remove_maxdisk ()
 
 # Others (?)
 
+check_any_keyword ()
+{
+    local parseline="$1"
+    local pattern="$2"
+    local keyword_alias="$3"
+    debug "Read: '$parseline'."
+    debug "Pattern: '$pattern'."
+    if [[ $parseline =~ $pattern ]] ; then
+      debug "Keword found in input stream. Returning with 0."
+      return 0
+    fi
+    debug "Keword not found in input stream. Returning with 1."
+    return 1
+}
+
 # check for AllCheck because then we have to omit title and multiplicity
 check_allcheck_option ()
 {   
     debug "Checking if the AllCheck keyword is set in the route section."
+    # Assigning the allcheck option to the pattern
     local parseline="$1"
     local pattern="[Aa][Ll][Ll][Cc][Hh][Ee][Cc][Kk]"
-    if [[ $parseline =~ $pattern ]] ; then
-      message "Found 'AllCheck' keyword."
-      debug "Return 0."
+    local keyword_alias="AllCheck"
+    debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
+    if check_any_keyword "$parseline" "$pattern" ; then
+      message "Keyword '$keyword_alias' found in input stream."
+      debug "Again returning with 0."
       return 0
     fi
-    debug "No 'AllCheck' keyword found. (Return 1)"
+    debug "Keyword '$keyword_alias' not found. (Return 1)"
+    return 1
+}
+
+check_freq_keyword ()
+{
+    debug "Checking if the Freq keyword is set in the route section."
+    # Assigning the allcheck option to the pattern
+    local parseline="$1"
+    local pattern="[Ff][Rr][Ee][Qq]"
+    local keyword_alias="Freq"
+    debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
+    if check_any_keyword "$parseline" "$pattern" ; then
+      message "Keyword '$keyword_alias' found in input stream."
+      debug "Again returning with 0."
+      return 0
+    fi
+    debug "Keyword '$keyword_alias' not found. (Return 1)"
     return 1
 }
 

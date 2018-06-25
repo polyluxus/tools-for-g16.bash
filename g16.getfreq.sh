@@ -137,7 +137,6 @@ get_scriptpath_and_source_files ()
 # Specific functions for this script only
 #
 
-
 process_one_file ()
 {
   # run only for one file at the time
@@ -153,8 +152,17 @@ process_one_file ()
     logname=${logname/\.\//}
     (( ${#logname} > 25 )) && logname="${logname:0:10}*${logname:(-14)}"
 
+    extracted_route=$(getlines_route_g16_output_file "$logfile")
+    if check_freq_keyword "$extracted_route" ; then
+      debug "Fine, this appears to be a frequency calculations."
+    else
+      warning "This does not appear to be a frequency calculation."
+      warning "Only the first route section will be checked,"
+      warning "if this is a multijob output file, please split it."
+      (( printlevel < 3 )) && message "Use a higher verbosity to display the extracted route section."
+    fi
+
     if (( printlevel > 2 )) ; then
-      extracted_route=$(getlines_route_g16_output_file "$logfile")
       echo "The following route was extracted (first one encountered):"
       fold -w80 -c -s <<< "$extracted_route"
       echo "----------"
@@ -357,12 +365,12 @@ print_header_inline ()
     local printlevel="$1"
     if (( printlevel == 1 )) ; then
       print_energies_inline \
-        "File name" "Method" "Temperature" "Pressure" \
-        "El. Energy" "ZPE corr." "U corr." "H corr." "G corr." \
-        "S [tot]}" "Cv [tot]}"
+        "File_name" "Method" "Temperature" "Pressure" \
+        "El._Energy" "ZPE_corr." "U_corr." "H_corr." "G_corr." \
+        "S[tot]" "Cv[tot]"
     elif (( printlevel == 0 )) ; then
       print_energies_inline \
-        "File name" "El. Energy" "ZPE corr." "H corr." "G corr."
+        "File_name" "El._Energy" "ZPE_corr." "H_corr." "G_corr."
     fi
 }
 
@@ -371,42 +379,19 @@ print_footer_inline ()
     local printlevel="$1"
     if (( printlevel == 1 )) ; then
       print_energies_inline \
-        "-" "-" "K" "atm" "Ha" "Ha" "Ha" "Ha" "Ha" "cal/(mol K)" "cal/(mol K)"
+        "Units" ":" "K" "atm" "Ha" "Ha" "Ha" "Ha" "Ha" "cal/(mol K)" "cal/(mol K)"
     elif (( printlevel == 0 )) ; then
       print_energies_inline \
-        "-" "Ha" "Ha" "Ha" "Ha"
+        "Units:" "Ha" "Ha" "Ha" "Ha"
     fi
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 process_options ()
 {
     local ignore_verbosity_switch=false
     local printlevel
     # Evaluate options
-    while getopts :vV:cqh options ; do
+    while getopts :vV:cO:qh options ; do
       #hlp Usage  : $scriptname [options] filenames(s)
       #hlp 
       #hlp Options:
@@ -444,6 +429,13 @@ process_options ()
           #hlp
           c) 
             values_separator="," 
+            ;;
+
+          #hlp   -O <ARG>   Write summary to file <ARG> instead of displaying it.
+          #hlp
+          O)
+            write_outputfile="$OPTARG"
+            backup_if_exists "$write_outputfile"
             ;;
     
           #hlp   -q         Suppress messages, warnings, and errors of this script
@@ -526,12 +518,30 @@ if (( ${#file_list[@]} == 0 )) ; then
   fatal "No output file(s) specified. Nothing to do. Use $scriptname -h for more information."
 fi
 
+# Open a new file descriptor for output
+if [[ -z $write_outputfile ]] ; then
+  exec 5>&1
+else
+  exec 5> "$write_outputfile"
+fi
+
 warn_and_set_locale
-print_header_inline "$output_verbosity"
+print_header_inline "$output_verbosity" >&5
 for file in "${file_list[@]}" ; do
-  process_one_file "$file" "$output_verbosity"
+  if (( output_verbosity > 1 && ${#file_list[@]} > 1 )) ; then
+    message "$file"
+  fi
+  process_one_file "$file" "$output_verbosity" >&5 || (( exit_status++ ))
+  if (( output_verbosity > 1 && ${#file_list[@]} > 1 )) ; then
+    echo "==========" >&5
+  fi
 done
-print_footer_inline "$output_verbosity"
+print_footer_inline "$output_verbosity" >&5
+
+# Close file descriptor
+exec 5>&-
+
+(( exit_status > 0 )) && warning "There have been one or more errors handling the files."
 
 #hlp 
 #hlp $scriptname is part of $softwarename $version ($versiondate) 
