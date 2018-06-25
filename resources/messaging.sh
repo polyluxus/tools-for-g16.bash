@@ -80,7 +80,7 @@ debug ()
 {
     local line
     while read -r line || [[ -n "$line" ]] ; do
-      echo "DEBUG  : " "$line" >&4
+      echo "DEBUG  : " "(${FUNCNAME[1]}) $line" >&4
     done <<< "$*"
 }    
 
@@ -111,3 +111,21 @@ warn_additional_args ()
     done
 }
 
+# 
+# Issue warning if locale is wrong
+#
+
+# If the used locale is not English, the formatting of floating numbers of the 
+# printf commands will produce an error
+warn_and_set_locale ()
+{
+    if [[ "$LANG" =~ ^en_US.(UTF-8|utf8)$ ]]; then 
+      debug "Locale is '$LANG'"
+    else
+      warning "Formatting might not properly work for '$LANG'."
+      warning "Setting locale for this script to 'en_US.UTF-8'."
+      set -x
+        export LC_NUMERIC="en_US.UTF-8"
+      set +x
+    fi
+}

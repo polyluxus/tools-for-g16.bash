@@ -10,9 +10,14 @@ fi
 # Test if a given value is an integer
 #
 
-is_integer()
+is_integer ()
 {
     [[ $1 =~ ^[[:digit:]]+$ ]]
+}
+
+is_float ()
+{
+    [[ $1 =~ ^[[:digit:]]+\.[[:digit:]]+$ ]]
 }
 
 validate_integer () 

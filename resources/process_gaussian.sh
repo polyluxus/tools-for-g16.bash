@@ -16,7 +16,7 @@ match_output_suffix ()
   local matching_output_suffix=(log out log log LOG OUT LOG LOG)
   local choices=${#allowed_input_suffix[*]} count
   local test_suffix="$1" return_suffix
-  debug "(${FUNCNAME[0]}) test_suffix=$test_suffix; choices=$choices"
+  debug "test_suffix=$test_suffix; choices=$choices"
   
   # Assign matching outputfile
   for (( count=0 ; count < choices ; count++ )) ; do
@@ -66,7 +66,7 @@ match_output_file ()
 # Parsing functions
 #
 
-getlines_g16_output_file ()
+getlines_energy_g16_output_file ()
 {
     local logfile="$1" logname
     logname=${logfile%.*}
@@ -123,13 +123,35 @@ getlines_g16_output_file ()
     done < <(grep -A6 -e 'E (Thermal)[[:space:]]\+CV[[:space:]]\+S' "$logfile")
     # Print them rearranged one value at the time
     index=0
-    local format="%-15s [%-15s]= %20s %-10s\n"
+    local format="%-30s= %20s %-10s\\n"
     while (( index < ${#names[@]} )) ; do
-      printf "$format" "${header[1]}" "${names[$index]}" "${thermal[$index]}" "${unit[1]}"
-      printf "$format" "${header[2]}" "${names[$index]}" "${heatcap[$index]}" "${unit[2]}"
-      printf "$format" "${header[3]}" "${names[$index]}" "${entropy[$index]}" "${unit[3]}"
+      # shellcheck disable=SC2059
+      printf "$format" "${header[3]}[${names[$index]}]" "${entropy[$index]}" "${unit[3]}"
+      # shellcheck disable=SC2059
+      printf "$format" "${header[2]}[${names[$index]}]" "${heatcap[$index]}" "${unit[2]}"
+      # shellcheck disable=SC2059
+      printf "$format" "${header[1]}[${names[$index]}]" "${thermal[$index]}" "${unit[1]}"
       (( index ++ ))
     done
+}
+
+getlines_route_g16_output_file ()
+{
+    # The route section is echoed in the log file, but it might spread over various lines
+    # options might be cut off in the middle. It always starts with # folowed by a space
+    # or the various verbosity levels NPT (case insensitive). The route section is
+    # terminated by a line of dahes. The script will stop reading the file if encountered.
+    local line appendline pattern keepreading=false
+    local logfile="$1"
+    while read -r line || [[ -n "$line" ]] ; do
+      pattern="^[[:space:]]*#[nNpPtT]?[[:space:]]"
+      if [[ $line =~ $pattern || "$keepreading" == "true" ]] ; then
+        [[ $line =~ ^[[:space:]]*[-]+[[:space:]]*$ ]] && break
+        appendline="$appendline$line"
+        keepreading=true
+      fi
+    done < "$logfile"
+    echo "$appendline"
 }
 
 find_energy ()
@@ -164,6 +186,177 @@ find_energy ()
       echo "$cycles"
     else
       debug "No energy statement found."
+      return 1
+    fi
+}
+
+find_temp_press ()
+{
+    local readline="$1" pattern pattern_temp pattern_pres
+    pattern_temp="Temperature[[:space:]]+([0-9]+\\.[0-9]+)[[:space:]]+Kelvin\\."
+    pattern_pres="Pressure[[:space:]]+([0-9]+\\.[0-9]+)[[:space:]]+Atm\\."
+    pattern="^[[:space:]]*$pattern_temp[[:space:]]+$pattern_pres[[:space:]]*$"
+    if [[ $readline =~ $pattern ]] ; then
+      debug "temperature: ${BASH_REMATCH[1]}; pressure: ${BASH_REMATCH[1]}"
+      echo "${BASH_REMATCH[1]}" # Temperature
+      echo "${BASH_REMATCH[2]}" # Pressure
+    else
+      debug "Temperature and Pressure not within this line."
+      return 1
+    fi
+}
+
+find_zero_point_corr ()
+{
+    local readline="$1" pattern
+    pattern="Zero-point correction=[[:space:]]+([-]?[0-9]+\\.[0-9]+)"
+    if [[ $readline =~ $pattern ]] ; then
+      debug "Zero-point correction: ${BASH_REMATCH[1]}"
+      echo "${BASH_REMATCH[1]}" 
+    else
+      debug "Zero-point correction not within this line."
+      return 1
+    fi
+}
+
+find_thermal_corr_energy ()
+{
+    local readline="$1" pattern
+    pattern="Thermal correction to Energy=[[:space:]]+([-]?[0-9]+\\.[0-9]+)"
+    if [[ $readline =~ $pattern ]] ; then
+      debug "Thermal correction to Energy: ${BASH_REMATCH[1]}"
+      echo "${BASH_REMATCH[1]}" 
+    else
+      debug "Thermal correction to Energy not within this line."
+      return 1
+    fi
+}
+
+find_thermal_corr_enthalpy ()
+{
+    local readline="$1" pattern
+    pattern="Thermal correction to Enthalpy=[[:space:]]+([-]?[0-9]+\\.[0-9]+)"
+    if [[ $readline =~ $pattern ]] ; then
+      debug "Thermal correction to Enthalpy: ${BASH_REMATCH[1]}"
+      echo "${BASH_REMATCH[1]}" 
+    else
+      debug "Thermal correction to Enthalpy not within this line."
+      return 1
+    fi
+}
+
+find_thermal_corr_gibbs ()
+{
+    local readline="$1" pattern
+    pattern="Thermal correction to Gibbs Free Energy=[[:space:]]+([-]?[0-9]+\\.[0-9]+)"
+    if [[ $readline =~ $pattern ]] ; then
+      debug "Thermal correction to Gibbs Free Energy: ${BASH_REMATCH[1]}"
+      echo "${BASH_REMATCH[1]}" 
+    else
+      debug "Thermal correction to Gibbs Free Energy not within this line."
+      return 1
+    fi
+}
+
+find_entropy ()
+{
+    # This function doubles as a means to find the total entropy,
+    # as well as the contributions,
+    # this is in principle just a safeguard if I get my code a bit wrong
+    local readline="$1" pattern subpattern
+    debug "Read: $readline"
+    debug "Option: '$2'"
+    case $2 in
+      ""|[Tt][Oo][Tt]*)
+        subpattern="Total" ;;
+      [Ee][Ll][Ee]*)
+        subpattern="Electronic" ;;
+      [Tt][Rr][Aa]*)
+        subpattern="Translational" ;;
+      [Rr][Oo][Tt]*)
+        subpattern="Rotational" ;;
+      [Vv][Ii][Bb]*)
+        subpattern="Vibrational" ;;
+      *)
+        debug "No match for '$2'."
+        subpattern="Total" ;;
+    esac
+    # the line has already been transformed from the g16 original output
+    pattern="S\\[($subpattern)\\][[:space:]]+=[[:space:]]+([-]?[0-9]+\\.[0-9]+)"
+    debug "Matching: '$pattern'"
+    if [[ $readline =~ $pattern ]] ; then
+      debug "Found entropy (${BASH_REMATCH[1]}): ${BASH_REMATCH[2]}"
+      echo "${BASH_REMATCH[2]}" 
+    else
+      debug "Entropy not within this line."
+      return 1
+    fi
+}
+
+find_heatcapacity ()
+{
+    # This function doubles as a means to find the total heat capacity,
+    # as well as the contributions,
+    # this is in principle just a safeguard if I get my code a bit wrong
+    local readline="$1" pattern subpattern
+    debug "Read: $readline"
+    case $2 in
+      ""|[Tt][Oo][Tt]*)
+        subpattern="Total" ;;
+      [Ee][Ll][Ee]*)
+        subpattern="Electronic" ;;
+      [Tt][Rr][Aa]*)
+        subpattern="Translational" ;;
+      [Rr][Oo][Tt]*)
+        subpattern="Rotational" ;;
+      [Vv][Ii][Bb]*)
+        subpattern="Vibrational" ;;
+      *)
+        debug "No match for '$2'."
+        subpattern="Total" ;;
+    esac
+    # the line has already been transformed from the g16 original output
+    pattern="CV\\[($subpattern)\\][[:space:]]+=[[:space:]]+([-]?[0-9]+\\.[0-9]+)"
+    debug "Matching: '$pattern'"
+    if [[ $readline =~ $pattern ]] ; then
+      debug "Found heat capacity (${BASH_REMATCH[1]}): ${BASH_REMATCH[2]}"
+      echo "${BASH_REMATCH[2]}" 
+    else
+      debug "Heat capacity not within this line."
+      return 1
+    fi
+}
+
+find_thermal_corr ()
+{
+    # This function doubles as a means to find the total heat capacity,
+    # as well as the contributions,
+    # this is in principle just a safeguard if I get my code a bit wrong
+    local readline="$1" pattern subpattern
+    debug "Read: $readline"
+    case $2 in
+      ""|[Tt][Oo][Tt]*)
+        subpattern="Total" ;;
+      [Ee][Ll][Ee]*)
+        subpattern="Electronic" ;;
+      [Tt][Rr][Aa]*)
+        subpattern="Translational" ;;
+      [Rr][Oo][Tt]*)
+        subpattern="Rotational" ;;
+      [Vv][Ii][Bb]*)
+        subpattern="Vibrational" ;;
+      *)
+        debug "No match for '$2'."
+        subpattern="Total" ;;
+    esac
+    # the line has already been transformed from the g16 original output
+    pattern="E \\(Thermal\\)\\[($subpattern)\\][[:space:]]+=[[:space:]]+([-]?[0-9]+\\.[0-9]+)"
+    debug "Matching: '$pattern'"
+    if [[ $readline =~ $pattern ]] ; then
+      debug "Found heat capacity (${BASH_REMATCH[1]}): ${BASH_REMATCH[2]}"
+      echo "${BASH_REMATCH[2]}" 
+    else
+      debug "Heat capacity not within this line."
       return 1
     fi
 }
@@ -260,7 +453,7 @@ warn_mem_directive ()
 #was remove_comment ()
 remove_g16_input_comment ()
 {
-    debug "(${FUNCNAME[0]}) Attempting to remove comment."
+    debug "Attempting to remove comment."
     local parseline="$1"
     debug "Parsing: '$parseline'"
     local pattern="^[[:space:]]*([^!]+)[!]*[[:space:]]*(.*)$"
@@ -295,7 +488,7 @@ read_g16_input_file ()
     # After that come geometry and other input sections, we trust the user knows how to
     # specify these and read them as they are.
 
-    debug "(${FUNCNAME[0]}) Reading input file."
+    debug "Reading input file."
     local parsefile="$1" line appendline pattern
     debug "Working on: $parsefile"
     # The hash marks the beginning of the route (everything before is link0)
@@ -447,7 +640,7 @@ collate_route_keyword_opts ()
 {
     # The function takes an inputstring and removes any unnecessary spaces
     # needed for collate_route_keywords
-    debug "(${FUNCNAME[0]}) Collating keyword options."
+    debug "Collating keyword options."
     local inputstring="$1"
     debug "Input: $inputstring"
     # The collated section will be saved to
@@ -485,7 +678,7 @@ collate_route_keywords ()
 {
     # This function removes spaces which have been entered in the original input
     # so that the folding (to 80 characters) doesn't break a keyword.
-    debug "(${FUNCNAME[0]}) Collating keywords."
+    debug "Collating keywords."
     local inputstring="$1"
     debug "Input: $inputstring"
     # The collated section will be saved to
@@ -634,18 +827,53 @@ remove_maxdisk ()
 
 # Others (?)
 
+check_any_keyword ()
+{
+    local parseline="$1"
+    local pattern="$2"
+    local keyword_alias="$3"
+    debug "Read: '$parseline'."
+    debug "Pattern: '$pattern'."
+    if [[ $parseline =~ $pattern ]] ; then
+      debug "Keword found in input stream. Returning with 0."
+      return 0
+    fi
+    debug "Keword not found in input stream. Returning with 1."
+    return 1
+}
+
 # check for AllCheck because then we have to omit title and multiplicity
 check_allcheck_option ()
 {   
     debug "Checking if the AllCheck keyword is set in the route section."
+    # Assigning the allcheck option to the pattern
     local parseline="$1"
     local pattern="[Aa][Ll][Ll][Cc][Hh][Ee][Cc][Kk]"
-    if [[ $parseline =~ $pattern ]] ; then
-      message "Found 'AllCheck' keyword."
-      debug "Return 0."
+    local keyword_alias="AllCheck"
+    debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
+    if check_any_keyword "$parseline" "$pattern" ; then
+      message "Keyword '$keyword_alias' found in input stream."
+      debug "Again returning with 0."
       return 0
     fi
-    debug "No 'AllCheck' keyword found. (Return 1)"
+    debug "Keyword '$keyword_alias' not found. (Return 1)"
+    return 1
+}
+
+check_freq_keyword ()
+{
+    debug "Checking if the Freq keyword is set in the route section."
+    # Assigning the allcheck option to the pattern
+    local parseline="$1"
+    local pattern="[Ff][Rr][Ee][Qq]"
+    local keyword_alias="Freq"
+    debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
+    if check_any_keyword "$parseline" "$pattern" ; then
+      message "Keyword '$keyword_alias' found in input stream."
+      debug "Again returning with 0."
+      return 0
+    fi
+    debug "Keyword '$keyword_alias' not found. (Return 1)"
     return 1
 }
 
@@ -660,7 +888,7 @@ validate_write_in_out_jobname ()
     local testfile="$1"
     local input_suffix output_suffix
     local -a test_possible_inputfiles
-    debug "(${FUNCNAME[0]}) Validating: $testfile"
+    debug "Validating: $testfile"
 
     # Check if supplied inputfile is readable, extract suffix and title
     if inputfile=$(is_readable_file_or_exit "$testfile") ; then
@@ -714,7 +942,7 @@ validate_write_in_out_jobname ()
 #was write_new_inputfile ()
 write_g16_input_file ()
 {
-    debug "(${FUNCNAME[0]}) Writing new (modified) input file."
+    debug "Writing new (modified) input file."
     local verified_checkpoint
     # checkpoint is a global variable
     [[ -z $checkpoint ]] && checkpoint="${jobname}.chk"
