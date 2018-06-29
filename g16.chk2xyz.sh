@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-#hlp A very quick script to transform a checkpointfile
-#hlp to a formatted checkpointfile and then to xyz 
-#hlp coordinates using Open Babel.
-#hlp Usage: $scriptname [option] <checkpointfile(s)>
-#hlp Distributed with $softwarename $version ($versiondate)
+#hlp   A very quick script to transform a checkpointfile
+#hlp   to a formatted checkpointfile and then to xyz 
+#hlp   coordinates using Open Babel.
+#hlp   Usage: $scriptname [option] <checkpointfile(s)>
+#hlp
 # 
 
 #
@@ -181,8 +181,10 @@ format_one_checkpoint ()
 
 format_only ()
 {
+    local tested_file
     # run only for commandline arguments
-    is_readable_file_and_warn "$1" && format_one_checkpoint "$1" || return $?
+    tested_file=$(is_readable_file_and_warn "$1") || return $?
+    format_one_checkpoint "$tested_file" || return $?
 }
 
 ###   get_all_checkpoint ()
@@ -269,9 +271,11 @@ debug "Initialising option index."
 OPTIND="1"
 
 while getopts :fh options ; do
+  #hlp   Options:
+  #hlp
   case $options in
-    #hlp OPTIONS:
-    #hlp   -f      Formats all checkpointfiles that are found in the current directory
+    #hlp     -f      Formats all checkpointfiles that are found in the current directory
+    #hlp
     f) 
        ### get_all_checkpoint checkpoint_list # Needs Bash > 4.3
        debug "Executing for directory; looking for all checkpoint files."
@@ -279,7 +283,8 @@ while getopts :fh options ; do
        debug "Found: ${checkpoint_list[*]}"
        (( ${#checkpoint_list[*]} == 0 )) &&  warning "No checkpoint files found in this directory."
        ;;
-    #hlp   -h      Prints this help text
+    #hlp     -h      Prints this help text
+    #hlp
     h) helpme ;; 
 
    \?) fatal "Invalid option: -$OPTARG." ;;
@@ -307,3 +312,4 @@ message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"
 
 (( exit_status == 0 )) || fatal "There have been one or more errors."
+#hlp   $scriptname is part of $softwarename $version ($versiondate) 

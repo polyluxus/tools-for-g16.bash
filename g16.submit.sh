@@ -9,18 +9,13 @@
 # 
 # The help lines are distributed throughout the script and grepped for
 #
-#hlp   This is $scriptname!
-#hlp
-#hlp   It will sumbit a gaussian input file to the queueing system.
+#hlp   This script will sumbit a Gaussian input file to the queueing system.
 #hlp   It is designed to work on the RWTH compute cluster in 
 #hlp   combination with the bsub queue.
 #hlp
 #hlp   This software comes with absolutely no warrenty. None. Nada.
 #hlp
-#hlp   VERSION    :   $version
-#hlp   DATE       :   $versiondate
-#hlp
-#hlp   USAGE      :   $scriptname [options] [IPUT_FILE]
+#hlp   Usage: $scriptname [options] [IPUT_FILE]
 #hlp
 
 #
@@ -409,7 +404,7 @@ process_options ()
 {
   ##Needs complete rework
 
-    #hlp   OPTIONS    :
+    #hlp   Options:
     #hlp    
     local OPTIND=1 
 
@@ -597,6 +592,6 @@ process_inputfile "$requested_inputfile"
 write_jobscript "$request_qsys"
 submit_jobscript "$request_qsys" "$requested_submit_status" 
 
-#hlp   AUTHOR    : Martin
+#hlp   $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"

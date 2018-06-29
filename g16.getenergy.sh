@@ -1,15 +1,10 @@
 #!/bin/bash
 
-#hlp   This is $scriptname!
-#hlp
 #hlp   It finds energy statements from Gaussian 16 calculations,
 #hlp   or find energy statements from all G16 log files in the 
 #hlp   working directory.
 #hlp 
 #hlp   This software comes with absolutely no warrenty. None. Nada.
-#hlp
-#hlp   VERSION    :   $version
-#hlp   DATE       :   $versiondate
 #hlp
 
 # Related Review of original code:
@@ -224,12 +219,13 @@ get_scriptpath_and_source_files || exit 1
 OPTIND="1"
 
 while getopts :hqi:o: options ; do
-  #hlp   USAGE      :   $scriptname [options] <filenames>
+  #hlp   Usage: $scriptname [options] <filenames>
   #hlp
   #hlp   If no filenames are specified, the script looks for all '*.com'
   #hlp   files and assumes there is a matching '*.log' file.
   #hlp
-  #hlp   OPTIONS:
+  #hlp   Options:
+  #hlp
   case $options in
     #hlp     -h        Prints this help text
     #hlp
@@ -254,7 +250,7 @@ while getopts :hqi:o: options ; do
        process_input_files="false"
        ;;
 
-    #hlp More options in preparation.
+    #hlp   More options in preparation.
    \?) fatal "Invalid option: -$OPTARG." ;;
 
     :) fatal "Option -$OPTARG requires an argument." ;;
@@ -285,5 +281,5 @@ else
 fi
 
 message "Created with '$script_invocation_spell'."
-#hlp (Martin; $version; $versiondate.)
 message "$scriptname is part of $softwarename $version ($versiondate)"
+#hlp   $scriptname is part of $softwarename $version ($versiondate) 
