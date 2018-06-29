@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#hlp This tool creates a summary for a single (or more) frequency calculation(s)
-#hlp of the quantum chemical software suite Gaussian16.
-#hlp It will, however, not fail if it is not one. 
-#hlp It looks for a defined set of keywords and writes them to the screen.
+#hlp   This tool creates a summary for a single (or more) frequency calculation(s)
+#hlp   of the quantum chemical software suite Gaussian16.
+#hlp   It will, however, not fail if it is not one. 
+#hlp   It looks for a defined set of keywords and writes them to the screen.
 #hlp
-#hlp This software comes with absolutely no warrenty. None. Nada.
+#hlp   This software comes with absolutely no warrenty. None. Nada.
 #hlp
 
 # An old version of this script was reviewed:
@@ -392,11 +392,11 @@ process_options ()
     local printlevel
     # Evaluate options
     while getopts :vV:cO:qh options ; do
-      #hlp Usage  : $scriptname [options] filenames(s)
+      #hlp   Usage: $scriptname [options] filenames(s)
       #hlp 
-      #hlp Options:
+      #hlp   Options:
         case $options in
-          #hlp   -v         incrementally increase verbosity 
+          #hlp     -v         incrementally increase verbosity 
           v) 
             if [[ "$ignore_verbosity_switch" == "false" ]] ; then
               (( printlevel++ )) 
@@ -408,42 +408,42 @@ process_options ()
             fi
             ;;
     
-          #hlp   -V [ARG]   set level of verbosity directly, ARG may be
-          #hlp                0: (default) display only the filename, electronic energy, zero-point correction,
-          #hlp                   enthalpy correction, and correction to the Gibbs energy in a single line
-          #hlp                1: display a single line of most values (equal to -v)
-          #hlp                2: display a short table of most important values (equal to -vv)
-          #hlp                3: like 2, also repeats the route section (equal to -vvv)
-          #hlp                4: like 3, also includes the decomposition of the entropy, thermal
-          #hlp                   energy and heat capacity into electronic, translational, 
-          #hlp                   rotational, and vibrational contributions (equal to -vvvv)
-          #hlp                If this option is found, -v will be ignored.
-          #hlp
+          #hlp     -V [ARG]   set level of verbosity directly, ARG may be
+          #hlp                  0: (default) display only the filename, electronic energy, zero-point correction,
+          #hlp                     enthalpy correction, and correction to the Gibbs energy in a single line
+          #hlp                  1: display a single line of most values (equal to -v)
+          #hlp                  2: display a short table of most important values (equal to -vv)
+          #hlp                  3: like 2, also repeats the route section (equal to -vvv)
+          #hlp                  4: like 3, also includes the decomposition of the entropy, thermal
+          #hlp                     energy and heat capacity into electronic, translational, 
+          #hlp                     rotational, and vibrational contributions (equal to -vvvv)
+          #hlp                  If this option is found, -v will be ignored.
+          #hlp  
           V)
             validate_integer "$OPTARG"
             printlevel="$OPTARG" 
             ignore_verbosity_switch="true"
             ;;
     
-          #hlp   -c         Separate values with comma (only affects -V0, -V1)
+          #hlp     -c         Separate values with comma (only affects -V0, -V1)
           #hlp
           c) 
             values_separator="," 
             ;;
 
-          #hlp   -O <ARG>   Write summary to file <ARG> instead of displaying it.
+          #hlp     -O <ARG>   Write summary to file <ARG> instead of displaying it.
           #hlp
           O)
             write_outputfile="$OPTARG"
             backup_if_exists "$write_outputfile"
             ;;
     
-          #hlp   -q         Suppress messages, warnings, and errors of this script
+          #hlp     -q         Suppress messages, warnings, and errors of this script
           #hlp              (May be specified multiple times.)
           #hlp
           q) (( stay_quiet++ )) ;; 
 
-          #hlp   -h         display this help
+          #hlp     -h         display this help
           #hlp
           h) 
             helpme 
@@ -543,8 +543,7 @@ exec 5>&-
 
 (( exit_status > 0 )) && warning "There have been one or more errors handling the files."
 
-#hlp 
-#hlp $scriptname is part of $softwarename $version ($versiondate) 
+#hlp   $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"
 exit $exit_status

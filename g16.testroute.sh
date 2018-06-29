@@ -1,15 +1,21 @@
-#!/bin/bash
+#! /bin/bash
 
-#hlp   It finds energy statements from Gaussian 16 calculations,
-#hlp   or find energy statements from all G16 log files in the 
-#hlp   working directory.
-#hlp 
+# Gaussian 16 submission script
+#
+# You might not want to make modifications here.
+# If you do improve it, I would be happy to learn about it.
+#
+
+# 
+# The help lines are distributed throughout the script and grepped for
+#
+#hlp   This script reads an input file, extracts the route section,
+#hlp   and tests it with the Gaussian utility testrt.
+#hlp
 #hlp   This software comes with absolutely no warrenty. None. Nada.
 #hlp
-
-# Related Review of original code:
-# http://codereview.stackexchange.com/q/129854/92423
-# Thanks to janos and 200_success
+#hlp   Usage: $scriptname [options] [IPUT_FILE]
+#hlp
 
 #
 # Generic functions to find the scripts 
@@ -97,9 +103,11 @@ get_scriptpath_and_source_files ()
     source "$resourcespath/default_variables.sh" &> "$tmplog" || (( error_count++ ))
     
     # Set more default variables
-    # exit_status=0
+    exit_status=0
     stay_quiet=0
-    process_input_files="true"
+    # Ensure that in/outputfile variables are empty
+    unset inputfile
+    unset outputfile
     
     # Import other functions
     #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
@@ -110,6 +118,8 @@ get_scriptpath_and_source_files ()
     source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
     #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/process_gaussian.sh
     source "$resourcespath/process_gaussian.sh" &> "$tmplog" || (( error_count++ ))
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/validate_numbers.sh
+    source "$resourcespath/validate_numbers.sh" &> "$tmplog" || (( error_count++ ))
 
     if (( error_count > 0 )) ; then
       echo "ERROR: Unable to locate library functions. Check installation." >&2
@@ -131,60 +141,80 @@ get_scriptpath_and_source_files ()
 # Specific functions for this script only
 #
 
-process_one_file ()
+validate_g16_route ()
 {
-  # run only for one file at the time
-  local testfile="$1" logfile logname
-  local readline returned_array
-  local functional energy cycles
-  if logfile="$(match_output_file "$testfile")" ; then
-    logname=${logfile%.*}
-    logname=${logname/\.\//}
-    (( ${#logname} > 25 )) && logname="${logname:0:10}*${logname:(-14)}"
-    # Could also be achived with getlines_g16_output_file but would be overkill
-    readline=$(tac "$logfile" | grep -m1 'SCF Done')
-    mapfile -t returned_array < <( find_energy "$readline" )
-    debug "Array written, ${#returned_array[@]} elements"
-    functional="${returned_array[0]}"
-    energy="${returned_array[1]}"
-    cycles="${returned_array[2]}"
-    if (( ${#returned_array[@]} > 0 )) ; then
-      printf '%-25s %-15s = %20s ( %6s )\n' "$logname" "$functional" "$energy" "$cycles"
+    local read_route="$1"
+    local g16_output
+    debug "Read the following route section:"
+    debug "$readroute"
+    if g16_output=$($g16_testrt_cmd "$read_route" 2>&1) ; then
+      message "Route section has no syntax errors."
+      debug "$g16_output"
     else
-      printf '%-25s No energy found.\n' "$logname"
+      warning "There was an error in the route section"
+      message "$g16_output"
       return 1
     fi
-  else
-    printf '%-25s No output file found.\n' "${testfile%.*}"
-    return 1
-  fi
 }
 
-process_directory ()
+process_inputfile ()
 {
-  # Find all files in a directory
-  local suffix="$1" returncode=0
-  local -a file_list
-  local process_file 
-  printf '%-25s %s\n' "Summary for " "${PWD#\/*\/*\/}" 
-  printf '%-25s %s\n\n' "Created " "$(date +"%Y/%m/%d %k:%M:%S")"
-  # Print a header
-  printf '%-25s %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
-  mapfile -t file_list < <( ls ./*."$suffix" 2> /dev/null ) 
-  if (( ${#file_list[*]} == 0 )) ; then
-    warning "No output files found in this directory."
-    return 1
-  else
-    debug "Files found: ${#file_list[*]}"
-  fi
-  for process_file in "${file_list[@]}" ; do
-    process_one_file "$process_file" || (( returncode++ ))
-  done
-  return $returncode
+    local testfile="$1"
+    debug "Processing Input: $testfile"
+    validate_g16_route "$route_section"
 }
 
 #
-# Begin main script
+# Process Options
+#
+
+process_options ()
+{
+  ##Needs complete rework
+
+    #hlp   Options:
+    #hlp    
+    local OPTIND=1 
+
+    while getopts :sh options ; do
+        case $options in
+
+          #hlp     -s       Suppress logging messages of the script.
+          #hlp              (May be specified multiple times.)
+          #hlp
+            s) (( stay_quiet++ )) ;;
+
+          #hlp     -h       this help.
+          #hlp
+            h) helpme ;;
+
+           \?) fatal "Invalid option: -$OPTARG." ;;
+
+            :) fatal "Option -$OPTARG requires an argument." ;;
+
+        esac
+    done
+
+    # Shift all variables processed to far
+    shift $((OPTIND-1))
+
+    if [[ -z "$1" ]] ; then 
+      fatal "There is no inputfile specified"
+    fi
+
+    # If a filename is specified, it must exist, otherwise exit
+    # different mode let's you only use the jobname
+    #requested_inputfile=$(is_readable_file_or_exit "$1") || exit 1 
+    requested_inputfile="$1"
+    shift
+    debug "Specified input: $requested_inputfile"
+
+    # Issue a warning that the addidtional flag has no effect.
+    warn_additional_args "$@"
+}
+
+#
+# MAIN SCRIPT
 #
 
 # If this script is sourced, return before executing anything
@@ -214,72 +244,26 @@ fi
 
 get_scriptpath_and_source_files || exit 1
 
-# Get options
-# Initialise options
-OPTIND="1"
+# Check for settings in three default locations (increasing priority):
+#   install path of the script, user's home directory, current directory
+g16_tools_rc_loc="$(get_rc "$scriptpath" "/home/$USER" "$PWD")"
+debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 
-while getopts :hqi:o: options ; do
-  #hlp   Usage: $scriptname [options] <filenames>
-  #hlp
-  #hlp   If no filenames are specified, the script looks for all '*.com'
-  #hlp   files and assumes there is a matching '*.log' file.
-  #hlp
-  #hlp   Options:
-  #hlp
-  case $options in
-    #hlp     -h        Prints this help text
-    #hlp
-    h) helpme ;; 
+# Load custom settings from the rc
 
-    #hlp     -q        Suppress messages, warnings, and errors
-    #hlp               (May be specified multiple times.)
-    #hlp
-    q) (( stay_quiet++ )) ;; 
-
-    #hlp     -i <ARG>  Specify input suffix if processing a directory.
-    #hlp               (Will look for input files with given suffix and
-    #hlp                automatically match suitable output file suffix.)
-    #hlp
-    i) g16_input_suffix="$OPTARG"
-       process_input_files="true"
-       ;;
-
-    #hlp     -o <ARG>  Specify output suffix if processing a directory.
-    #hlp
-    o) g16_output_suffix="$OPTARG" 
-       process_input_files="false"
-       ;;
-
-    #hlp   More options in preparation.
-   \?) fatal "Invalid option: -$OPTARG." ;;
-
-    :) fatal "Option -$OPTARG requires an argument." ;;
-
-  esac
-done
-
-shift $(( OPTIND - 1 ))
-
-if (( $# == 0 )) ; then
-  if [[ $process_input_files =~ [Tt][Rr][Uu][Ee] ]] ; then
-    debug "Processing inputfiles with suffix '$g16_input_suffix'."
-    process_directory "$g16_input_suffix" 
-  else
-    if use_g16_output_suffix=$(match_output_suffix "$g16_output_suffix") ; then
-      debug "Recognised output suffix '$use_g16_output_suffix'."
-    else
-      fatal "Unrecognised output suffix '$g16_output_suffix'."
-    fi
-    process_directory "$use_g16_output_suffix"
-  fi
+if [[ ! -z $g16_tools_rc_loc ]] ; then
+  #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
+  . "$g16_tools_rc_loc"
+  message "Configuration file '$g16_tools_rc_loc' applied."
 else
-  # Print a header if more than one file specified
-  (( $# > 1 )) && printf '%-25s %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
-  for inputfile in "$@"; do
-    process_one_file "$inputfile"
-  done
+  debug "No custom settings found."
 fi
 
-message "Created with '$script_invocation_spell'."
-message "$scriptname is part of $softwarename $version ($versiondate)"
+# Evaluate Options
+
+process_options "$@"
+process_inputfile "$requested_inputfile"
+
 #hlp   $scriptname is part of $softwarename $version ($versiondate) 
+message "$scriptname is part of $softwarename $version ($versiondate)"
+debug "$script_invocation_spell"

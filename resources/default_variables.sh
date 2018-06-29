@@ -36,6 +36,9 @@ g16_modules[1]="gaussian/16.a03_bin"
 # Options relating to producing a formatted checkpoint file
 g16_formchk_cmd="wrapper.g16 formchk" # ( Current workaround )
 g16_formchk_opts="-3"
+# Options related to testing the route section
+g16_testrt_cmd="wrapper.g16 testrt" # ( Current workaround )
+# (There are no options for this utility.)
 
 # Options related to use open babel
 obabel_cmd="obabel"
