@@ -29,6 +29,8 @@ g16_scratch="$TEMP"
 g16_overhead=2000
 # The 2000 might be a very conservative guess, but additionally
 # the memory will be scaled by (CPU + 1)/CPU (at least in the submit script).
+# Checkpoint files should be saved by default
+g16_checkpoint_save="true"
 # On the RWTH cluster Gaussian is loaded via a module system,
 # the names (in correct order) of the modules:
 g16_modules[0]="CHEMISTRY"

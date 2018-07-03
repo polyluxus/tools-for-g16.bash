@@ -9,8 +9,9 @@
 # 
 # The help lines are distributed throughout the script and grepped for
 #
+#hlp   WIP
 #hlp   This script reads an input file, extracts the route section,
-#hlp   and tests it with the Gaussian utility testrt.
+#hlp   and writes a new input file for a frequency run.
 #hlp
 #hlp   This software comes with absolutely no warrenty. None. Nada.
 #hlp
@@ -147,7 +148,6 @@ validate_g16_route ()
     local g16_output
     debug "Read the following route section:"
     debug "$read_route"
-    [[ -z $read_route ]] && warning "Route section appears to be empty."
     if g16_output=$($g16_testrt_cmd "$read_route" 2>&1) ; then
       message "Route section has no syntax errors."
       debug "$g16_output"
@@ -163,7 +163,84 @@ process_inputfile ()
     local testfile="$1"
     debug "Processing Input: $testfile"
     read_g16_input_file "$testfile"
-    validate_g16_route "$route_section"
+    extract_jobname_inoutnames "$testfile"
+    
+    local modified_route="$route_section"
+    local -a additional_keywords
+    # The opt keyword would lead to a compound job, that should be avoided
+    while ! modified_route=$(remove_opt_keyword      "$modified_route") ; do : ; done
+    # The script adds the freq keyword, if it is already present, 
+    # a syntax error will occour. It needs to be removed and re-added (with options).
+    while ! modified_route=$(remove_freq_keyword     "$modified_route") ; do : ; done
+    if [[ -z $use_freq_opts ]] ; then 
+      additional_keywords+=("Freq")
+    else
+      additional_keywords+=("Freq($use_freq_opts)")
+    fi
+    # Temperature/Pressure should be added via switches
+    while ! modified_route=$(remove_temp_keyword     "$modified_route") ; do : ; done
+    additional_keywords+=("$use_temp_keyword")
+    while ! modified_route=$(remove_pressure_keyword "$modified_route") ; do : ; done
+    additional_keywords+=("$use_pres_keyword")
+    # The guess/geom keyword will be added, it will clash if already present
+    while ! modified_route=$(remove_guess_keyword    "$modified_route") ; do : ; done
+    additional_keywords+=("guess(read)")
+    while ! modified_route=$(remove_geom_keyword     "$modified_route") ; do : ; done
+    additional_keywords+=("geom(check)")
+    # Population analysis doesn't work well with frequency runs
+    while ! modified_route=$(remove_pop_keyword      "$modified_route") ; do : ; done
+    # Writing additional output does not work well with frequency runs
+    while ! modified_route=$(remove_output_keyword   "$modified_route") ; do : ; done
+    
+    if modified_route=$(remove_gen_keyword "$modified_route") ; then
+      debug "No gen keyword present."
+    else
+      warning "Additional basis set specifications have not been read,"
+      warning "but will be retrieved from the checkpointfile."
+      while ! modified_route=$(remove_gen_keyword "$modified_route") ; do : ; done
+      additional_keywords+=('ChkBasis')
+      if check_denfit_keyword "$modified_route" ; then
+        debug "No 'DenFit' present."
+      else
+        warning "Please check density fitting settings are compatible with 'ChkBasis'."
+      fi
+    fi
+
+    # Add the custom route options
+    additional_keywords+=("$use_custom_route_keywords")
+    route_section="$modified_route ${additional_keywords[*]}"
+
+    local verified_checkpoint
+    if [[ -z $checkpoint ]] ; then
+      checkpoint="${jobname}.chk"
+      # Check if the guessed checkpointfile exists
+      # (We'll trust the user if it was specified in the input file,
+      #  after all the calculation might not be completed yet.)
+      if verified_checkpoint=$(test_file_location "$checkpoint") ; then
+        debug "verified_checkpoint=$verified_checkpoint"
+        fatal "Cannot find '$verified_checkpoint'."
+      fi
+    else
+      old_checkpoint="$checkpoint"
+    fi
+
+    # Assign new checkpoint/inputfile
+    if [[ -z $use_file_suffix ]] ; then
+      jobname="${jobname}.freq"
+    else
+      jobname="${jobname}.freq.$use_file_suffix"
+    fi
+    checkpoint="${jobname}.chk"
+    inputfile="${jobname}.com"
+   
+    backup_if_exists "$inputfile"
+
+    # Throw away the body of the input file
+    unset inputfile_body
+
+    write_g16_input_file > "$inputfile"
+    message "Written modified inputfile '$inputfile'."
+    # validate_g16_route "$route_section"
 }
 
 #
@@ -172,25 +249,113 @@ process_inputfile ()
 
 process_options ()
 {
+  ##Needs complete rework
+
+    #hlp   Options:
+    #hlp    
     local OPTIND=1 
 
-    while getopts :sh options ; do
-        #hlp   Options:
-        #hlp    
+    while getopts :o:RT:P:r:t:sh options ; do
         case $options in
+          #hlp   -o <ARG>   Adds options <ARG> to the frequency keyword.
+          #hlp              May be specified multiple times.
+          #hlp              The stack will be collated, but no sanity check will be performed.
+          #hlp              Example Options: NoRaman, VCD, ReadFC
+          #hlp
+          o) 
+            if [[ -z $use_freq_opts ]] ; then
+              use_freq_opts="$OPTARG"
+            else
+              use_freq_opts="$use_freq_opts, $OPTARG" 
+            fi
+            ;;
+
+          #hlp   -R         Writes a property run input file to redo a frequency calculation.
+          #hlp              Adds option 'ReadFC' to the frequency option list.
+          #hlp              Should be specified with a temperature or pressure
+          #hlp              via the '-T <ARG>' or '-P <ARG>' switches.
+          #hlp              No check is performed whether the supplied input file is a
+          #hlp              frequency calculation.
+          #hlp
+          R) 
+            g16_checkpoint_save="false" 
+            if [[ -z $use_freq_opts ]] ; then
+              use_freq_opts="ReadFC"
+            else
+              use_freq_opts="ReadFC, $use_freq_opts"
+            fi
+            warning "If not based on a frequency calculation, this will produce an error."
+            ;;
+
+          #hlp   -T <ARG>   Specify temperature in kelvin.
+          #hlp              Writes 'Temperature=<ARG>' to the route section. 
+          #hlp              If specified multiple times, only the last one has an effect.
+          #hlp              It will, however, mess with the filename.
+          #hlp 
+          T)
+            if is_float "$OPTARG" ; then
+              use_temp_keyword="Temperature=$OPTARG"
+              use_file_suffix="T${OPTARG//\./-}${use_file_suffix}"
+            elif is_integer "$OPTARG" ; then
+              use_temp_keyword="Temperature=${OPTARG}.0"
+              use_file_suffix="T${OPTARG//\./-}${use_file_suffix}"
+            else
+              fatal "Value '$OPTARG' for the temperature is no (floating point) number."
+            fi
+            ;;
+
+          #hlp   -P <ARG>   Specify pressure in atmosphere.
+          #hlp              Writes 'Pressure=<ARG>' to the route section. 
+          #hlp              If specified multiple times, only the last one has an effect.
+          #hlp              It will, however, mess with the filename.
+          #hlp 
+          P) 
+            if is_float "$OPTARG" ; then
+              use_pres_keyword="Pressure=$OPTARG"
+              use_file_suffix="P${OPTARG//\./-}${use_file_suffix}"
+            elif is_integer "$OPTARG" ; then
+              use_temp_keyword="Pressure=${OPTARG}.0"
+              use_file_suffix="P${OPTARG//\./-}${use_file_suffix}"
+            else
+              fatal "Value '$OPTARG' for the pressure is no (floating point) number."
+            fi
+            ;;
+
+          #hlp   -r <ARG>   Adds custom command <ARG> to the route section.
+          #hlp              May be specified multiple times.
+          #hlp              The stack will be collated, but no sanity check will be performed.
+          #hlp 
+          r) 
+            use_custom_route_keywords="$use_custom_route_keywords $OPTARG" 
+            ;;
+
+          #hlp   -t <ARG>   Adds <ARG> to the end (tail) of the new input file.
+          #hlp              If specified multiple times, each argument goes to a new line.
+          #hlp 
+          t) 
+            use_custom_tail[${#use_custom_tail[@]}]="$OPTARG" 
+            ;;
 
           #hlp     -s       Suppress logging messages of the script.
           #hlp              (May be specified multiple times.)
           #hlp
-            s) (( stay_quiet++ )) ;;
+          s) 
+            (( stay_quiet++ )) 
+            ;;
 
           #hlp     -h       this help.
           #hlp
-            h) helpme ;;
+          h) 
+            helpme 
+            ;;
 
-           \?) fatal "Invalid option: -$OPTARG." ;;
+          \?) 
+            fatal "Invalid option: -$OPTARG." 
+            ;;
 
-            :) fatal "Option -$OPTARG requires an argument." ;;
+          :) 
+            fatal "Option -$OPTARG requires an argument." 
+            ;;
 
         esac
     done
