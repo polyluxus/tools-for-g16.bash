@@ -255,7 +255,7 @@ process_options ()
     #hlp    
     local OPTIND=1 
 
-    while getopts :o:RT:P:r:t:sh options ; do
+    while getopts :o:RT:P:r:t:m:p:d:sh options ; do
         case $options in
           #hlp   -o <ARG>   Adds options <ARG> to the frequency keyword.
           #hlp              May be specified multiple times.
@@ -335,6 +335,41 @@ process_options ()
           t) 
             use_custom_tail[${#use_custom_tail[@]}]="$OPTARG" 
             ;;
+
+          # Link 0 related options
+          #hlp     -m <ARG> Define the total memory to be used in megabyte.
+          #hlp              The total request will be larger to account for 
+          #hlp              overhead which Gaussian may need. (Default: 512)
+          #hlp
+            m) 
+               validate_integer "$OPTARG" "the memory"
+               if (( OPTARG == 0 )) ; then
+                 fatal "Memory limit must not be zero."
+               fi
+               requested_memory="$OPTARG" 
+               ;;
+
+          #hlp     -p <ARG> Define number of professors to be used. (Default: 4)
+          #hlp
+            p) 
+               validate_integer "$OPTARG" "the number of threads"
+               if (( OPTARG == 0 )) ; then
+                 fatal "Number of threads must not be zero."
+               fi
+               requested_numCPU="$OPTARG" 
+               ;;
+
+          #hlp     -d <ARG> Define disksize via the MaxDisk keyword (MB).
+          #hlp              This option does not set a parameter for the queueing system,
+          #hlp              but will only modify the input file with the size specification.
+          #hlp              
+            d) 
+               validate_integer "$OPTARG" "the 'MaxDisk' keyword"
+               if (( OPTARG == 0 )) ; then
+                 fatal "The keyword 'MaxDisk' must not be zero."
+               fi
+               requested_maxdisk="$OPTARG"
+               ;;
 
           #hlp     -s       Suppress logging messages of the script.
           #hlp              (May be specified multiple times.)

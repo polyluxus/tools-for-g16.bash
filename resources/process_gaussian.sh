@@ -195,7 +195,7 @@ find_temp_press ()
     local readline="$1" pattern pattern_temp pattern_pres
     pattern_temp="Temperature[[:space:]]+([0-9]+\\.[0-9]+)[[:space:]]+Kelvin\\."
     pattern_pres="Pressure[[:space:]]+([0-9]+\\.[0-9]+)[[:space:]]+Atm\\."
-    pattern="^[[:space:]]*$pattern_temp[[:space:]]+$pattern_pres[[:space:]]*$"
+    pattern="^[[:space:]]*${pattern_temp}[[:space:]]+${pattern_pres}[[:space:]]*$"
     if [[ $readline =~ $pattern ]] ; then
       debug "temperature: ${BASH_REMATCH[1]}; pressure: ${BASH_REMATCH[1]}"
       echo "${BASH_REMATCH[1]}" # Temperature
@@ -799,7 +799,7 @@ remove_any_keyword ()
     # and inter-keyword delimiters are set to spaces only also, 
     # it is safe to use that as a criterion to remove unnecessary keywords.
     # The test pattern is extended to catch the whole keyword including options.
-    local extended_test_pattern="($test_pattern[^[:space:]]*)([[:space:]]+|$)"
+    local extended_test_pattern="(${test_pattern}[^[:space:]]*)([[:space:]]+|$)"
     if [[ $test_line =~ $extended_test_pattern ]] ; then
       local found_pattern=${BASH_REMATCH[1]}
       debug "Found pattern: '$found_pattern'" 
@@ -1072,6 +1072,7 @@ write_g16_input_file ()
     # checkpoint is a global variable
     if [[ ! -z $old_checkpoint ]] ; then
       if verified_old_checkpoint=$(test_file_location "$old_checkpoint") ; then
+        debug "verified_old_checkpoint=$verified_old_checkpoint"
         warning "Checkpoint file '$old_checkpoint' does not exist."
         warning "Gaussian will likely fail to run this calculation."
       else
@@ -1129,6 +1130,11 @@ write_g16_input_file ()
     debug "Lines till end of file: ${#inputfile_body[@]}"
     debug "Content: ${inputfile_body[*]}"
     printf "%s\\n" "${inputfile_body[@]}"
+    if (( ${#use_custom_tail[*]} > 0 )) ; then
+      debug "Additional lines for input: ${#use_custom_tail[@]}"
+      debug "Content: ${use_custom_tail[*]}"
+      printf "%s\\n" "${use_custom_tail[@]}"
+    fi
     # The input file must be terminated by a blank line
     echo ""
     # Add some information about the creation of the script
