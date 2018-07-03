@@ -146,7 +146,8 @@ validate_g16_route ()
     local read_route="$1"
     local g16_output
     debug "Read the following route section:"
-    debug "$readroute"
+    debug "$read_route"
+    [[ -z $read_route ]] && warning "Route section appears to be empty."
     if g16_output=$($g16_testrt_cmd "$read_route" 2>&1) ; then
       message "Route section has no syntax errors."
       debug "$g16_output"
@@ -161,6 +162,7 @@ process_inputfile ()
 {
     local testfile="$1"
     debug "Processing Input: $testfile"
+    read_g16_input_file "$testfile"
     validate_g16_route "$route_section"
 }
 
@@ -170,13 +172,11 @@ process_inputfile ()
 
 process_options ()
 {
-  ##Needs complete rework
-
-    #hlp   Options:
-    #hlp    
     local OPTIND=1 
 
     while getopts :sh options ; do
+        #hlp   Options:
+        #hlp    
         case $options in
 
           #hlp     -s       Suppress logging messages of the script.

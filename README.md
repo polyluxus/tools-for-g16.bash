@@ -47,9 +47,16 @@ This reposity comes with the following scripts (and files):
  * `g16.submit.sh`
    This tool parses and then submits a Gaussian 16 inputfile to a queueing system.
 
+ * `g16.testroute.sh`
+   This tool parses a Gaussian 16 inputfile and tests for syntax errors with the
+   Gaussian 16 utility `testrt`.
+
+ * `g16.freqinput.sh`
+   This tool reads in a Gaussian 16 inputfile and adds relevant keywords for a frequency calculation.
+
  * `g16.tools.rc`
    This file contains the settings for the scripts.
 
 All of the scripts come with a `-h` switch to give a summary of the available options.
 
-Martin (0.0.8, 2018-06-25)
+Martin (0.0.9, 2018-07-03)

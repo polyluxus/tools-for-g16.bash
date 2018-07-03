@@ -195,7 +195,7 @@ find_temp_press ()
     local readline="$1" pattern pattern_temp pattern_pres
     pattern_temp="Temperature[[:space:]]+([0-9]+\\.[0-9]+)[[:space:]]+Kelvin\\."
     pattern_pres="Pressure[[:space:]]+([0-9]+\\.[0-9]+)[[:space:]]+Atm\\."
-    pattern="^[[:space:]]*$pattern_temp[[:space:]]+$pattern_pres[[:space:]]*$"
+    pattern="^[[:space:]]*${pattern_temp}[[:space:]]+${pattern_pres}[[:space:]]*$"
     if [[ $readline =~ $pattern ]] ; then
       debug "temperature: ${BASH_REMATCH[1]}; pressure: ${BASH_REMATCH[1]}"
       echo "${BASH_REMATCH[1]}" # Temperature
@@ -392,22 +392,15 @@ get_chk_file ()
     debug "Checkpoint file is '$checkpoint'"
 }
 
-warn_oldchk_directive ()
+get_oldchk_file ()
 {
-    # In some cases the OldChk needs to be removed, issue a warning, let the main script handle the rest.
     local parseline="$1"
     local pattern="^[[:space:]]*%[Oo][Ll][Dd][Cc][Hh][Kk]=([^[:space:]]+)([[:space:]]+|$)"
     # The whole match (line, index 0) needs to be returned
-    local rematch_index=0 
-    local oldchk_read
+    local rematch_index=1 
     debug "Testing for OldChk."
-    if oldchk_read=$(parse_link0 "$parseline" "$pattern" "$rematch_index") ; then
-      warning "Link0 directive '$oldchk_read' found."
-      return 0
-    else
-      debug "Not an OldChk directive."
-      return 1
-    fi
+    old_checkpoint=$(parse_link0 "$parseline" "$pattern" "$rematch_index") || return 1
+    debug "Link0 directive '%OldChk=$old_checkpoint' found."
 }
 
 warn_nprocs_directive ()
@@ -511,6 +504,10 @@ read_g16_input_file ()
         if [[ -z $checkpoint ]] ; then
           # If the chk directive is found, check the next line
           get_chk_file "$line" && continue
+        fi
+        if [[ -z $old_checkpoint ]] ; then
+          # If the chk directive is found, check the next line
+          get_oldchk_file "$line" && continue
         fi
         if warn_nprocs_directive "$line" ; then
           # If the nprocs directive is found a warning will be issued,
@@ -802,7 +799,7 @@ remove_any_keyword ()
     # and inter-keyword delimiters are set to spaces only also, 
     # it is safe to use that as a criterion to remove unnecessary keywords.
     # The test pattern is extended to catch the whole keyword including options.
-    local extended_test_pattern="($test_pattern[^[:space:]]*)([[:space:]]+|$)"
+    local extended_test_pattern="(${test_pattern}[^[:space:]]*)([[:space:]]+|$)"
     if [[ $test_line =~ $extended_test_pattern ]] ; then
       local found_pattern=${BASH_REMATCH[1]}
       debug "Found pattern: '$found_pattern'" 
@@ -816,7 +813,7 @@ remove_any_keyword ()
     fi
 }
 
-remove_maxdisk ()
+remove_maxdisk_keyword ()
 {
     # Assigns the maxdisk keyword to the pattern
     local test_routesection="$1"
@@ -824,6 +821,89 @@ remove_maxdisk ()
     pattern="[Mm][Aa][Xx][Dd][Ii][Ss][Kk]"
     remove_any_keyword "$test_routesection" "$pattern" || return 1
 }
+
+remove_opt_keyword ()
+{
+    # Assigns the opt keyword to the pattern
+    local test_routesection="$1"
+    local pattern
+    pattern="[Oo][Pp][Tt]"
+    remove_any_keyword "$test_routesection" "$pattern" || return 1
+}
+
+remove_freq_keyword ()
+{
+    # Assigns the freq keyword to the pattern
+    local test_routesection="$1"
+    local pattern
+    pattern="[Ff][Rr][Ee][Qq]"
+    remove_any_keyword "$test_routesection" "$pattern" || return 1
+}
+
+remove_temp_keyword ()
+{
+    # Assigns the temp keyword to the pattern
+    local test_routesection="$1"
+    local pattern
+    pattern="[Tt][Ee][Mm][Pp]"
+    remove_any_keyword "$test_routesection" "$pattern" || return 1
+}
+
+remove_pressure_keyword ()
+{
+    # Assigns the pressure keyword to the pattern
+    local test_routesection="$1"
+    local pattern
+    pattern="[Pp][Rr][Ee][Ss][Ss][Uu][Rr][Ee]"
+    remove_any_keyword "$test_routesection" "$pattern" || return 1
+}
+
+remove_guess_keyword ()
+{
+    # Assigns the guess keyword to the pattern
+    local test_routesection="$1"
+    local pattern
+    pattern="[Gg][Uu][Ee][Ss][Ss]"
+    remove_any_keyword "$test_routesection" "$pattern" || return 1
+}
+
+remove_geom_keyword ()
+{
+    # Assigns the geom keyword to the pattern
+    local test_routesection="$1"
+    local pattern
+    pattern="[Gg][Ee][Oo][Mm]"
+    remove_any_keyword "$test_routesection" "$pattern" || return 1
+}
+
+remove_gen_keyword ()
+{
+    # Assigns the gen keyword to the pattern
+    local test_routesection="$1"
+    local pattern
+    pattern="[Gg][Ee][Nn]"
+    remove_any_keyword "$test_routesection" "$pattern" || return 1
+}
+
+remove_pop_keyword ()
+{
+    # Assigns the pop keyword to the pattern
+    local test_routesection="$1"
+    local pattern
+    pattern="[Pp][Oo][Pp]"
+    remove_any_keyword "$test_routesection" "$pattern" || return 1
+}
+
+remove_output_keyword ()
+{
+    # Assigns the pop keyword to the pattern
+    local test_routesection="$1"
+    local pattern
+    pattern="[Oo][Uu][Tt][Pp][Uu][Tt]"
+    remove_any_keyword "$test_routesection" "$pattern" || return 1
+}
+
+
 
 # Others (?)
 
@@ -877,11 +957,48 @@ check_freq_keyword ()
     return 1
 }
 
+check_denfit_keyword ()
+{
+    debug "Checking if the Denfit keyword is set in the route section."
+    # Assigning the allcheck option to the pattern
+    local parseline="$1"
+    local pattern="[Dd][Ee][Nn][Ff][Ii][Tt]"
+    local keyword_alias="Denfit"
+    debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
+    if check_any_keyword "$parseline" "$pattern" ; then
+      message "Keyword '$keyword_alias' found in input stream."
+      debug "Again returning with 0."
+      return 0
+    fi
+    debug "Keyword '$keyword_alias' not found. (Return 1)"
+    return 1
+}
+
+check_gen_keyword ()
+{
+    debug "Checking if the Gen keyword is set in the route section."
+    # Assigning the allcheck option to the pattern
+    local parseline="$1"
+    local pattern="[Ge][Ee][Nn]"
+    local keyword_alias="Gen"
+    debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
+    if check_any_keyword "$parseline" "$pattern" ; then
+      message "Keyword '$keyword_alias' found in input stream."
+      debug "Again returning with 0."
+      return 0
+    fi
+    debug "Keyword '$keyword_alias' not found. (Return 1)"
+    return 1
+}
+
+
+
+
 #
 # modified input files
 #
 
-validate_write_in_out_jobname ()
+extract_jobname_inoutnames ()
 {
     # Assigns the global variables inputfile outputfile jobname
     # Checks is locations are read/writeable
@@ -921,17 +1038,25 @@ validate_write_in_out_jobname ()
       done
       debug "Jobname: $jobname; Input suffix: $input_suffix; Output suffix: $output_suffix."
     fi
+    outputfile="$jobname.$output_suffix"
+}
+
+validate_write_in_out_jobname ()
+{
+    # Assigns the global variables inputfile outputfile jobname
+    # Checks is locations are read/writeable
+    local testfile="$1"
+    extract_jobname_inoutnames "$testfile"
 
     # Check special ending of input file
     # it is only necessary to check agains one specific suffix 'gjf' as that is hard coded in main script
-    if [[ "$input_suffix" == "gjf" ]] ; then
+    if [[ "${inputfile##*}" == "gjf" ]] ; then
       warning "The chosen inputfile will be overwritten."
       backup_file "$inputfile" "${inputfile}.bak"
       inputfile="${inputfile}.bak"
     fi
 
     # Check if an outputfile exists and prevent overwriting
-    outputfile="$jobname.$output_suffix"
     backup_if_exists "$outputfile"
 
     # Display short logging message
@@ -943,8 +1068,18 @@ validate_write_in_out_jobname ()
 write_g16_input_file ()
 {
     debug "Writing new (modified) input file."
-    local verified_checkpoint
+    local verified_checkpoint verified_old_checkpoint
     # checkpoint is a global variable
+    if [[ ! -z $old_checkpoint ]] ; then
+      if verified_old_checkpoint=$(test_file_location "$old_checkpoint") ; then
+        debug "verified_old_checkpoint=$verified_old_checkpoint"
+        warning "Checkpoint file '$old_checkpoint' does not exist."
+        warning "Gaussian will likely fail to run this calculation."
+      else
+        debug "Found checkpoint file."
+      fi
+      echo "%OldChk=$old_checkpoint"
+    fi
     [[ -z $checkpoint ]] && checkpoint="${jobname}.chk"
     if verified_checkpoint=$(test_file_location "$checkpoint") ; then
       debug "verified_checkpoint=$verified_checkpoint"
@@ -954,6 +1089,11 @@ write_g16_input_file ()
       warning "This may lead to an unusable file and loss of data."
       message "If you are attempting to read in data from a previous run, use"
       message "the directive '%OldChk=<previous_calculation>' instead."
+      echo "%Chk=$verified_checkpoint"
+    fi
+    if [[ "$g16_checkpoint_save" == "false" ]] ; then
+      message "Named checkpoint files will not be saved."
+      echo "%NoSave"
     fi
     # requested_numCPU is a global variable
     echo "%NProcShared=$requested_numCPU"
@@ -968,7 +1108,7 @@ write_g16_input_file ()
     # requested_maxdisk is a global variable
     [[ -z $requested_maxdisk ]] && fatal "Value for keyword 'MaxDisk' is unset, probably compromised rc."
     # Remove any existing MaxDisk keyword to add one with script value.
-    while ! route_section=$(remove_maxdisk "$route_section") ; do : ; done
+    while ! route_section=$(remove_maxdisk_keyword "$route_section") ; do : ; done
     use_route_section=$(collate_route_keywords "$route_section MaxDisk=${requested_maxdisk}MB")
     # Fold the route section to 80 characters for better readability
     fold -w80 -c -s <<< "$use_route_section"
@@ -990,6 +1130,11 @@ write_g16_input_file ()
     debug "Lines till end of file: ${#inputfile_body[@]}"
     debug "Content: ${inputfile_body[*]}"
     printf "%s\\n" "${inputfile_body[@]}"
+    if (( ${#use_custom_tail[*]} > 0 )) ; then
+      debug "Additional lines for input: ${#use_custom_tail[@]}"
+      debug "Content: ${use_custom_tail[*]}"
+      printf "%s\\n" "${use_custom_tail[@]}"
+    fi
     # The input file must be terminated by a blank line
     echo ""
     # Add some information about the creation of the script
