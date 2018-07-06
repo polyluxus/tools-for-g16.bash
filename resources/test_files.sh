@@ -51,7 +51,7 @@ test_file_location ()
         (( savesuffix++ ))
         debug "The file '${file_return}.${savesuffix}' exists."
       done
-      warning "File '$file_return' exists."
+      debug "File '$file_return' exists."
       echo "${file_return}.${savesuffix}"
         debug "There is no file '${file_return}.${savesuffix}'. Return 1."
       return 1
@@ -71,6 +71,7 @@ backup_if_exists ()
 {
     local move_target
     move_target=$(test_file_location "$1") && return
+    warning "File '$1' exists."
     backup_file "$1" "$move_target"
 }
 

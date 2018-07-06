@@ -1082,6 +1082,7 @@ write_g16_input_file ()
     fi
     [[ -z $checkpoint ]] && checkpoint="${jobname}.chk"
     if verified_checkpoint=$(test_file_location "$checkpoint") ; then
+      message "Checkpoint file '$checkpoint' does not exists and will be created."
       debug "verified_checkpoint=$verified_checkpoint"
       echo "%Chk=$verified_checkpoint"
     else
