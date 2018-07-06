@@ -13,8 +13,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-g16.bash"
-version="0.0.8"
-versiondate="2018-06-25"
+version="0.0.9"
+versiondate="2018-07-03"
 
 #
 # Standard commands for external software:
@@ -29,6 +29,8 @@ g16_scratch="$TEMP"
 g16_overhead=2000
 # The 2000 might be a very conservative guess, but additionally
 # the memory will be scaled by (CPU + 1)/CPU (at least in the submit script).
+# Checkpoint files should be saved by default
+g16_checkpoint_save="true"
 # On the RWTH cluster Gaussian is loaded via a module system,
 # the names (in correct order) of the modules:
 g16_modules[0]="CHEMISTRY"
@@ -36,6 +38,9 @@ g16_modules[1]="gaussian/16.a03_bin"
 # Options relating to producing a formatted checkpoint file
 g16_formchk_cmd="wrapper.g16 formchk" # ( Current workaround )
 g16_formchk_opts="-3"
+# Options related to testing the route section
+g16_testrt_cmd="wrapper.g16 testrt" # ( Current workaround )
+# (There are no options for this utility.)
 
 # Options related to use open babel
 obabel_cmd="obabel"

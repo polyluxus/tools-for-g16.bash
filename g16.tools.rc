@@ -24,6 +24,7 @@
   g16_modules[1]="gaussian/16.a03_bin"
 
 # Set the commands or paths for utilities:
+#
 # - formatted checkpoint files
 #   
 #   Tools-for-g16 wrapper (if found in path)
@@ -33,13 +34,24 @@
 #   Local install with formchk found in PATH
 #   g16_formchk_cmd="formchk" 
 #   The hard coded path to the binary works also.
-#   bin_formchk_cmd="/path/to/g09/formchk"
+#   bin_formchk_cmd="/path/to/g16/formchk"
 #
 #   No options should be included in the above, but can be set:
     g16_formchk_opts="-3"
 #   If no options should be given to fromchk, the leave set it to empty,
 #   g16_formchk_opts=""
 #   otherwise the scripts will use '-3' as option.
+#
+# - checking the route section
+#   
+#   Tools-for-g16 wrapper (if found in path)
+#   g16_testrt_cmd="g16.wrapper.sh testrt" # ( - TO DO - )
+#   A command that executes testrt
+    g16_testrt_cmd="wrapper.g16 testrt" # ( Current workaround )
+#   Local install with testrt found in PATH
+#   g16_testrt_cmd="testrt" 
+#   The hard coded path to the binary works also.
+#   bin_testrt_cmd="/path/to/g16/testrt"
 #
 
 # This script requires an installation of Open Babel.
