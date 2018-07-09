@@ -1090,7 +1090,7 @@ write_g16_input_file ()
       warning "This may lead to an unusable file and loss of data."
       message "If you are attempting to read in data from a previous run, use"
       message "the directive '%OldChk=<previous_calculation>' instead."
-      echo "%Chk=$verified_checkpoint"
+      echo "%Chk=$checkpoint"
     fi
     if [[ "$g16_checkpoint_save" == "false" ]] ; then
       message "Named checkpoint files will not be saved."
