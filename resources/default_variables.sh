@@ -31,7 +31,9 @@ g16_overhead=2000
 # the memory will be scaled by (CPU + 1)/CPU (at least in the submit script).
 # Checkpoint files should be saved by default
 g16_checkpoint_save="true"
-# On the RWTH cluster Gaussian is loaded via a module system,
+# If a modular software management is available, use it?
+load_modules="true"
+# For example: On the RWTH cluster Gaussian is loaded via a module system,
 # the names (in correct order) of the modules:
 g16_modules[0]="CHEMISTRY"
 g16_modules[1]="gaussian/16.a03_bin"

@@ -42,9 +42,9 @@ message ()
         esac
       fi
       if (( stay_quiet <= 0 )) ; then
-        echo "INFO   : " "$line" >&3
+        echo "INFO    : $line" >&3
       else
-        debug "(info   ) " "$line"
+        debug "(info)     $line"
       fi
     done <<< "$*"
     return $exit_status
@@ -55,9 +55,9 @@ warning ()
     local line
     while read -r line || [[ -n "$line" ]] ; do
       if (( stay_quiet <= 1 )) ; then
-        echo "WARNING: " "$line" >&2
+        echo "WARNING : $line" >&2
       else
-        debug "(warning) " "$line"
+        debug "(warning)  $line"
       fi
     done <<< "$*"
     return 1
@@ -68,9 +68,9 @@ fatal ()
     local line
     while read -r line || [[ -n "$line" ]] ; do
       if (( stay_quiet <= 2 )) ; then 
-        echo "ERROR  : " "$line" >&2
+        echo "ERROR   : $line" >&2
       else
-        debug "(error  ) " "$line"
+        debug "(error)    $line"
       fi
     done <<< "$*"
     exit 1
@@ -80,7 +80,7 @@ debug ()
 {
     local line
     while read -r line || [[ -n "$line" ]] ; do
-      echo "DEBUG  : " "(${FUNCNAME[1]}) $line" >&4
+      echo "DEBUG   : (${FUNCNAME[1]}) $line" >&4
     done <<< "$*"
 }    
 
