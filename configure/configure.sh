@@ -287,7 +287,7 @@ ask_gaussian_checkpoint_save ()
   debug "use_g16_scheckpoint_save=$use_g16_scheckpoint_save"
 }
 
-ask_modules ()
+ask_load_modules ()
 {
   ask "If a modular software management is available, would you like to use it?"
   use_load_modules=$(read_true_false)
@@ -483,7 +483,8 @@ get_configuration_from_file ()
 {
   # Check for settings in three default locations (increasing priority):
   #   install path of the script, user's home directory, current directory
-  g16_tools_rc_loc="$(get_rc "$scriptpath/.." "/home/$USER" "$PWD")"
+  g16_tools_path=$(get_absolute_dirname "$scriptpath/../g16.tools.rc")
+  g16_tools_rc_loc="$(get_rc "$g16_tools_path" "/home/$USER" "$PWD")"
   debug "g16_tools_rc_loc=$g16_tools_rc_loc"
   
   # Load custom settings from the rc
@@ -561,11 +562,15 @@ get_configuration_interactive ()
   debug "use_g16_checkpoint_save=$use_g16_checkpoint_save"
 
   use_load_modules="$load_modules"
+  use_g16_modules=( "${g16_modules[@]}" )
   if [[ -z $use_load_modules ]] ; then
     ask_load_modules
   else
     message "Recovered setting : 'load_modules=$use_load_modules'"
-    ask "Would you like to change this setting?"
+    if (( ${#use_g16_modules[@]} > 0 )) ; then
+      message "Recovered setting : 'g16_modules=( ${use_g16_modules[*]} )"
+    fi
+    ask "Would you like to change any of these settings?"
     if read_boolean ; then ask_load_modules ; fi
   fi
   debug "use_load_modules=$use_load_modules"
@@ -669,7 +674,233 @@ get_configuration_interactive ()
 
 }
 
+print_configuration ()
+{
+  # Write the configuration file 
+  echo "#!/bin/bash"
+  echo "# This is an an automatically generated configuration file."
+  echo ""
 
+  echo "# General path to the g16 directory (this should work on every system)"
+  echo "# [Default: /path/is/not/set]"
+  echo "#"
+  if [[ -z $use_g16_installpath ]] ; then
+    echo "# g16_installpath=\"/path/is/not/set\""
+  else
+    echo "  g16_installpath=\"$use_g16_installpath\""
+  fi
+  echo ""
+
+  echo "# Define where scratch files shall be written to"
+  # shellcheck disable=SC2016
+  echo '# [Default: $TEMP]'
+  echo "#"
+  if [[ -z $use_g16_scratch ]] ; then
+    # shellcheck disable=SC2016
+    echo '# g16_scratch="$TEMP"'
+  else
+    echo "  g16_scratch=\"$use_g16_scratch\""
+  fi
+  echo ""
+
+  echo "# Define the overhead you'd like to give Gaussian in MB "
+  echo "# [Default: 2000]"
+  echo "#"
+  if [[ -z $use_g16_overhead ]] ; then
+    echo "# g16_overhead=2000"
+  else
+    echo "  g16_overhead=$use_g16_overhead"
+  fi
+  echo ""
+
+  echo "# Save checkpoint files by default."
+  echo "#"
+  if [[ -z $use_g16_checkpoint_save ]] ; then
+    echo "# g16_checkpoint_save=true"
+  else
+    echo "# g16_checkpoint_save=\"$use_g16_checkpoint_save\""
+  fi
+  echo ""
+
+  echo "# If a modular software management is available, use it?"
+  echo "# [Default: true]"
+  echo "#"
+  if [[ -z $use_load_modules ]] ; then
+    echo "# load_modules=true"
+  else
+    echo "  load_modules=\"$use_load_modules\""
+  fi
+  echo "#"
+  echo "# Enter the names of the modules to be loaded here."
+  echo "# They have to appear in the correct order (if they happen to depend on each other)."
+  echo "# "
+  if (( ${#use_g16_modules[@]} == 0 )) ; then
+    echo "# g16_modules[0]=\"DependOn\""
+    echo "# g16_modules[1]=\"gaussian/version\""
+  else
+    local print_g16_modules
+    print_g16_modules=$(declare -p use_g16_modules)
+    print_g16_modules="${print_g16_modules/use_/}"
+    echo "$print_g16_modules"
+  fi
+  echo ""
+
+  echo "# Set the commands or paths for utilities:"
+  echo "#"
+  echo "# - formatted checkpoint files"
+  echo "#   "
+  echo "#   Command that accesses formcheck."
+  echo "#   Wrappers work, command in PATH works, path to the binary works"
+  echo "#"
+  if [[ -z $use_g16_formchk_cmd ]] ; then
+    echo "#   g16_formchk_cmd=\"g16.wrapper.sh formchk\""
+    echo "#   g16_formchk_cmd=\"formchk\""
+    echo "#   bin_formchk_cmd=\"/path/to/g16/formchk\""
+    echo "#"
+    echo "#   No options should be included in the above, but can be set:"
+    echo "#   g16_formchk_opts=\"-3\""
+    echo "#   If no options should be given to fromchk, the leave set it to empty,"
+    echo "#   g16_formchk_opts=\"\""
+    echo "#   otherwise the scripts will use '-3' as option."
+  else
+    echo "    g16_formchk_cmd=\"$use_g16_formchk_cmd\""
+    echo "#   No options should be included in the above, but can be set:"
+    echo "    g16_formchk_opts=\"$use_g16_formchk_opts\""
+  fi
+  echo "#"
+
+  echo "# - checking the route section (this is similar to above)"
+  echo "#   "
+  if [[ -z $use_g16_testrt_cmd ]] ; then
+    echo "#   g16_testrt_cmd=\"testrt\""
+  else
+    echo "    g16_testrt_cmd=\"$use_g16_testrt_cmd\""
+  fi
+  echo "#"
+  echo ""
+
+  echo "# This script requires an installation of Open Babel."
+  echo "# Syntax used is: obabel [-i<in-type>] <in-file> [-o<out-type>] -O<out-file>"
+  echo "# Restrictions as above apply."
+  echo "#"
+  if [[ -z $use_obabel_cmd ]] ; then 
+    echo "# obabel_cmd=\"obabel\""
+  else
+    echo "  obabel_cmd=\"$use_obabel_cmd\""
+  fi
+  echo "#"
+  echo ""
+
+  echo "# Default files and suffixes"
+  echo "# "
+  if [[ -z $use_g16_input_suffix ]] ; then
+    echo "# g16_input_suffix=\"com\""
+  else
+    echo "  g16_input_suffix=\"$use_g16_input_suffix\""
+  fi
+  if [[ -z $use_g16_output_suffix ]] ; then
+    echo "# g16_output_suffix=\"log\""
+  else
+    echo "  g16_output_suffix=\"$use_g16_output_suffix\""
+  fi
+  echo "#"
+  echo ""
+
+  # Needs work (and functions)
+  echo "# Default options for printing and verbosity"
+  echo "#"
+  echo "  values_separator=\" \" # (space separated values)"
+  echo "  output_verbosity=0"
+  echo "  stay_quiet=0"
+  echo ""
+
+  echo "#"
+  echo "# Default values for the queueing system"
+  echo "#"
+  echo ""
+  echo "# Specify default Walltime in [[HH:]MM:]SS"
+  echo "#"
+  if [[ -z $use_requested_walltime ]] ; then
+    echo "# requested_walltime=\"72:00:00\""
+  else
+    echo "  requested_walltime=\"$use_requested_walltime\""
+  fi
+  echo ""
+
+  echo "# Specify a default value for the memory (does not include overhead)"
+  echo "#"
+  if [[ -z $use_requested_memory ]] ; then
+    echo "# requested_memory=512"
+  else
+    echo "  requested_memory=\"$use_requested_memory\""
+  fi
+  echo ""
+
+  echo "# Set the number of professors doing the calculation"
+  echo "#"
+  if [[ -z $use_requested_numCPU ]] ; then
+    echo "# requested_numCPU=4"
+  else
+    echo "  requested_numCPU=\"$use_requested_numCPU\""
+  fi
+  echo ""
+
+  echo "# The default which should be written to the inputfile regarding disk space (in MB)"
+  echo "#"
+  if [[ -z $use_requested_maxdisk ]] ; then
+    echo "# requested_maxdisk=30000"
+  else
+    echo "  requested_maxdisk=\"$use_requested_maxdisk\""
+  fi
+  echo ""
+
+  echo "# Select a queueing system (pbs-gen/bsub-rwth)"
+  echo "#"
+  if [[ -z $use_request_qsys ]] ; then
+    echo "# request_qsys=\"pbs-gen\""
+  else
+    echo "  request_qsys=\"$use_request_qsys\""
+  fi
+  echo ""
+
+  echo "# Account to project (only for bsub)"
+  echo "#"
+  if [[ -z $use_bsub_project ]] ; then
+    echo "# bsub_project=default"
+  else
+    echo "  bsub_project=\"$use_bsub_project\""
+  fi
+  echo ""
+
+  echo "# Calculations will be submitted to run (hold/keep)"
+  if [[ -z $use_requested_submit_status ]] ; then
+    echo "# requested_submit_status=\"run\""
+  else
+    echo "  requested_submit_status=\"$use_requested_submit_status\""
+  fi
+  echo ""
+  echo "#"
+  echo "# End of automatic configuration, $(date)."
+}
+
+write_configuration_to_file ()
+{
+  local settings_filename
+  ask "Where do you want to store these settings?"
+  message "Predefined location: $PWD/g16.tools.rc"
+  message "Recommended location: $g16_tools_path/.g16.toolsrc"
+  settings_filename=$(read_human_input)
+  if [[ -z $settings_filename ]] ; then
+    settings_filename="$PWD/g16.tools.rc"
+  elif [[ -d "$settings_filename" ]] ; then
+    settings_filename="$settings_filename/g16.tools.rc"
+    warning "No valid filename specified, will use '$settings_filename' instead."
+  fi
+  backup_if_exists "$settings_filename"
+
+  print_configuration > "$settings_filename"
+  message "Written configuration file '$settings_filename'."
+}
 
 
 
@@ -707,6 +938,7 @@ get_scriptpath_and_source_files || exit 1
 get_configuration_from_file
 get_configuration_interactive
 
+write_configuration_to_file
 
 
 
