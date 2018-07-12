@@ -365,7 +365,6 @@ ask_g16_utilities ()
   debug "use_g16_testrt_cmd=$use_g16_testrt_cmd"
 }
 
-
 ask_other_utilities ()
 {
   ask "Which command shall be used to execute Open Babel (obabel)?"
@@ -392,6 +391,40 @@ ask_g16_default_extensions ()
   fi
   debug "use_g16_input_suffix=$use_g16_input_suffix"
   debug "use_g16_output_suffix=$use_g16_output_suffix"
+}
+
+ask_stay_quiet ()
+{
+  ask "What level of chattyness of $softwarename would you like to set?"
+  message "(0: all; 1: no info; 2: no warnings; >2: nothing)"
+  message "Skipping this section will also choose '0'."
+  use_stay_quiet=$(read_interger)
+  [[ -z $use_stay_quiet ]] && use_stay_quiet=0
+  debug "use_stay_quiet=$use_stay_quiet"
+}
+
+ask_output_verbosity ()
+{
+  ask "How much information should be printed by default when extracting information?"
+  message "This determines the short/long output form of some scripts (currently only getfreq)."
+  message "(0: least; 1: slightly more; 2: table; 3: (long) table; >3: much MORE)"
+  message "Skipping this section will also choose '0'."
+  use_output_verbosity=$(read_integer)
+  [[ -z $use_output_verbosity ]] && use_output_verbosity=0
+  debug "use_output_verbosity=$use_output_verbosity"
+} 
+
+ask_values_separator ()
+{
+  ask "What value separator would you like to use?"
+  message "Enter 'space' to use ' ', or skip this section to use the default (space)."
+  use_values_separator=$(read_human_input)
+  if [[ $use_values_separator =~ ^[[:space:]]*[Ss][Pp]([Aa]([Cc][Ee]?)?)? ]] ; then
+    use_values_separator=" "
+  elif [[ -z $use_values_separator ]] ; then
+    use_values_separator=" "
+  fi
+  debug "use_values_separator=$use_values_separator"
 }
 
 ask_qsys_details ()
@@ -628,6 +661,27 @@ get_configuration_interactive ()
   debug "use_g16_input_suffix=$use_g16_input_suffix"
   debug "use_g16_output_suffix=$use_g16_output_suffix"
 
+  use_stay_quiet="$stay_quiet"
+  [[ -z $use_stay_quiet ]] && use_stay_quiet=0
+  message "Recovered setting : 'stay_quiet=$use_stay_quiet'"
+  ask "Would you like to change this setting?"
+  if read_boolean ; then ask_stay_quiet ; fi
+  debug "use_stay_quiet=$use_stay_quiet"
+
+  use_output_verbosity="$output_verbosity"
+  [[ -z $use_output_verbosity ]] && use_output_verbosity=0
+  message "Recovered setting : 'output_verbosity=$use_output_verbosity'"
+  ask "Would you like to change this setting?"
+  if read_boolean ; then ask_output_verbosity ; fi
+  debug "use_output_verbosity=$use_output_verbosity"
+
+  use_values_separator="$values_separator"
+  [[ -z $use_values_separator ]] && use_values_separator=" "
+  message "Recovered setting : 'values_separator=$use_values_separator'"
+  ask "Would you like to change this setting?"
+  if read_boolean ; then ask_values_separator ; fi
+  debug "use_values_separator=$use_values_separator"
+
   use_request_qsys="$request_qsys"
   if [[ -z $use_request_qsys ]] ; then
     ask_qsys_details
@@ -822,12 +876,12 @@ print_configuration ()
   echo "#"
   echo ""
 
-  # Needs work (and functions)
+  # These values are always set
   echo "# Default options for printing and verbosity"
   echo "#"
-  echo "  values_separator=\" \" # (space separated values)"
-  echo "  output_verbosity=0"
-  echo "  stay_quiet=0"
+  echo "  values_separator=\"$use_values_separator\" # (space separated values)"
+  echo "  output_verbosity=$use_output_verbosity"
+  echo "  stay_quiet=$use_stay_quiet"
   echo ""
 
   echo "#"
