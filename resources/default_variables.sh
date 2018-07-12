@@ -13,8 +13,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-g16.bash"
-version="0.0.9"
-versiondate="2018-07-03"
+version="0.0.10"
+versiondate="2018-07-12"
 
 #
 # Standard commands for external software:
@@ -36,7 +36,7 @@ load_modules="true"
 # For example: On the RWTH cluster Gaussian is loaded via a module system,
 # the names (in correct order) of the modules:
 g16_modules[0]="CHEMISTRY"
-g16_modules[1]="gaussian/16.a03_bin"
+g16_modules[1]="gaussian/16.b01_bin"
 # Options relating to producing a formatted checkpoint file
 g16_formchk_cmd="wrapper.g16 formchk" # ( Current workaround )
 g16_formchk_opts="-3"
