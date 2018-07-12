@@ -141,6 +141,20 @@ expand_tilde ()
   fi
   echo "$return_string"
 }
+
+expand_tilde_in_path ()
+{
+  local test_PATH="$1" test_element return_PATH
+  local -a test_PATH_elements return_PATH_elements
+
+  IFS=':' read -r -a test_PATH_elements <<< "$test_PATH"
+  for test_element in "${test_PATH_elements[@]}" ; do
+    test_element=$(expand_tilde "$test_element")
+    return_PATH_elements+=( "$test_element" )
+  done
+  printf -v return_PATH '%s:' "${return_PATH_elements[@]}"
+  echo "${return_PATH%:}"
+}
   
 check_exist_executable ()
 {
@@ -295,6 +309,8 @@ ask_load_modules ()
   if [[ "$use_load_modules" =~ ^[Tt]([Rr]([Uu]([Ee])?)?)?$ ]] ; then
     if ( command -v module &> /dev/null ) ; then
       debug "Command 'module' is available."
+      (( ${#use_g16_modules[@]} > 0 )) && warning "Read modules have been reset, please enter all of them again."
+      unset use_g16_modules
       local module_index=0
       while [[ -z ${use_g16_modules[$module_index]} ]] ; do
         debug "Reading use_g16_modules[$module_index]"
@@ -551,7 +567,7 @@ get_configuration_interactive ()
   fi
   debug "use_g16_overhead=$use_g16_overhead"
 
-  use_g16_checkpoint_save="$use_g16_checkpoint_save"
+  use_g16_checkpoint_save="$g16_checkpoint_save"
   if [[ -z $use_g16_checkpoint_save ]] ; then
     ask_gaussian_checkpoint_save
   else
@@ -718,7 +734,7 @@ print_configuration ()
   if [[ -z $use_g16_checkpoint_save ]] ; then
     echo "# g16_checkpoint_save=true"
   else
-    echo "# g16_checkpoint_save=\"$use_g16_checkpoint_save\""
+    echo "  g16_checkpoint_save=\"$use_g16_checkpoint_save\""
   fi
   echo ""
 
@@ -890,6 +906,8 @@ write_configuration_to_file ()
   message "Predefined location: $PWD/g16.tools.rc"
   message "Recommended location: $g16_tools_path/.g16.toolsrc"
   settings_filename=$(read_human_input)
+  settings_filename=$(expand_tilde "$settings_filename")
+  debug "settings_filename=$settings_filename"
   if [[ -z $settings_filename ]] ; then
     settings_filename="$PWD/g16.tools.rc"
   elif [[ -d "$settings_filename" ]] ; then
@@ -902,8 +920,55 @@ write_configuration_to_file ()
   message "Written configuration file '$settings_filename'."
 }
 
+create_softlinks_in_bin ()
+{
+  local link_target_path="$HOME/bin"
+  local test_PATH
+  local file_name link_target_name link_target
 
+  test_PATH=$(expand_tilde_in_path "$PATH")
+  debug "test_PATH=$test_PATH"
+  if [[ "$test_PATH" =~ (^|:)"${link_target_path}"(/)?(:|$) ]] ; then
+    debug "Found '$link_target_path' in PATH."
+  else
+    warning "Directory '$link_target_path' appears to not be in PATH."
+    message "Continue anyway."
+  fi
 
+  if [[ -r "$link_target_path" ]] ; then
+    debug "Target path is readable: $link_target_path"
+  else
+    warning "Cannot read '$link_target_path'."
+    return 1
+  fi
+
+  if [[ -w "$link_target_path" ]] ; then
+    debug "Target path is writeable: $link_target_path"
+  else
+    warning "Cannot write to '$link_target_path'."
+    return 1
+  fi
+  
+  while read -r file_name || [[ -n "$file_name" ]]; do
+    debug "file_name=$file_name"
+    link_target_name="${file_name##*/}"
+    debug "link_target_name=$link_target_name"
+    link_target_name="${link_target_name/.sh/}"
+    debug "link_target_name=$link_target_name"
+    link_target="$link_target_path/$link_target_name"
+    debug "link_target=$link_target"
+
+    if [[ -e "$link_target" ]] ; then
+      message "The following symbolic link already exists:"
+      message "$(ls -l "$link_target")"
+    else
+      [[ -x "$file_name" ]] || warning "The file '$file_name' is not executable."
+      message "$(ln -vs "$file_name" "$link_target")"
+    fi
+
+  done < <(ls "$g16_tools_path"/*.sh)
+
+}
 
 #
 # MAIN SCRIPT
@@ -940,9 +1005,10 @@ get_configuration_interactive
 
 write_configuration_to_file
 
-
-
-
+ask "Would you like to create a symbolic links for the scripts in '~/bin'?"
+if read_boolean ; then
+  create_softlinks_in_bin
+fi
 
 message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"
