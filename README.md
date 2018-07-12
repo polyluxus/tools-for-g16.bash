@@ -22,12 +22,17 @@ They each need access to the resources directory.
 The scripts can be configured with the help of `g16.tools.rc`; 
 more advisable, however, is to copy this file onto `.g16.toolsrc`
 and modify this file instead.
-(A configuration script is still work in progress.)
+
+The `configure` directory contains a script that will allow you to configure
+all currently supported settings of the tools.
+It produces a file like `g16.tools.rc` from old or the default settings,
+which I recommend to store as `.g16.toolsrc` in the main directory.
 
 To make the files accessible globally, the directory where they have been stored
 must be in the `PATH` variable.
 Alternatively, you can create softlinks to those files in a directory, 
 which is already recognised by `PATH`, e.g. `~/bin` in my case.
+The configure script also lets you create softlinks for the tools contained within.
 
 ## Utilities
 
@@ -59,4 +64,4 @@ This reposity comes with the following scripts (and files):
 
 All of the scripts come with a `-h` switch to give a summary of the available options.
 
-Martin (0.0.9, 2018-07-03)
+Martin (0.0.10, 2018-07-12)
