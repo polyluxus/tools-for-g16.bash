@@ -584,7 +584,7 @@ get_configuration_interactive ()
   if [[ -z $use_g16_scratch ]] ; then
     ask_gaussian_scratch 
   else
-    message "Recovered setting : 'g16_scratch=$use_g16_scratch'"
+    message "Recovered setting: 'g16_scratch=$use_g16_scratch'"
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_gaussian_scratch ; fi
   fi
@@ -594,7 +594,7 @@ get_configuration_interactive ()
   if [[ -z $use_g16_overhead ]] ; then
     ask_gaussian_overhead
   else
-    message "Recovered setting : 'g16_overhead=$use_g16_overhead'"
+    message "Recovered setting: 'g16_overhead=$use_g16_overhead'"
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_gaussian_overhead ; fi
   fi
@@ -604,7 +604,7 @@ get_configuration_interactive ()
   if [[ -z $use_g16_checkpoint_save ]] ; then
     ask_gaussian_checkpoint_save
   else
-    message "Recovered setting : 'g16_checkpoint_save=$use_g16_checkpoint_save'"
+    message "Recovered setting: 'g16_checkpoint_save=$use_g16_checkpoint_save'"
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_gaussian_checkpoint_save ; fi
   fi
@@ -615,9 +615,9 @@ get_configuration_interactive ()
   if [[ -z $use_load_modules ]] ; then
     ask_load_modules
   else
-    message "Recovered setting : 'load_modules=$use_load_modules'"
+    message "Recovered setting: 'load_modules=$use_load_modules'"
     if (( ${#use_g16_modules[@]} > 0 )) ; then
-      message "Recovered setting : 'g16_modules=( ${use_g16_modules[*]} )"
+      message "Recovered setting: 'g16_modules=( ${use_g16_modules[*]} )"
     fi
     ask "Would you like to change any of these settings?"
     if read_boolean ; then ask_load_modules ; fi
@@ -629,8 +629,8 @@ get_configuration_interactive ()
   if [[ -z $use_g16_formchk_cmd || -z $use_g16_testrt_cmd ]] ; then
     ask_g16_utilities
   else
-    message "Recovered setting : 'g16_testrt_cmd=$use_g16_testrt_cmd'"
-    message "Recovered setting : 'g16_formchk_cmd=$use_g16_formchk_cmd'"
+    message "Recovered setting: 'g16_testrt_cmd=$use_g16_testrt_cmd'"
+    message "Recovered setting: 'g16_formchk_cmd=$use_g16_formchk_cmd'"
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_g16_utilities ; fi
   fi
@@ -641,7 +641,7 @@ get_configuration_interactive ()
   if [[ -z $use_obabel_cmd ]] ; then
     ask_other_utilities
   else
-    message "Recovered setting : 'obabel_cmd=$use_obabel_cmd'"
+    message "Recovered setting: 'obabel_cmd=$use_obabel_cmd'"
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_other_utilities ; fi
   fi
@@ -653,8 +653,8 @@ get_configuration_interactive ()
   if [[ -z $use_g16_input_suffix || -z $use_g16_output_suffix ]] ; then
     ask_g16_default_extensions
   else
-    message "Recovered setting : 'g16_input_suffix=$use_g16_input_suffix'"
-    message "Recovered setting : 'g16_output_suffix=$use_g16_output_suffix'"
+    message "Recovered setting: 'g16_input_suffix=$use_g16_input_suffix'"
+    message "Recovered setting: 'g16_output_suffix=$use_g16_output_suffix'"
     ask "Would you like to change these settings?"
     if read_boolean ; then ask_g16_default_extensions ; fi
   fi
@@ -663,21 +663,21 @@ get_configuration_interactive ()
 
   use_stay_quiet="$stay_quiet"
   [[ -z $use_stay_quiet ]] && use_stay_quiet=0
-  message "Recovered setting : 'stay_quiet=$use_stay_quiet'"
+  message "Recovered setting: 'stay_quiet=$use_stay_quiet'"
   ask "Would you like to change this setting?"
   if read_boolean ; then ask_stay_quiet ; fi
   debug "use_stay_quiet=$use_stay_quiet"
 
   use_output_verbosity="$output_verbosity"
   [[ -z $use_output_verbosity ]] && use_output_verbosity=0
-  message "Recovered setting : 'output_verbosity=$use_output_verbosity'"
+  message "Recovered setting: 'output_verbosity=$use_output_verbosity'"
   ask "Would you like to change this setting?"
   if read_boolean ; then ask_output_verbosity ; fi
   debug "use_output_verbosity=$use_output_verbosity"
 
   use_values_separator="$values_separator"
   [[ -z $use_values_separator ]] && use_values_separator=" "
-  message "Recovered setting : 'values_separator=$use_values_separator'"
+  message "Recovered setting: 'values_separator=$use_values_separator'"
   ask "Would you like to change this setting?"
   if read_boolean ; then ask_values_separator ; fi
   debug "use_values_separator=$use_values_separator"
@@ -686,7 +686,7 @@ get_configuration_interactive ()
   if [[ -z $use_request_qsys ]] ; then
     ask_qsys_details
   else
-    message "Recovered setting : 'request_qsys=$use_request_qsys'"
+    message "Recovered setting: 'request_qsys=$use_request_qsys'"
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_qsys_details ; fi
   fi
@@ -696,7 +696,7 @@ get_configuration_interactive ()
   if [[ -z $use_requested_walltime ]] ; then
     ask_walltime
   else
-    message "Recovered setting : 'requested_walltime=$use_requested_walltime'"
+    message "Recovered setting: 'requested_walltime=$use_requested_walltime'"
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_walltime ; fi
   fi
@@ -706,7 +706,7 @@ get_configuration_interactive ()
   if [[ -z $use_requested_memory ]] ; then
     ask_memory
   else
-    message "Recovered setting : 'requested_memory=$use_requested_memory'"
+    message "Recovered setting: 'requested_memory=$use_requested_memory'"
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_memory ; fi
   fi
@@ -716,7 +716,7 @@ get_configuration_interactive ()
   if [[ -z $use_requested_numCPU ]] ; then
     ask_threads
   else
-    message "Recovered setting : 'requested_numCPU=$use_requested_numCPU'"
+    message "Recovered setting: 'requested_numCPU=$use_requested_numCPU'"
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_threads ; fi
   fi
@@ -726,7 +726,7 @@ get_configuration_interactive ()
   if [[ -z $use_requested_maxdisk ]] ; then
     ask_maxdisk
   else
-    message "Recovered setting : 'requested_maxdisk=$use_requested_maxdisk'"
+    message "Recovered setting: 'requested_maxdisk=$use_requested_maxdisk'"
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_maxdisk ; fi
   fi
@@ -736,7 +736,7 @@ get_configuration_interactive ()
   if [[ -z $use_requested_submit_status ]] ; then
     ask_submit_status
   else
-    message "Recovered setting : 'requested_submit_status=$use_requested_submit_status'"
+    message "Recovered setting: 'requested_submit_status=$use_requested_submit_status'"
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_submit_status ; fi
   fi
