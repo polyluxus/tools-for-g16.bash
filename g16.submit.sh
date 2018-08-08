@@ -212,7 +212,7 @@ write_jobscript ()
       fi
       echo "jobid=\"\${PBS_JOBID%%.*}\"" >&9
 
-    elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
+    elif [[ "$queue" =~ [Bb][Ss][Uu][Bb] ]] ; then
       echo "#!/usr/bin/env bash" >&9
       echo "# Submission script automatically created with $scriptname" >&9
 
@@ -244,7 +244,8 @@ write_jobscript ()
         done
         echo "#BSUB -w \"$resolve_dependency\"" >&9
       fi
-      if [[ "$PWD" =~ [Hh][Pp][Cc] ]] ; then
+      # Possibly an RWTH cluster specific setting
+      if [[ "$queue" =~ [Rr][Ww][Tt][Hh] && "$PWD" =~ [Hh][Pp][Cc] ]] ; then
         echo "#BSUB -R select[hpcwork]" >&9
       fi
       if [[ "$bsub_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
@@ -261,13 +262,7 @@ write_jobscript ()
     echo "" >&9
 
     # How Gaussian is loaded
-    if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
-      cat >&9 <<-EOF
-			g16root="$g16_installpath"
-			export g16root
-			. \$g16root/g16/bsd/g16.profile
-			EOF
-    elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
+    if [[ "$load_modules" =~ [Tt][Rr][Uu][Ee] ]] ; then
       (( ${#g16_modules[*]} == 0 )) && fatal "No modules to load."
       cat >&9 <<-EOF
       # Might only be necessary for rwth (?)
@@ -275,6 +270,14 @@ write_jobscript ()
 			module load ${g16_modules[*]} 2>&1
 			# Because otherwise it would go to the error output.
 			
+			EOF
+    else
+      [[ -z "$g16_installpath" ]] && fatal "Gaussian path is unset."
+      [[ -e "$g16_installpath/g16/bsd/g16.profile" ]] && fatal "Gaussian profile does not exist."
+      cat >&9 <<-EOF
+			g16root="$g16_installpath"
+			export g16root
+			. \$g16root/g16/bsd/g16.profile
 			EOF
     fi
 
