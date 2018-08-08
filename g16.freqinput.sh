@@ -219,6 +219,8 @@ process_inputfile ()
       if verified_checkpoint=$(test_file_location "$checkpoint") ; then
         debug "verified_checkpoint=$verified_checkpoint"
         fatal "Cannot find '$verified_checkpoint'."
+      else
+        old_checkpoint="$checkpoint"
       fi
     else
       old_checkpoint="$checkpoint"
