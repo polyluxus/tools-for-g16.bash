@@ -467,6 +467,39 @@ remove_g16_input_comment ()
     fi
 }
 
+read_xyz_geometry_file ()
+{
+    debug "Reading input file."
+    local parsefile="$1" line storeline
+    debug "Working on: $parsefile"
+    local pattern pattern_num pattern_element pattern_print
+    # A global variable called 'inputfile_body' should start with the geometry
+    # Other content is stored in global variables 'title_section', 'molecule_charge', 'molecule_mult'
+    local body_index=0
+    pattern_num="[+-]?[0-9]+\\.[0-9]*"
+    pattern_element="[A-Za-z]+[A-Za-z]*"
+    pattern="^[[:space:]]*($pattern_element)[[:space:]]*($pattern_num)[[:space:]]*($pattern_num)[[:space:]]*($pattern_num)[[:space:]]*(.*)$"
+    pattern_print="%-3s %15.8f %15.8f %15.8f"
+    while read -r line || [[ -n "$line" ]] ; do
+      debug "Read line: $line"
+      
+      if [[ "$line" =~ $pattern ]] ; then
+        # shellcheck disable=SC2059
+        storeline=$(printf "$pattern_print" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}")
+        debug "Ignored end of line: '${BASH_REMATCH[5]}'."
+        inputfile_body[$body_index]="$storeline" 
+        debug "Read and stored: '${inputfile_body[$body_index]}'"
+        (( body_index++ ))
+        debug "Increase index to $body_index."
+      else
+        debug "Line doesn't match pattern of xyz."
+      fi
+
+    done < "$parsefile"
+    (( ${#inputfile_body[@]} == 0 )) && warning "No geometry in '$parsefile'."
+    debug "Finished reading input file."
+}
+
 #was read_inputfile ()
 read_g16_input_file ()
 {
@@ -512,14 +545,14 @@ read_g16_input_file ()
         if warn_nprocs_directive "$line" ; then
           # If the nprocs directive is found a warning will be issued,
           # add that the directive will be ignored.
-          warning "The statement will be replace by script values."
+          warning "The statement will be replaced by script values."
           # Skip to the next line if the statement was found.
           continue
         fi
         if warn_mem_directive "$line" ; then
           # If the mem directive is found a warning will be issued,
           # add that the directive will be ignored.
-          warning "The statement will be replace by script values."
+          warning "The statement will be replaced by script values."
           # Skip to the next line if the statement was found.
           continue
         fi
@@ -1111,6 +1144,7 @@ write_g16_input_file ()
     # Remove any existing MaxDisk keyword to add one with script value.
     while ! route_section=$(remove_maxdisk_keyword "$route_section") ; do : ; done
     use_route_section=$(collate_route_keywords "$route_section MaxDisk=${requested_maxdisk}MB")
+    message "Added 'MaxDisk=${requested_maxdisk}MB' to the route section."
     # Fold the route section to 80 characters for better readability
     fold -w80 -c -s <<< "$use_route_section"
     # A blank line terminates the route section
