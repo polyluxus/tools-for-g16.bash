@@ -167,8 +167,8 @@ process_inputfile ()
     [[ -z $jobname ]] && jobname="${testfile/.xyz/}"
     [[ "$jobname" == "%s" ]] && jobname="${testfile/.start.xyz/}"
     input_suffix="$g16_input_suffix"
-    checkpoint="${jobname}.chk"
     [[ -z $inputfile ]] && inputfile="${jobname}.com"
+    checkpoint="${inputfile%.*}.chk"
    
     backup_if_exists "$inputfile"
 
