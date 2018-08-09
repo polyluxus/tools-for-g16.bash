@@ -13,8 +13,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-g16.bash"
-version="0.0.10"
-versiondate="2018-07-12"
+version="0.0.11"
+versiondate="2018-08-09"
 
 #
 # Standard commands for external software:
@@ -48,10 +48,16 @@ g16_testrt_cmd="wrapper.g16 testrt" # ( Current workaround )
 obabel_cmd="obabel"
 
 #
-# Default files and suffixes
+# Default files, suffixes, options for Gaussian 16
 #
 g16_input_suffix="com"
 g16_output_suffix="log"
+g16_route_section_predefined[00]="# PM6"
+g16_route_section_predefined[01]="#P B97D3/def2SVP"
+g16_route_section_predefined[02]="#P B97D3/def2TZVPP"
+g16_route_section_predefined[03]="#P BP86/def2SVP   EmpiricalDispersion=GD3BJ"
+g16_route_section_predefined[04]="#P BP86/def2TZVPP EmpiricalDispersion=GD3BJ"
+g16_route_section_default="# B97D3/def2SVP"
 
 #
 # Default options for printing

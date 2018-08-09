@@ -129,3 +129,25 @@ warn_and_set_locale ()
       set +x
     fi
 }
+
+#
+# Print an array from a declare string
+#
+
+print_declared_array ()
+{
+    local parseline="$1"
+    debug "Input: $parseline"
+    local found_match
+    local pattern="(\\[([0-9]+[0-9]*)\\]=\"([^\"]*)\")(.*)"
+    while [[ "$parseline" =~ $pattern ]] ; do
+      found_match="${BASH_REMATCH[1]}"
+      debug "Matched: $found_match"
+      printf '%5d : %s\n' "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}"
+      parseline="${BASH_REMATCH[4]}"
+      debug "parseline=$parseline"
+      sleep 1
+    done
+
+    debug "$parseline"
+}
