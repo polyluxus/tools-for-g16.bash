@@ -164,16 +164,17 @@ process_inputfile ()
     debug "Processing Input: $testfile"
     read_xyz_geometry_file "$testfile"
 
-    jobname="${testfile/.xyz/}"
+    [[ -z $jobname ]] && jobname="${testfile/.xyz/}"
+    [[ "$jobname" == "%s" ]] && jobname="${testfile/.start.xyz/}"
     input_suffix="$g16_input_suffix"
     checkpoint="${jobname}.chk"
-    inputfile="${jobname}.com"
+    [[ -z $inputfile ]] && inputfile="${jobname}.com"
    
     backup_if_exists "$inputfile"
 
     if [[ -z $route_section ]] ; then 
       route_section="$g16_route_section_default"
-      warning "No route section was verified, using default:"
+      warning "No route section was specified, using default:"
       warning "$(fold -w80 -c -s <<< "$route_section")"
     fi
     [[ -z $use_temp_keyword ]]          || route_section="$route_section $use_temp_keyword"
@@ -181,13 +182,14 @@ process_inputfile ()
     [[ -z $use_custom_route_keywords ]] || route_section="$route_section $use_custom_route_keywords"
 
     local substitute
-    [[ -z $title_section ]] && title_section="Calculation: %s"
+    [[ -z $title_section ]] && title_section="Calculation: %j"
     while [[ $title_section =~ ^(.*)(%.)(.*)$ ]] ; do
       case ${BASH_REMATCH[2]} in
-        %f)   substitute="$jobname" ;;
+        %f)   substitute="${testfile/.xyz}" ;;
         %F)   substitute="$testfile" ;;
-        %s)   substitute="${jobname/start/}"
+        %s)   substitute="${testfile/start/}"
               substitute="${substitute/../.}" ;;
+        %j)   substitute="$jobname" ;;
          *)   warning "Substitution pattern '${BASH_REMATCH[2]}' not supported." 
               substitute="${BASH_REMATCH[2]}" ;;
       esac
@@ -214,7 +216,7 @@ process_options ()
     #hlp    
     local OPTIND=1 
 
-    while getopts :T:P:r:R:l:t:C:c:M:m:p:d:sh options ; do
+    while getopts :T:P:r:R:l:t:C:j:f:c:M:m:p:d:sh options ; do
         case $options in
           #hlp   -T <ARG>   Specify temperature in kelvin.
           #hlp              Writes 'Temperature=<ARG>' to the route section. 
@@ -238,7 +240,7 @@ process_options ()
             if is_float "$OPTARG" ; then
               use_pres_keyword="Pressure=$OPTARG"
             elif is_integer "$OPTARG" ; then
-              use_temp_keyword="Pressure=${OPTARG}.0"
+              use_pres_keyword="Pressure=${OPTARG}.0"
             else
               fatal "Value '$OPTARG' for the pressure is no (floating point) number."
             fi
@@ -268,7 +270,7 @@ process_options ()
             fi
             ;;
 
-          #hlp   -l <ARG>   Load a specific rout section stored as <ARG>.
+          #hlp   -l <ARG>   Load a specific route section stored as <ARG>.
           #hlp              If <ARG> is 'list', print all predefined values instead.
           #hlp
           l)
@@ -278,7 +280,7 @@ process_options ()
               # printf '%d %s\n' "${!g16_route_section_predefined[@]}" "${g16_route_section_predefined[@]}"
               exit 0
             elif is_integer "$OPTARG" ; then
-              (( OPTARG > ${#g16_route_section_predefined[*]} )) && fatal "Out of range: $OPTARG"
+              [[ -z ${g16_route_section_predefined[$OPTARG]} ]] && fatal "Out of range: $OPTARG"
               route_section="${g16_route_section_predefined[$OPTARG]}"
               message "Applied route section:"
               message "$(fold -w80 -c -s <<< "$route_section")"
@@ -300,20 +302,36 @@ process_options ()
           #hlp                '%F' input filename 
           #hlp                '%f' input without the xyz suffix
           #hlp                '%s' like '%f' filters out 'start'
+          #hlp                '%j' job name
           #hlp              Default: 'Calculation : %s'
           #hlp 
           C) 
             title_section="$OPTARG"
             ;;
 
-          #hlp     -c <ARG> Define the charge of the molecule. (Default: 0)
+          #hlp   -j <ARG>   Define the name of the job. 
+          #hlp              If the argument is '%s', use the input filename and 
+          #hlp              filter the ending '.start.xyz'.
+          #hlp              This will also be used as the basis for the filename.
+          #hlp
+          j)
+            jobname="$OPTARG"
+            ;;
+
+          #hlp   -f <ARG>   Write inputfile to <ARG>.
+          #hlp
+          f)
+            inputfile="$OPTARG"
+            ;;
+
+          #hlp   -c <ARG>   Define the charge of the molecule. (Default: 0)
           #hlp
           c) 
             validate_whole_number "$OPTARG" "charge"
             molecule_charge="$OPTARG"
             ;;
 
-          #hlp     -M <ARG> Define the Multiplicity of the molecule. (Default: 1)
+          #hlp   -M <ARG>   Define the Multiplicity of the molecule. (Default: 1)
           #hlp
           M) 
             validate_integer "$OPTARG" "multiplicity"
@@ -322,7 +340,7 @@ process_options ()
             ;;
 
           # Link 0 related options
-          #hlp     -m <ARG> Define the total memory to be used in megabyte.
+          #hlp   -m <ARG>   Define the total memory to be used in megabyte.
           #hlp              The total request will be larger to account for 
           #hlp              overhead which Gaussian may need. (Default: 512)
           #hlp
@@ -334,7 +352,7 @@ process_options ()
                requested_memory="$OPTARG" 
                ;;
 
-          #hlp     -p <ARG> Define number of professors to be used. (Default: 4)
+          #hlp   -p <ARG>   Define number of professors to be used. (Default: 4)
           #hlp
             p) 
                validate_integer "$OPTARG" "the number of threads"
@@ -344,7 +362,7 @@ process_options ()
                requested_numCPU="$OPTARG" 
                ;;
 
-          #hlp     -d <ARG> Define disksize via the MaxDisk keyword (MB).
+          #hlp   -d <ARG>   Define disksize via the MaxDisk keyword (MB).
           #hlp              This option does not set a parameter for the queueing system,
           #hlp              but will only modify the input file with the size specification.
           #hlp              
@@ -356,14 +374,14 @@ process_options ()
                requested_maxdisk="$OPTARG"
                ;;
 
-          #hlp     -s       Suppress logging messages of the script.
+          #hlp   -s         Suppress logging messages of the script.
           #hlp              (May be specified multiple times.)
           #hlp
           s) 
             (( stay_quiet++ )) 
             ;;
 
-          #hlp     -h       this help.
+          #hlp   -h         this help.
           #hlp
           h) 
             helpme 
