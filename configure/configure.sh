@@ -393,6 +393,72 @@ ask_g16_default_extensions ()
   debug "use_g16_output_suffix=$use_g16_output_suffix"
 }
 
+ask_g16_store_route_section ()
+{
+  local user_input array_index array_index_current
+  local -a tmp_g16_route_section_predefined
+  while true ; do
+    if (( ${#use_g16_route_section_predefined[@]} != 0 )) ; then
+      printf '%5s : %s\n' "Index" "Predefined route section"
+      array_index=0
+      for array_index in "${!use_g16_route_section_predefined[@]}" ; do
+        printf '%5d : %s\n' "$array_index" "${use_g16_route_section_predefined[$array_index]}"
+        array_index_current=$(( array_index + 1 ))
+      done
+    fi
+    ask "Would you like to change these settings?"
+    message "To delete an entry, enter 'del <number>',"
+    message "to add or replace an entry, enter 'add <number>',"
+    message "where <number> is optional."
+    user_input=$(read_human_input)
+    [[ -z $user_input ]] && break
+    if [[ "$user_input" =~ ^[[:space:]]*[Dd][Ee][Ll][[:space:]]*([0-9]*)[[:space:]]*$ ]] ; then
+      if [[ -z ${BASH_REMATCH[1]} ]] ; then
+        ask "Which entry would you like to delete?"
+        array_index=$(read_integer)
+      else
+        array_index="${BASH_REMATCH[1]}"
+      fi
+      unset 'use_g16_route_section_predefined[array_index]'
+    elif [[ "$user_input" =~ ^[[:space:]]*[Aa][Dd][Dd][[:space:]]*([0-9]*)[[:space:]]*$ ]] ; then
+      if [[ -z ${BASH_REMATCH[1]} ]] ; then
+        array_index="$array_index_current"
+        while array_index in "${!use_g16_route_section_predefined[@]}" ; do
+          (( array_index++ ))
+        done
+      else
+        array_index="${BASH_REMATCH[1]}"
+      fi
+      ask "What should the new route section be?"
+      user_input=$(read_human_input)
+      use_g16_route_section_predefined[$array_index]="$user_input"
+    else
+      warning "Unrecognised command."
+    fi
+    unset user_input array_index
+  done
+  tmp_g16_route_section_predefined=( "${use_g16_route_section_predefined[@]}" )
+  if (( ${#tmp_g16_route_section_predefined[@]} != 0 )) ; then
+    array_index=0
+    printf '%5s : %s\n' "Index" "Predefined route section"
+    for array_index in "${!tmp_g16_route_section_predefined[@]}" ; do
+      printf '%5d : %s\n' "$array_index" "${tmp_g16_route_section_predefined[$array_index]}"
+    done
+    ask "Which entry would you like to set as the default?"
+    user_input=$(read_integer)
+    while (( user_input >= ${#tmp_g16_route_section_predefined[@]} )) ; do
+      user_input=$(read_integer)
+    done
+    use_g16_route_section_default="${tmp_g16_route_section_predefined[$user_input]}"
+  else
+    ask "What should be the default route section?"
+    use_g16_route_section_default=$(read_human_input)
+  fi
+  unset use_g16_route_section_predefined
+  use_g16_route_section_predefined=( "${tmp_g16_route_section_predefined[@]}" )
+  unset tmp_g16_route_section_predefined
+}
+
 ask_stay_quiet ()
 {
   ask "What level of chattyness of $softwarename would you like to set?"
@@ -661,6 +727,19 @@ get_configuration_interactive ()
   debug "use_g16_input_suffix=$use_g16_input_suffix"
   debug "use_g16_output_suffix=$use_g16_output_suffix"
 
+  use_g16_route_section_default="$g16_route_section_default"
+  debug "g16_route_section_default=$use_g16_route_section_default"
+  use_g16_route_section_predefined=( "${g16_route_section_predefined[@]}" )
+  debug "$(declare -p use_g16_route_section_predefined)"
+  if [[ ! -z $use_g16_route_section_default ]] ; then
+    message "Recovered setting: 'g16_route_section_default=$use_g16_route_section_default'"
+  fi
+  if (( ${#use_g16_route_section_predefined[@]} != 0 )) ; then
+    message "Recovered predefined route sections."
+  fi
+  ask "Would you like to display/add/remove stored route sections?"
+  if read_boolean ; then ask_g16_store_route_section ; fi
+
   use_stay_quiet="$stay_quiet"
   [[ -z $use_stay_quiet ]] && use_stay_quiet=0
   message "Recovered setting: 'stay_quiet=$use_stay_quiet'"
@@ -861,7 +940,7 @@ print_configuration ()
   echo "#"
   echo ""
 
-  echo "# Default files and suffixes"
+  echo "# Default files, suffixes, and other for Gaussian 16"
   echo "# "
   if [[ -z $use_g16_input_suffix ]] ; then
     echo "# g16_input_suffix=\"com\""
@@ -872,6 +951,22 @@ print_configuration ()
     echo "# g16_output_suffix=\"log\""
   else
     echo "  g16_output_suffix=\"$use_g16_output_suffix\""
+  fi
+  echo "#"
+  echo "# Predefined Route sections"
+  if [[ -z $use_g16_route_section_default ]] ; then
+    echo "# g16_route_section_default='#P B97D3/def2-SVP'"
+  else
+    echo "  g16_route_section_default=\"$use_g16_route_section_default\""
+  fi
+  if (( ${#use_g16_route_section_predefined[@]} == 0 )) ; then
+    echo "# g16_route_section_predefined[0]='#P B97D3/def2-SVP'"
+    echo "# g16_route_section_predefined[1]='#P B97D3/def2-TZVPP OPT'"
+  else
+    local array_index=0
+    for array_index in "${!use_g16_route_section_predefined[@]}" ; do
+      printf '  g16_route_section_predefined[%d]="%s"\n' "$array_index" "${use_g16_route_section_predefined[$array_index]}"
+    done
   fi
   echo "#"
   echo ""

@@ -275,9 +275,10 @@ process_options ()
           #hlp
           l)
             if [[ $OPTARG =~ [Ll][Ii][Ss][Tt] ]] ; then
-              declare -p g16_route_section_predefined
-              print_declared_array "$(declare -p g16_route_section_predefined)"
-              # printf '%d %s\n' "${!g16_route_section_predefined[@]}" "${g16_route_section_predefined[@]}"
+              local array_index=0
+              for array_index in "${!g16_route_section_predefined[@]}" ; do
+                printf '%5d : %s\n' "$array_index" "${g16_route_section_predefined[$array_index]}"
+              done
               exit 0
             elif is_integer "$OPTARG" ; then
               [[ -z ${g16_route_section_predefined[$OPTARG]} ]] && fatal "Out of range: $OPTARG"

@@ -53,13 +53,11 @@ obabel_cmd="obabel"
 g16_input_suffix="com"
 g16_output_suffix="log"
 g16_route_section_predefined[00]="# PM6"
-g16_route_section_predefined[01]="#P B97D3/def2-SVP"
-g16_route_section_predefined[02]="#P B97D3/def2-TZVP"
-g16_route_section_predefined[03]="#P B97D3/def2-TZVPP"
-g16_route_section_predefined[11]="#P BP86/def2-SVP   EmpiricalDispersion=GD3BJ"
-g16_route_section_predefined[12]="#P BP86/def2-TZVP  EmpiricalDispersion=GD3BJ"
-g16_route_section_predefined[13]="#P BP86/def2-TZVPP EmpiricalDispersion=GD3BJ"
-g16_route_section_default="# B97D3/def2-SVP"
+g16_route_section_predefined[01]="#P B97D3/def2SVP"
+g16_route_section_predefined[02]="#P B97D3/def2TZVPP"
+g16_route_section_predefined[03]="#P BP86/def2SVP   EmpiricalDispersion=GD3BJ"
+g16_route_section_predefined[04]="#P BP86/def2TZVPP EmpiricalDispersion=GD3BJ"
+g16_route_section_default="# B97D3/def2SVP"
 
 #
 # Default options for printing
