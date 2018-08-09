@@ -15,16 +15,37 @@ is_integer ()
     [[ $1 =~ ^[[:digit:]]+$ ]]
 }
 
+is_whole_number ()
+{
+    [[ $1 =~ ^[+-]?[[:digit:]]+$ ]]
+}
+
 is_float ()
 {
-    [[ $1 =~ ^[[:digit:]]+\.[[:digit:]]+$ ]]
+    [[ $1 =~ ^[+-]?[[:digit:]]+\.[[:digit:]]+$ ]]
 }
 
 validate_integer () 
 {
     if ! is_integer "$1"; then
-        [ ! -z "$2" ] && fatal "Value for $2 ($1) is no integer."
-          [ -z "$2" ] && fatal "Value \"$1\" is no integer."
+        [ ! -z "$2" ] && fatal "Value for $2 ($1) is no positive integer."
+          [ -z "$2" ] && fatal "Value \"$1\" is no positive integer."
+    fi
+}
+
+validate_whole_number () 
+{
+    if ! is_whole_number "$1"; then
+        [ ! -z "$2" ] && fatal "Value for $2 ($1) is no whole number."
+          [ -z "$2" ] && fatal "Value \"$1\" is no whole number."
+    fi
+}
+
+validate_float () 
+{
+    if ! is_float "$1"; then
+        [ ! -z "$2" ] && fatal "Value for $2 ($1) is no floating point number."
+          [ -z "$2" ] && fatal "Value \"$1\" is no floating point number."
     fi
 }
 

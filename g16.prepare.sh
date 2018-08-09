@@ -180,7 +180,21 @@ process_inputfile ()
     [[ -z $use_pres_keyword ]]          || route_section="$route_section $use_pres_keyword"
     [[ -z $use_custom_route_keywords ]] || route_section="$route_section $use_custom_route_keywords"
 
-    [[ -z $title_section ]] && title_section="Calculation: $jobname"
+    local substitute
+    [[ -z $title_section ]] && title_section="Calculation: %s"
+    while [[ $title_section =~ ^(.*)(%.)(.*)$ ]] ; do
+      case ${BASH_REMATCH[2]} in
+        %f)   substitute="$jobname" ;;
+        %F)   substitute="$testfile" ;;
+        %s)   substitute="${jobname/start/}"
+              substitute="${substitute/../.}" ;;
+         *)   warning "Substitution pattern '${BASH_REMATCH[2]}' not supported." 
+              substitute="${BASH_REMATCH[2]}" ;;
+      esac
+      title_section="${BASH_REMATCH[1]}$substitute${BASH_REMATCH[3]}"
+      [[ -z $title_section ]] && title_section="Title card required"
+    done
+
     [[ -z $molecule_charge ]] && molecule_charge=0
     [[ -z $molecule_mult ]] && molecule_mult=1
     write_g16_input_file > "$inputfile"
@@ -200,7 +214,7 @@ process_options ()
     #hlp    
     local OPTIND=1 
 
-    while getopts :T:P:r:R:l:t:m:p:d:sh options ; do
+    while getopts :T:P:r:R:l:t:C:c:M:m:p:d:sh options ; do
         case $options in
           #hlp   -T <ARG>   Specify temperature in kelvin.
           #hlp              Writes 'Temperature=<ARG>' to the route section. 
@@ -256,6 +270,7 @@ process_options ()
 
           #hlp   -l <ARG>   Load a specific rout section stored as <ARG>.
           #hlp              If <ARG> is 'list', print all predefined values instead.
+          #hlp
           l)
             if [[ $OPTARG =~ [Ll][Ii][Ss][Tt] ]] ; then
               declare -p g16_route_section_predefined
@@ -277,6 +292,33 @@ process_options ()
           #hlp 
           t) 
             use_custom_tail[${#use_custom_tail[@]}]="$OPTARG" 
+            ;;
+
+          #hlp   -C <ARG>   Specify the caption (title) of the job.
+          #hlp              If specified multiple times, only the last one has an effect.
+          #hlp              Replacement options:
+          #hlp                '%F' input filename 
+          #hlp                '%f' input without the xyz suffix
+          #hlp                '%s' like '%f' filters out 'start'
+          #hlp              Default: 'Calculation : %s'
+          #hlp 
+          C) 
+            title_section="$OPTARG"
+            ;;
+
+          #hlp     -c <ARG> Define the charge of the molecule. (Default: 0)
+          #hlp
+          c) 
+            validate_whole_number "$OPTARG" "charge"
+            molecule_charge="$OPTARG"
+            ;;
+
+          #hlp     -M <ARG> Define the Multiplicity of the molecule. (Default: 1)
+          #hlp
+          M) 
+            validate_integer "$OPTARG" "multiplicity"
+            (( OPTARG == 0 )) && fatal "Multiplicity must not be zero."
+            molecule_mult="$OPTARG"
             ;;
 
           # Link 0 related options
