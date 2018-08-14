@@ -249,7 +249,11 @@ write_jobscript ()
         echo "#BSUB -R select[hpcwork]" >&9
       fi
       if [[ "$bsub_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
-        message "No project selected."
+        if [[ "$queue" =~ [Rr][Ww][Tt][Hh] ]] ; then
+          warning "No project selected."
+        else
+          message "No project selected."
+        fi
       else
         echo "#BSUB -P $bsub_project" >&9
       fi
