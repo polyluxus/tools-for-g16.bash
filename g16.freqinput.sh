@@ -227,6 +227,24 @@ process_inputfile ()
     fi
 
     # Assign new checkpoint/inputfile
+    local file_suffix_temp file_suffix_pres
+    if [[ -z $use_temp_keyword ]] ; then
+      debug "No temperature set, no suffix to extract."
+    else
+      file_suffix_temp="T${use_temp_keyword#*=}"
+      file_suffix_temp="${file_suffix_temp//\./-}"
+    fi
+    if [[ -z $use_pres_keyword ]] ; then
+      debug "No pressure set, no suffix to extract."
+    else
+      file_suffix_pres="P${use_pres_keyword#*=}"
+      file_suffix_pres="${file_suffix_pres//\./-}"
+    fi
+    if [[ -z $file_suffix_temp || -z $file_suffix_pres ]] ; then
+      use_file_suffix="${file_suffix_temp}${file_suffix_pres}"
+    else
+      use_file_suffix="${file_suffix_temp}_${file_suffix_pres}"
+    fi
     if [[ -z $use_file_suffix ]] ; then
       jobname="${jobname}.freq"
     else
@@ -297,10 +315,8 @@ process_options ()
           T)
             if is_float "$OPTARG" ; then
               use_temp_keyword="Temperature=$OPTARG"
-              use_file_suffix="T${OPTARG//\./-}${use_file_suffix}"
             elif is_integer "$OPTARG" ; then
               use_temp_keyword="Temperature=${OPTARG}.0"
-              use_file_suffix="T${OPTARG//\./-}${use_file_suffix}"
             else
               fatal "Value '$OPTARG' for the temperature is no (floating point) number."
             fi
@@ -314,10 +330,8 @@ process_options ()
           P) 
             if is_float "$OPTARG" ; then
               use_pres_keyword="Pressure=$OPTARG"
-              use_file_suffix="P${OPTARG//\./-}${use_file_suffix}"
             elif is_integer "$OPTARG" ; then
-              use_temp_keyword="Pressure=${OPTARG}.0"
-              use_file_suffix="P${OPTARG//\./-}${use_file_suffix}"
+              use_pres_keyword="Pressure=${OPTARG}.0"
             else
               fatal "Value '$OPTARG' for the pressure is no (floating point) number."
             fi
