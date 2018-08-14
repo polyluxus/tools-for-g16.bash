@@ -486,7 +486,7 @@ process_options ()
             H) 
                requested_submit_status="hold"
                message "The submission with status 'hold' is still in development." 
-               warning "(BSUB) Current settings would prevent releasing the job."
+               warning "(RWTH) Current settings would prevent releasing the job."
                ;;
 
           #hlp     -k       Only create (keep) the jobscript, do not submit it.
