@@ -145,13 +145,14 @@ format_one_checkpoint ()
     local output_fchk="${use_input_chk%.*}.fchk"
     local output_xyz="${use_input_chk%.*}.xyz"
     local g16_output g16_formchk_args obabel_output
-    debug "global variables used: 'g16_formchk_cmd=$g16_formchk_cmd' 'g16_formchk_opts=$g16_formchk_opts'"
+    debug "global variables used: 'g16_formchk_cmd=\"$g16_formchk_cmd\"' 'g16_formchk_opts=\"$g16_formchk_opts\"'"
 
     backup_if_exists "$output_fchk"
     backup_if_exists "$output_xyz"
     
     # Run the programs
-    g16_formchk_args=( "$g16_formchk_opts" "$use_input_chk" "$output_fchk" )
+    [[ -z "$g16_formchk_opts" ]] || g16_formchk_args+=( "$g16_formchk_opts" )
+    g16_formchk_args+=( "$use_input_chk" "$output_fchk" )
 
     debug "Command: $g16_formchk_cmd ${g16_formchk_args[*]} 2>&1"
     g16_output=$($g16_formchk_cmd "${g16_formchk_args[@]}" 2>&1) || returncode="$?"
