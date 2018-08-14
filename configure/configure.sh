@@ -691,17 +691,20 @@ get_configuration_interactive ()
   debug "use_load_modules=$use_load_modules"
 
   use_g16_formchk_cmd="$g16_formchk_cmd"
+  use_g16_formchk_opts="$g16_formchk_opts"
   use_g16_testrt_cmd="$g16_testrt_cmd"
   if [[ -z $use_g16_formchk_cmd || -z $use_g16_testrt_cmd ]] ; then
     ask_g16_utilities
   else
     message "Recovered setting: 'g16_testrt_cmd=$use_g16_testrt_cmd'"
     message "Recovered setting: 'g16_formchk_cmd=$use_g16_formchk_cmd'"
-    ask "Would you like to change this setting?"
+    message "Recovered setting: 'g16_formchk_opts=$use_g16_formchk_opts'"
+    ask "Would you like to change these settings?"
     if read_boolean ; then ask_g16_utilities ; fi
   fi
   debug "use_g16_testrt_cmd=$use_g16_testrt_cmd"
   debug "use_g16_formchk_cmd=$use_g16_formchk_cmd"
+  debug "use_g16_formchk_opts=$use_g16_formchk_opts"
 
   use_obabel_cmd="$obabel_cmd"
   if [[ -z $use_obabel_cmd ]] ; then
@@ -769,7 +772,16 @@ get_configuration_interactive ()
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_qsys_details ; fi
   fi
+  use_bsub_project="$bsub_project"
+  if [[ "$use_request_qsys" =~ [Bb][Ss][Uu][Bb] && -z $use_bsub_project ]] ; then
+    ask_qsys_details
+  else
+    message "Recovered setting: 'bsub_project=$use_bsub_project'"
+    ask "Would you like to change this setting?"
+    if read_boolean ; then ask_qsys_details ; fi
+  fi
   debug "use_request_qsys=$use_request_qsys"
+  debug "use_bsub_project=$use_bsub_project"
 
   use_requested_walltime="$requested_walltime"
   if [[ -z $use_requested_walltime ]] ; then
