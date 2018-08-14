@@ -160,9 +160,10 @@ validate_g16_route ()
 
 process_inputfile ()
 {
-    local testfile="$1"
+    local testfile
+    testfile=$(is_readable_file_or_exit "$1") || return 1
     debug "Processing Input: $testfile"
-    read_g16_input_file "$testfile"
+    read_g16_input_file "$testfile" 
     validate_g16_route "$route_section"
 }
 

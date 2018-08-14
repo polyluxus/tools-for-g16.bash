@@ -496,7 +496,7 @@ read_xyz_geometry_file ()
       fi
 
     done < "$parsefile"
-    (( ${#inputfile_body[@]} == 0 )) && warning "No geometry in '$parsefile'."
+    (( ${#inputfile_body[@]} == 0 )) && warning "No geometry in '$parsefile'." || return 1
     debug "Finished reading input file."
 }
 

@@ -39,7 +39,7 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
 #
     g16_formchk_cmd="wrapper.g16 formchk"
 #   No options should be included in the above, but can be set:
-    g16_formchk_opts=""
+    g16_formchk_opts="-3"
 #
 # - checking the route section (this is similar to above)
 #   
