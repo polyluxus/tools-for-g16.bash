@@ -160,9 +160,10 @@ validate_g16_route ()
 
 process_inputfile ()
 {
-    local testfile="$1"
+    local testfile
+    testfile=$(is_readable_file_or_exit "$1") || return 1
     debug "Processing Input: $testfile"
-    read_xyz_geometry_file "$testfile"
+    read_xyz_geometry_file "$testfile" || return 1
 
     [[ -z $jobname ]] && jobname="${testfile/.xyz/}"
     [[ "$jobname" == "%s" ]] && jobname="${testfile/.start.xyz/}"
@@ -451,6 +452,7 @@ process_options ()
 # If this script is sourced, return before executing anything
 (( ${#BASH_SOURCE[*]} > 1 )) && return 0
 
+exit_status=0
 # Save how script was called
 script_invocation_spell="$0 $*"
 
@@ -493,8 +495,9 @@ fi
 # Evaluate Options
 
 process_options "$@"
-process_inputfile "$requested_inputfile"
+process_inputfile "$requested_inputfile" || exit_status="1"
 
 #hlp   $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"
+exit $exit_status
