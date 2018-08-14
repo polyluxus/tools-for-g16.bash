@@ -177,16 +177,21 @@ process_inputfile ()
     else
       additional_keywords+=("Freq($use_freq_opts)")
     fi
+    message "Added '${additional_keywords[-1]}' to the route section."
     # Temperature/Pressure should be added via switches
     while ! modified_route=$(remove_temp_keyword     "$modified_route") ; do : ; done
     additional_keywords+=("$use_temp_keyword")
+    message "Added '${additional_keywords[-1]}' to the route section."
     while ! modified_route=$(remove_pressure_keyword "$modified_route") ; do : ; done
     additional_keywords+=("$use_pres_keyword")
+    message "Added '${additional_keywords[-1]}' to the route section."
     # The guess/geom keyword will be added, it will clash if already present
     while ! modified_route=$(remove_guess_keyword    "$modified_route") ; do : ; done
     additional_keywords+=("guess(read)")
+    message "Added '${additional_keywords[-1]}' to the route section."
     while ! modified_route=$(remove_geom_keyword     "$modified_route") ; do : ; done
     additional_keywords+=("geom(check)")
+    message "Added '${additional_keywords[-1]}' to the route section."
     # Population analysis doesn't work well with frequency runs
     while ! modified_route=$(remove_pop_keyword      "$modified_route") ; do : ; done
     # Writing additional output does not work well with frequency runs
@@ -199,6 +204,7 @@ process_inputfile ()
       warning "but will be retrieved from the checkpointfile."
       while ! modified_route=$(remove_gen_keyword "$modified_route") ; do : ; done
       additional_keywords+=('ChkBasis')
+      message "Added '${additional_keywords[-1]}' to the route section."
       if check_denfit_keyword "$modified_route" ; then
         debug "No 'DenFit' present."
       else
@@ -208,6 +214,8 @@ process_inputfile ()
 
     # Add the custom route options
     additional_keywords+=("$use_custom_route_keywords")
+    debug "Added the following keywords to route section:"
+    debug "$(fold -w80 -c -s <<< "${additional_keywords[*]}")"
     route_section="$modified_route ${additional_keywords[*]}"
 
     local verified_checkpoint
