@@ -177,9 +177,24 @@ process_inputfile ()
       warning "No route section was specified, using default:"
       warning "$(fold -w80 -c -s <<< "$route_section")"
     fi
-    [[ -z $use_temp_keyword ]]          || route_section="$route_section $use_temp_keyword"
-    [[ -z $use_pres_keyword ]]          || route_section="$route_section $use_pres_keyword"
-    [[ -z $use_custom_route_keywords ]] || route_section="$route_section $use_custom_route_keywords"
+    if [[ -z $use_temp_keyword ]] ; then
+      debug "No temperature set."      
+    else 
+      route_section="$route_section $use_temp_keyword"
+      message "Added '$use_temp_keyword' to route section."
+    fi
+    if [[ -z $use_pres_keyword ]] ; then 
+      debug "No pressure set."
+    else
+      route_section="$route_section $use_pres_keyword"
+      message "Added '$use_pres_keyword' to route section."
+    fi
+    if [[ -z $use_custom_route_keywords ]] ; then
+      debug "No user specified keywords to be added."
+    else
+      route_section="$route_section $use_custom_route_keywords"
+      message "Added '$use_custom_route_keywords' to the route section."
+    fi
 
     local substitute
     [[ -z $title_section ]] && title_section="Calculation: %j"
@@ -196,9 +211,11 @@ process_inputfile ()
       title_section="${BASH_REMATCH[1]}$substitute${BASH_REMATCH[3]}"
       [[ -z $title_section ]] && title_section="Title card required"
     done
+    message "Using caption '$title_section'."
 
     [[ -z $molecule_charge ]] && molecule_charge=0
     [[ -z $molecule_mult ]] && molecule_mult=1
+    message "Setting charge ($molecule_charge) and multiplicity ($molecule_mult)."
     write_g16_input_file > "$inputfile"
     message "Written modified inputfile '$inputfile'."
     # validate_g16_route "$route_section"
@@ -277,7 +294,17 @@ process_options ()
             if [[ $OPTARG =~ [Ll][Ii][Ss][Tt] ]] ; then
               local array_index=0
               for array_index in "${!g16_route_section_predefined[@]}" ; do
-                printf '%5d : %s\n' "$array_index" "${g16_route_section_predefined[$array_index]}"
+                (( array_index > 0 )) && printf '\n'
+                printf '%5d : ' "$array_index" 
+                local printvar printline=0
+                while read -r printvar || [[ -n "$printvar" ]] ; do
+                  if (( printline == 0 )) ; then
+                    printf '%-80s\n' "$printvar"
+                  else
+                    printf '        %-80s\n' "$printvar"
+                  fi
+                  (( printline++ ))
+                done <<< "$( fold -w80 -c -s <<< "${g16_route_section_predefined[$array_index]}" )"
               done
               exit 0
             elif is_integer "$OPTARG" ; then
@@ -345,35 +372,35 @@ process_options ()
           #hlp              The total request will be larger to account for 
           #hlp              overhead which Gaussian may need. (Default: 512)
           #hlp
-            m) 
-               validate_integer "$OPTARG" "the memory"
-               if (( OPTARG == 0 )) ; then
-                 fatal "Memory limit must not be zero."
-               fi
-               requested_memory="$OPTARG" 
-               ;;
+          m) 
+            validate_integer "$OPTARG" "the memory"
+            if (( OPTARG == 0 )) ; then
+              fatal "Memory limit must not be zero."
+            fi
+            requested_memory="$OPTARG" 
+            ;;
 
           #hlp   -p <ARG>   Define number of professors to be used. (Default: 4)
           #hlp
-            p) 
-               validate_integer "$OPTARG" "the number of threads"
-               if (( OPTARG == 0 )) ; then
-                 fatal "Number of threads must not be zero."
-               fi
-               requested_numCPU="$OPTARG" 
-               ;;
+          p) 
+            validate_integer "$OPTARG" "the number of threads"
+            if (( OPTARG == 0 )) ; then
+              fatal "Number of threads must not be zero."
+            fi
+            requested_numCPU="$OPTARG" 
+            ;;
 
           #hlp   -d <ARG>   Define disksize via the MaxDisk keyword (MB).
           #hlp              This option does not set a parameter for the queueing system,
           #hlp              but will only modify the input file with the size specification.
           #hlp              
-            d) 
-               validate_integer "$OPTARG" "the 'MaxDisk' keyword"
-               if (( OPTARG == 0 )) ; then
-                 fatal "The keyword 'MaxDisk' must not be zero."
-               fi
-               requested_maxdisk="$OPTARG"
-               ;;
+          d) 
+            validate_integer "$OPTARG" "the 'MaxDisk' keyword"
+            if (( OPTARG == 0 )) ; then
+              fatal "The keyword 'MaxDisk' must not be zero."
+            fi
+            requested_maxdisk="$OPTARG"
+            ;;
 
           #hlp   -s         Suppress logging messages of the script.
           #hlp              (May be specified multiple times.)
