@@ -234,7 +234,7 @@ process_options ()
     #hlp    
     local OPTIND=1 
 
-    while getopts :T:P:r:R:l:t:C:j:f:c:M:m:p:d:sh options ; do
+    while getopts :T:P:r:R:l:t:C:j:f:c:M:U:m:p:d:sh options ; do
         case $options in
           #hlp   -T <ARG>   Specify temperature in kelvin.
           #hlp              Writes 'Temperature=<ARG>' to the route section. 
@@ -357,15 +357,27 @@ process_options ()
           #hlp
           c) 
             validate_whole_number "$OPTARG" "charge"
+            [[ -z $molecule_charge ]] || warning "Overwriting previously set charge ($molecule_charge)."
             molecule_charge="$OPTARG"
             ;;
 
           #hlp   -M <ARG>   Define the Multiplicity of the molecule. (Default: 1)
+          #hlp              If specified with '-U <ARG>' only the last one will have an effect.
           #hlp
           M) 
             validate_integer "$OPTARG" "multiplicity"
             (( OPTARG == 0 )) && fatal "Multiplicity must not be zero."
+            [[ -z $molecule_mult ]] || warning "Overwriting previously set multiplicity ($molecule_mult)."
             molecule_mult="$OPTARG"
+            ;;
+
+          #hlp   -U <ARG>   Define the number of unpaired electrons in the molecule. (Default: 0)
+          #hlp              If specified with '-M <ARG>' only the last one will have an effect.
+          #hlp
+          U) 
+            validate_integer "$OPTARG" "unpaired electrons"
+            [[ -z $molecule_mult ]] || warning "Overwriting previously set multiplicity ($molecule_mult)."
+            molecule_mult="$(( OPTARG + 1 ))"
             ;;
 
           # Link 0 related options
