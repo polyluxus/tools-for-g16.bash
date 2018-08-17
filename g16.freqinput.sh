@@ -180,11 +180,19 @@ process_inputfile ()
     message "Added '${additional_keywords[-1]}' to the route section."
     # Temperature/Pressure should be added via switches
     while ! modified_route=$(remove_temp_keyword     "$modified_route") ; do : ; done
-    additional_keywords+=("$use_temp_keyword")
-    message "Added '${additional_keywords[-1]}' to the route section."
+    if [[ -z "$use_temp_keyword" ]] ; then
+      debug "No temperature keyword to add."
+    else
+      additional_keywords+=("$use_temp_keyword")
+      message "Added '${additional_keywords[-1]}' to the route section."
+    fi
     while ! modified_route=$(remove_pressure_keyword "$modified_route") ; do : ; done
-    additional_keywords+=("$use_pres_keyword")
-    message "Added '${additional_keywords[-1]}' to the route section."
+    if [[ -z "$use_pres_keyword" ]] ; then
+      debug "No pressure keyword to add."
+    else
+      additional_keywords+=("$use_pres_keyword")
+      message "Added '${additional_keywords[-1]}' to the route section."
+    fi
     # The guess/geom keyword will be added, it will clash if already present
     while ! modified_route=$(remove_guess_keyword    "$modified_route") ; do : ; done
     additional_keywords+=("guess(read)")
@@ -213,9 +221,15 @@ process_inputfile ()
     fi
 
     # Add the custom route options
-    additional_keywords+=("$use_custom_route_keywords")
-    debug "Added the following keywords to route section:"
-    debug "$(fold -w80 -c -s <<< "${additional_keywords[*]}")"
+    if [[ -z "$use_custom_route_keywords" ]] ; then
+      debug "No custom route keywords specified."
+    else
+      additional_keywords+=("$use_custom_route_keywords")
+      debug "Added the following keywords to route section:"
+      debug "$(fold -w80 -c -s <<< "${additional_keywords[*]}")"
+    fi
+
+    # Merge all keywords
     route_section="$modified_route ${additional_keywords[*]}"
 
     local verified_checkpoint
