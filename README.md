@@ -63,10 +63,11 @@ This reposity comes with the following scripts (and files):
    This tool reads in a file containing a set of cartesian coordinates (might be a Gaussian input file)
    and writes a Gaussian inputfile with predefined keywords.
    More keywords can be added with commandline options, too.
+   The script can now interface to Turbomole and GFN-xTB coord files, too.
 
  * `g16.tools.rc`
    This file contains the settings for the scripts.
 
 All of the scripts come with a `-h` switch to give a summary of the available options.
 
-Martin (0.0.12, 2018-08-14)
+Martin (0.0.13, 2018-08-17)
