@@ -375,7 +375,7 @@ process_options ()
             ;;
 
           # Link 0 related options
-          #hlp     -m <ARG> Define the total memory to be used in megabyte.
+          #hlp   -m <ARG>   Define the total memory to be used in megabyte.
           #hlp              The total request will be larger to account for 
           #hlp              overhead which Gaussian may need. (Default: 512)
           #hlp
@@ -387,7 +387,7 @@ process_options ()
                requested_memory="$OPTARG" 
                ;;
 
-          #hlp     -p <ARG> Define number of professors to be used. (Default: 4)
+          #hlp   -p <ARG>   Define number of professors to be used. (Default: 4)
           #hlp
             p) 
                validate_integer "$OPTARG" "the number of threads"
@@ -397,7 +397,7 @@ process_options ()
                requested_numCPU="$OPTARG" 
                ;;
 
-          #hlp     -d <ARG> Define disksize via the MaxDisk keyword (MB).
+          #hlp   -d <ARG>   Define disksize via the MaxDisk keyword (MB).
           #hlp              This option does not set a parameter for the queueing system,
           #hlp              but will only modify the input file with the size specification.
           #hlp              
@@ -409,14 +409,14 @@ process_options ()
                requested_maxdisk="$OPTARG"
                ;;
 
-          #hlp     -s       Suppress logging messages of the script.
+          #hlp   -s         Suppress logging messages of the script.
           #hlp              (May be specified multiple times.)
           #hlp
           s) 
             (( stay_quiet++ )) 
             ;;
 
-          #hlp     -h       this help.
+          #hlp   -h         this help.
           #hlp
           h) 
             helpme 
