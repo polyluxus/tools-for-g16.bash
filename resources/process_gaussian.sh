@@ -443,7 +443,6 @@ warn_mem_directive ()
 
 # other link0 derectives should be appended here if necessary
 
-#was remove_comment ()
 remove_g16_input_comment ()
 {
     debug "Attempting to remove comment."
@@ -473,29 +472,92 @@ read_xyz_geometry_file ()
     local parsefile="$1" line storeline
     debug "Working on: $parsefile"
     local pattern pattern_num pattern_element pattern_print
+    local         pattern_coord skip_reading_coordinates="no" convert_coord2xyz="no"
+    local -a      inputfile_coord2xyz
+    local         pattern_charge pattern_mult pattern_uhf
     # A global variable called 'inputfile_body' should start with the geometry
     # Other content is stored in global variables 'title_section', 'molecule_charge', 'molecule_mult'
+    local molecule_charge_local molecule_mult_local molecule_uhf_local
     local body_index=0
+    pattern_coord="^[[:space:]]*\\\$coord[[:space:]]*$"
     pattern_num="[+-]?[0-9]+\\.[0-9]*"
     pattern_element="[A-Za-z]+[A-Za-z]*"
     pattern="^[[:space:]]*($pattern_element)[[:space:]]*($pattern_num)[[:space:]]*($pattern_num)[[:space:]]*($pattern_num)[[:space:]]*(.*)$"
     pattern_print="%-3s %15.8f %15.8f %15.8f"
+    pattern_charge="[Cc][Hh][Rr][Gg][[:space:]]+([+-]?[0-9]+)"
+    pattern_mult="[Mm][Uu][Ll][Tt][[:space:]]+([0-9]+)"
+    pattern_uhf="[Uu][Hh][Ff][[:space:]]+([0-9]+)"
     while read -r line || [[ -n "$line" ]] ; do
       debug "Read line: $line"
       
-      if [[ "$line" =~ $pattern ]] ; then
-        # shellcheck disable=SC2059
-        storeline=$(printf "$pattern_print" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}")
-        debug "Ignored end of line: '${BASH_REMATCH[5]}'."
-        inputfile_body[$body_index]="$storeline" 
-        debug "Read and stored: '${inputfile_body[$body_index]}'"
-        (( body_index++ ))
-        debug "Increase index to $body_index."
-      else
-        debug "Line doesn't match pattern of xyz."
+      if [[ "$skip_reading_coordinates" =~ [Nn][Oo] ]] ; then
+        if [[ "$line" =~ $pattern_coord ]] ; then
+          message "This appears to be a file in Turbomole format."
+          message "File will be converted using openbabel."
+          skip_reading_coordinates="yes"
+          convert_coord2xyz="yes"
+        else
+          debug "Not a coord file."
+        fi
+
+        if [[ "$line" =~ $pattern ]] ; then
+          # shellcheck disable=SC2059
+          storeline=$(printf "$pattern_print" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}")
+          debug "Ignored end of line: '${BASH_REMATCH[5]}'."
+          inputfile_body[$body_index]="$storeline" 
+          debug "Read and stored: '${inputfile_body[$body_index]}'"
+          (( body_index++ ))
+          debug "Increase index to $body_index."
+          continue
+        else
+          debug "Line doesn't match pattern of xyz."
+        fi
+      fi
+
+      if [[ "$line" =~ $pattern_charge ]] ; then
+        molecule_charge_local="${BASH_REMATCH[1]}"
+        message "Found molecule's charge: $molecule_charge_local."
+        [[ -z $molecule_charge ]] || warning "Overwriting previously set charge ($molecule_charge)."
+        molecule_charge="$molecule_charge_local"
+        debug "Use molecule's charge: $molecule_charge."
+      elif [[ "$line" =~ $pattern_mult ]] ; then
+        molecule_mult_local="${BASH_REMATCH[1]}"
+        message "Found molecule's multiplicity: $molecule_mult_local."
+        [[ -z $molecule_mult ]] || warning "Overwriting previously set multiplicity ($molecule_mult)."
+        molecule_mult="$molecule_mult_local"
+        message "Use molecule's multiplicity: $molecule_mult."
+      elif [[ "$line" =~ $pattern_uhf ]] ; then
+        molecule_uhf_local="${BASH_REMATCH[1]}"
+        message "Found number of unpaired electrons for the molecule: $molecule_uhf_local."
+        [[ -z $molecule_mult ]] || warning "Overwriting previously set multiplicity ($molecule_mult)."
+        molecule_mult="$(( molecule_uhf_local + 1 ))"
+        message "Use molecule's multiplicity: $molecule_mult."
       fi
 
     done < "$parsefile"
+
+    if [[ "$convert_coord2xyz" =~ [Yy][Ee][Ss] ]] ; then
+      local tmplog 
+      tmplog=$(mktemp tmp.XXXXXXXX) 
+      debug "$(ls -lh "$tmplog")"
+      mapfile -t inputfile_coord2xyz < <("$obabel_cmd" -itmol "$parsefile" -oxyz 2> "$tmplog")
+      debug "$(cat "$tmplog")"
+      debug "$(rm -v "$tmplog")"
+
+      # First line is the number of atoms.
+      # Second line is a comment.
+      unset 'inputfile_coord2xyz[0]' 'inputfile_coord2xyz[1]'
+      debug "$(printf '%s\n' "${inputfile_coord2xyz[@]}")"
+      if (( ${#inputfile_body[@]} > 0 )) ; then
+        warning "Input file body has previously been written to."
+        warning "The following content will be overwritten:"
+        warning "$(printf '%s\n' "${inputfile_body[@]}")"
+      fi
+      inputfile_body=( "${inputfile_coord2xyz[@]}" )
+    else
+      debug "Inputfile doesn't need conversion from Turbomol to Xmol format."
+    fi
+
     if (( ${#inputfile_body[@]} == 0 )) ; then
       warning "No geometry in '$parsefile'." 
       return 1
@@ -503,7 +565,6 @@ read_xyz_geometry_file ()
     debug "Finished reading input file."
 }
 
-#was read_inputfile ()
 read_g16_input_file ()
 {
     # The route section contains one or more lines.
@@ -668,7 +729,6 @@ read_g16_input_file ()
     debug "Finished reading input file."
 }
 
-# was collate_keyword_opts ()
 collate_route_keyword_opts ()
 {
     # The function takes an inputstring and removes any unnecessary spaces
@@ -706,7 +766,6 @@ collate_route_keyword_opts ()
     debug "Returned: $keepstring"
 }
 
-# was collate_keywords ()
 collate_route_keywords ()
 {
     # This function removes spaces which have been entered in the original input
@@ -1100,7 +1159,6 @@ validate_write_in_out_jobname ()
     message "Output will be written to '$outputfile'."
 }
 
-#was write_new_inputfile ()
 write_g16_input_file ()
 {
     debug "Writing new (modified) input file."
@@ -1166,7 +1224,8 @@ write_g16_input_file ()
 
     # Append the rest of the input file
     debug "Lines till end of file: ${#inputfile_body[@]}"
-    debug "Content: ${inputfile_body[*]}"
+    debug "Content:"
+    debug "$(printf '%s\n' "${inputfile_body[@]}")"
     printf "%s\\n" "${inputfile_body[@]}"
     if (( ${#use_custom_tail[*]} > 0 )) ; then
       debug "Additional lines for input: ${#use_custom_tail[@]}"
