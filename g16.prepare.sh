@@ -9,9 +9,13 @@
 # 
 # The help lines are distributed throughout the script and grepped for
 #
-#hlp   WIP
-#hlp   This script reads an xyz input file, extracts the geometry,
+#hlp   << WORK IN PROGESS >>
+#hlp   This script reads an input file, extracts the geometry,
 #hlp   and writes a new input file from default parameter.
+#hlp
+#hlp   Currently the script is able to handle files of the following format:
+#hlp   xmol, Gaussian input with Cartesian coordinates,
+#hlp   Turbomole coord format (and by extension xtb files)
 #hlp
 #hlp   This software comes with absolutely no warrenty. None. Nada.
 #hlp
@@ -354,6 +358,8 @@ process_options ()
             ;;
 
           #hlp   -c <ARG>   Define the charge of the molecule. (Default: 0)
+          #hlp              If the pattern 'chrg <number>' is found in the file,
+          #hlp              the script will use it. (Interface to xtb files)
           #hlp
           c) 
             validate_whole_number "$OPTARG" "charge"
@@ -363,6 +369,8 @@ process_options ()
 
           #hlp   -M <ARG>   Define the Multiplicity of the molecule. (Default: 1)
           #hlp              If specified with '-U <ARG>' only the last one will have an effect.
+          #hlp              If the pattern 'mult <number>' is found in the file,
+          #hlp              the script will use it. 
           #hlp
           M) 
             validate_integer "$OPTARG" "multiplicity"
@@ -373,6 +381,8 @@ process_options ()
 
           #hlp   -U <ARG>   Define the number of unpaired electrons in the molecule. (Default: 0)
           #hlp              If specified with '-M <ARG>' only the last one will have an effect.
+          #hlp              If the pattern 'uhf <number>' is found in the file,
+          #hlp              the script will use it. (Interface to xtb files)
           #hlp
           U) 
             validate_integer "$OPTARG" "unpaired electrons"
