@@ -13,8 +13,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-g16.bash"
-version="0.0.13"
-versiondate="2018-08-17"
+version="0.0.14"
+versiondate="2018-08-20"
 
 #
 # Standard commands for external software:
@@ -81,6 +81,8 @@ requested_numCPU=4
 requested_maxdisk=10000
 # Account to project (currently only for bsub-rwth)
 bsub_project=default
+# E-Mail address to send notifications to
+bsub_email=default
 # Calculations will be submitted to run (hold/keep)
 requested_submit_status="run"
 

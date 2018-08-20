@@ -118,8 +118,12 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
 #
 # bsub_project=default
 
+# Sent notifications to the following email address (only for bsub)
+#
+# bsub_email="default@default.com"
+
 # Calculations will be submitted to run (hold/keep)
   requested_submit_status="run"
 
 #
-# End of automatic configuration, Thu Aug  9 17:17:29 CEST 2018.
+# End of automatic configuration, Mon Aug 20 14:59:11 CEST 2018.

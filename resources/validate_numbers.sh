@@ -111,3 +111,18 @@ format_duration_or_exit ()
 }
 
 
+is_email ()
+{
+    # Simplified email matching
+    # See: https://www.regular-expressions.info/email.html
+    [[ $1 =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]
+}
+
+validate_email () 
+{
+    if ! is_email "$1"; then
+        [ ! -z "$2" ] && fatal "Value for $2 ($1) is no email address."
+          [ -z "$2" ] && fatal "Value '$1' is no email address."
+    fi
+}
+
