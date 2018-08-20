@@ -257,6 +257,11 @@ write_jobscript ()
       else
         echo "#BSUB -P $bsub_project" >&9
       fi
+      if [[ "$bsub_email" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
+        message "No email address given, notifications will be sent to system default."
+      else
+        echo "#BSUB -u $bsub_email" >&9
+      fi
       echo "jobid=\"\${LSB_JOBID}\"" >&9
 
     else
@@ -415,7 +420,7 @@ process_options ()
     #hlp    
     local OPTIND=1 
 
-    while getopts :m:p:d:w:b:e:j:Hkq:Q:P:sh options ; do
+    while getopts :m:p:d:w:b:e:j:Hkq:Q:P:u:sh options ; do
         case $options in
 
           #hlp     -m <ARG> Define the total memory to be used in megabyte.
@@ -481,12 +486,12 @@ process_options ()
                ;;
 
           #hlp     -H       submit the job with status hold (PBS) or PSUSP (BSUB)
-          #hlp              --TODO--
           #hlp
             H) 
                requested_submit_status="hold"
-               message "The submission with status 'hold' is still in development." 
-               warning "(RWTH) Current settings would prevent releasing the job."
+               if [[ "$queue" =~ [Rr][Ww][Tt][Hh] ]] ; then
+                 warning "(RWTH) Current permissions of 'bresume' prevent releasing the job."
+               fi 
                ;;
 
           #hlp     -k       Only create (keep) the jobscript, do not submit it.
@@ -505,11 +510,21 @@ process_options ()
             Q) request_qsys="$OPTARG" ;;
 
           #hlp     -P <ARG> Account to project.
-          #hlp              Automatically selects '-Q bsub-rwth' and remote execution.
+          #hlp              This is a BSUB specific setting, it therefore also
+          #hlp              automatically selects '-Q bsub-rwth' and remote execution.
+          #hlp              If the argument is 'default', '0', or '', it reverts to system settings.
           #hlp
             P) 
                bsub_project="$OPTARG"
                request_qsys="bsub-rwth"  
+               ;;
+
+          #hlp     -u <ARG> Set user email address. This is also a BSUB specific setting.
+          #hlp              In other queueing systems it just won't be used.
+          #hlp              If the argument is 'default', '0', or '', it reverts to system settings.
+          #hlp
+            u) 
+               bsub_email=$(validate_email "$OPTARG")
                ;;
 
           #hlp     -s       Suppress logging messages of the script.

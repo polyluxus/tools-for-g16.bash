@@ -202,6 +202,18 @@ read_human_input ()
   echo "$readvar"
 }
 
+read_email ()
+{
+  debug "Reading email address."
+  local verified_email
+  until is_email "$verified_email" ; do
+    verified_email=$(read_human_input)
+    [[ "$verified_email" == 0 ]] && unset readvar && break
+  done
+  debug "verified_email=$verified_email"
+  echo "$verified_email"
+}
+
 read_boolean ()
 {
   debug "Reading boolean."
@@ -512,6 +524,10 @@ ask_qsys_details ()
       ask "What project would you like to specify?"
       use_bsub_project=$(read_human_input)
       debug "use_bsub_project=$use_bsub_project"
+
+      ask "What what email address should recieve notifications?"
+      use_bsub_email=$(read_email)
+      debug "use_bsub_email=$use_bsub_email"
       ;;&
     *[Rr][Ww][Tt][Hh] )
       use_request_qsys="bsub-rwth"
@@ -780,8 +796,17 @@ get_configuration_interactive ()
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_qsys_details ; fi
   fi
+  use_bsub_email="$bsub_email"
+  if [[ "$use_request_qsys" =~ [Bb][Ss][Uu][Bb] && -z $use_bsub_email ]] ; then
+    ask_qsys_details
+  else
+    message "Recovered setting: 'bsub_email=$use_bsub_email'"
+    ask "Would you like to change this setting?"
+    if read_boolean ; then ask_qsys_details ; fi
+  fi
   debug "use_request_qsys=$use_request_qsys"
   debug "use_bsub_project=$use_bsub_project"
+  debug "use_bsub_email=$use_bsub_email"
 
   use_requested_walltime="$requested_walltime"
   if [[ -z $use_requested_walltime ]] ; then
@@ -1046,6 +1071,15 @@ print_configuration ()
     echo "# bsub_project=default"
   else
     echo "  bsub_project=\"$use_bsub_project\""
+  fi
+  echo ""
+
+  echo "# Sent notifications to the following email address (only for bsub)"
+  echo "#"
+  if [[ -z $use_bsub_email ]] ; then
+    echo "# bsub_email=default@default.com"
+  else
+    echo "  bsub_email=\"$use_bsub_email\""
   fi
   echo ""
 
