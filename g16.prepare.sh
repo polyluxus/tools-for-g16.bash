@@ -169,8 +169,17 @@ process_inputfile ()
     debug "Processing Input: $testfile"
     read_xyz_geometry_file "$testfile" || return 1
 
-    [[ -z $jobname ]] && jobname="${testfile/.xyz/}"
-    [[ "$jobname" == "%s" ]] && jobname="${testfile/.start.xyz/}"
+    if [[ -z $jobname ]] ; then
+      # Remove trailing directories
+      jobname="${testfile##*/}"
+      jobname="${jobname/..xyz/}"
+    elif [[ "$jobname" == "%s" ]] ; then 
+      # Remove trailing directories
+      jobname="${testfile##*/}"
+      jobname="${jobname/.start.xyz/}"
+    else
+      debug "Jobname: $jobname"
+    fi
     input_suffix="$g16_input_suffix"
     [[ -z $inputfile ]] && inputfile="${jobname}.com"
     checkpoint="${inputfile%.*}.chk"
