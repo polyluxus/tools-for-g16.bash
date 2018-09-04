@@ -1,0 +1,73 @@
+\documentclass[   % inherits article
+  final,          % or
+  % draft,
+  a4paper,        % or
+  % letterpaper   % (etc. pp.)
+  rscols=3,       % this is the default
+  margin=1.0cm,   % default, or
+]{refsheet}
+
+% Typesetting codeprettier
+\usepackage[dvipsnames]{xcolor}
+\definecolor{lightgray}{gray}{0.95}
+\usepackage{listings}
+\lstdefinestyle{mytex}{
+  language=[LaTeX]TeX,%
+  backgroundcolor=\color{lightgray},%
+  basicstyle=\footnotesize\ttfamily,%
+  keywordstyle=\bfseries,%
+  breaklines=true,%
+  morekeywords={part,chapter,subsection,subsubsection,paragraph,subparagraph}%
+}
+
+\lstset{style=mytex}
+
+% Symbols for SE and GH
+\usepackage{fontawesome} 
+% Symbols for creative commons
+\usepackage{ccicons}
+% linking to the outside world
+\usepackage{hyperref}
+% Martin's weird SE handle
+% (use a different package and Xe/LuaLaTeX if you're doing proper Japanese cheat sheets.)
+\usepackage{CJKutf8} 
+
+% Please no font errors
+% https://tex.stackexchange.com/a/9366/33413
+\newcommand\mybackslash{\char`\\}
+
+% What this is about
+\title{Cheat-Sheat for \texttt{tools-for-g16.bash} (0.0.14, 2018-08-20)}
+\author{Martin C Schwarzer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+This accompanies the repository \href{https://github.com/polyluxus/tools-for-g16.bash}{polyluxus/tools-for-g16.bash}.
+
+Various bash scripts to aid the use of the quantum chemistry software package Gaussian 16.
+
+\section{\texttt{g16.prepare.sh}}
+\section{\texttt{g16.testroute.sh}}
+\section{\texttt{g16.freqinput.sh}}
+\section{\texttt{g16.submit.sh}}
+\section{\texttt{g16.getenergy.sh}}
+\section{\texttt{g16.getfreq.sh}}
+\section{\texttt{g16.chk2xyz.sh}}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-m <ARG>] Memory
+\end{rslisttt}
+
+\section{Author, Bugs, and the Rest}
+
+Martin C Schwarzer  
+\faStackExchange~\href{https://chemistry.stackexchange.com/users/4945}{Martin-\begin{CJK*}{UTF8}{min}マーチン\end{CJK*}}
+\faGithub~\href{https://github.com/polyluxus}{polyluxus}
+
+This document is licensed \ccbysa.
+
+\end{document}
