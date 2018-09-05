@@ -37,7 +37,7 @@
 \newcommand\mybackslash{\char`\\}
 
 % What this is about
-\title{Cheat-Sheat for \texttt{tools-for-g16.bash} (0.0.14, 2018-08-20)}
+\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.0.14, 2018-08-20)}
 \author{Martin C Schwarzer}
 \date{\today}
 
@@ -50,16 +50,158 @@ This accompanies the repository \href{https://github.com/polyluxus/tools-for-g16
 
 Various bash scripts to aid the use of the quantum chemistry software package Gaussian 16.
 
+\subsection{Preliminary notes}
+
+The notation in brackets \texttt{[]} indicate optional arguments/inputs;
+arguments in angles \texttt{<>} require human input.
+
+The following abbreviations will be used:
+\begin{rslisttt}{ARG}
+  \item[ARG] String type argument
+  \item[INT] Positive integer
+  \item[NUM] Whole number
+  \item[FLT] Floating point number
+  \item[DUR] Duration in format \texttt{[[HH:]MM:]SS} 
+\end{rslisttt}
+
 \section{\texttt{g16.prepare.sh}}
-\section{\texttt{g16.testroute.sh}}
-\section{\texttt{g16.freqinput.sh}}
-\section{\texttt{g16.submit.sh}}
-\section{\texttt{g16.getenergy.sh}}
-\section{\texttt{g16.getfreq.sh}}
-\section{\texttt{g16.chk2xyz.sh}}
+
+This tool reads in a file containing a set of cartesian coordinates and
+writes a Gaussian inputfile with predefined keywords. 
+The script interfaces to Xmol format, 
+Turbomole/ GFN-xTB \texttt{coord} format, too.
+
+Usage: \texttt{g16.prepare.sh [opt] <file>}
 
 \begin{rslisttt}{-m <ARG>}
-  \item[-m <ARG>] Memory
+  \item[-T <FLT>] Temperature (kelvin)
+  \item[-P <FLT>] Pressure (atmosphere)
+  \item[-r <ARG>] Add \texttt{<ARG>} to route section
+  \item[-R <ARG>] Specific route section \texttt{<ARG>}
+  \item[-l <INT>] Load predefined route section 
+  \item[-l list ] Show all predefined route sections
+  \item[-t <ARG>] Adds \texttt{<ARG>} to end of file
+  \item[-C <ARG>] Specify caption/title of job;\\ Replacements:
+  \begin{rsinline} %Does not work as expected :(
+    \item[\%F] input filename,
+    \item[\%f] input filename without \texttt{.xyz},
+    \item[\%s] like \texttt{\%f}, also filtering \texttt{start},
+    \item[\%j] jobname.
+  \end{rsinline}
+  \item[-j <ARG>] Jobname 
+  \item[-j \%s  ] Jobname is filename filtering \texttt{start.xyz}
+  \item[-f <ARG>] Filename of generated input
+  \item[-c <NUM>] Charge 
+  \item[-M <INT>] Multiplicity (not zero
+  \item[-U <INT>] Memory
+  \item[-m <INT>] Memory (megabyte)
+  \item[-p <INT>] Processors
+  \item[-d <INT>] disksize via MaxDisk (megabyte)
+  \item[-s      ] Silent script mode
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+\section{\texttt{g16.testroute.sh}}
+
+This tool parses a Gaussian 16 inputfile and 
+tests the route section for syntax errors 
+with the Gaussian 16 utility \texttt{testrt}.
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-s      ] Silent script mode
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+\section{\texttt{g16.freqinput.sh}}
+
+This tool reads in a Gaussian 16 inputfile and 
+adds relevant keywords for a frequency calculation.
+
+Usage: \texttt{g16.freqinput.sh [opt] <file>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-o <ARG>] Adds option \texttt{<ARG>} to the \texttt{freq} keyword.
+  \item[-R      ] Adds option \texttt{ReadFC} to the \texttt{freq} option list.
+  \item[-T <FLT>] Temperature (kelvin)
+  \item[-P <FLT>] Pressure (atmosphere)
+  \item[-r <ARG>] Add \texttt{<ARG>} to route section
+  \item[-t <ARG>] Adds \texttt{<ARG>} to end of file
+  \item[-m <INT>] Memory (megabyte)
+  \item[-p <INT>] Processors
+  \item[-d <INT>] disksize via MaxDisk (megabyte)
+  \item[-s      ] Silent script mode
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+
+\section{\texttt{g16.submit.sh}}
+
+This tool parses and then submits a Gaussian 16 inputfile to a queueing system.
+
+Usage: \texttt{g16.submit.sh [opt] <file>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-m <INT>] Memory (megabyte)
+  \item[-p <INT>] Processors
+  \item[-d <INT>] disksize via MaxDisk (megabyte)
+  \item[-w <DUR>] Walltime limit
+    %\item[-b <ARG>] Specify binary (TODO)
+  \item[-e <ARG>] Specify an environment variable, format \texttt{VAR=<value>}
+  \item[-j <INT>] Wait for job with ID \texttt{<INT>}
+  \item[-H      ] Submit with status hold (PBS) or \texttt{PSUSP} (BSUB)
+  \item[-k      ] Only create (keep) the jobscript, do not submit it.
+  \item[-Q <ARG>] Queue for which job script should be created 
+    (\texttt{pbs-gen}/\texttt{bsub-rwth})
+    %\item[-q <ARG>] Specify queue (TODO)
+  \item[-P <ARG>] Account to project (BSUB);
+    if \texttt{<ARG>} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
+  \item[-u <ARG>] set user email address (BSUB);
+    if \texttt{<ARG>} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
+  \item[-s      ] Silent script mode
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+
+\section{\texttt{g16.getenergy.sh}}
+
+This tool finds energy statements from Gaussian 16 calculations.
+
+Usage: \texttt{g16.getenergy.sh [opt] [<file(s)>]}
+
+If no files given, it finds energy statements from all log files in the current directory.
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-i <ARG>] Specify input suffix if processing directory
+  \item[-o <ARG>] Specify output suffix if processing directory
+  \item[-q      ] Silent script mode
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+\section{\texttt{g16.getfreq.sh}}
+
+This tool summarises a frequency calculation and extracts the thermochemistry data.
+
+Usage: \texttt{g16.getfreq.sh [opt] <file(s)>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-v      ] Incrementally increase verbosity
+  \item[-V <INT>] Set level of verbosity directly, (0-4)
+  \item[-c      ] Separate values by comma (\texttt{-V0} or \texttt{-V1})
+  \item[-O <ARG>] Write summary to file instead of screen
+  \item[-q      ] Silent script mode
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+\section{\texttt{g16.chk2xyz.sh}}
+
+A tool to convert a checkpoint file to an \texttt{xyz} file. 
+This formats the \texttt{chk} first to a \texttt{fchk}.
+
+Usage: \texttt{g16.chk2xyz.sh [option] <checkpointfile(s)>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-f      ] Formats all checkpointfiles that are found in the current directory
+  \item[-h      ] Help file 
 \end{rslisttt}
 
 \section{Author, Bugs, and the Rest}
