@@ -165,10 +165,15 @@ process_inputfile ()
 
     # Remove any solvent information present, and add new ones
     while ! modified_route=$(remove_scrf_keyword     "$modified_route") ; do : ; done
-    if [[ -z $use_scrf_opts ]] ; then
+    if (( ${#use_scrf_opts[@]} == 0 )) ; then
       additional_keywords+=("SCRF(PCM,solvent=water)")
     else
-      additional_keywords+=("SCRF($(printf '%s,' "${use_scrf_opts[@]}"))")
+      local collated_scrf_opts
+      collated_scrf_opts=$(printf ',%s' "${use_scrf_opts[@]}")
+      # Remove first character (comma)
+      collated_scrf_opts=${collated_scrf_opts:1}
+      debug "Found options: $collated_scrf_opts"
+      additional_keywords+=("SCRF($collated_scrf_opts)")
     fi
     message "Added '${additional_keywords[-1]}' to the route section."
 
@@ -268,6 +273,7 @@ process_options ()
           #hlp
           o) 
             use_scrf_opts+=("$OPTARG")
+
             ;;
 
           #hlp   -S <ARG>   Adds 'solvent=<ARG>' to the SCRF options.
@@ -277,7 +283,7 @@ process_options ()
             if [[ ${use_scrf_opts[*]} =~ [Ss][Oo][Ll][Vv][Ee][Nn][Tt] ]] ; then
               fatal "Multiple solvents specified in 'SCRF($(printf '%s,' "${use_scrf_opts[@]}" "solvent=$OPTARG"))'."
             else
-              use_scrf_opts=("solvent=$OPTARG")
+              use_scrf_opts+=("solvent=$OPTARG")
             fi
             ;;
 
