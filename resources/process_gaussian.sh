@@ -935,6 +935,15 @@ remove_freq_keyword ()
     remove_any_keyword "$test_routesection" "$pattern" || return 1
 }
 
+remove_scrf_keyword ()
+{
+    # Assigns the scrf keyword to the pattern
+    local test_routesection="$1"
+    local pattern
+    pattern="[Ss][Cc][Rr][Ff]"
+    remove_any_keyword "$test_routesection" "$pattern" || return 1
+}
+
 remove_temp_keyword ()
 {
     # Assigns the temp keyword to the pattern
