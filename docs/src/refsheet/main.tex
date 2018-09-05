@@ -53,10 +53,12 @@ Various bash scripts to aid the use of the quantum chemistry software package Ga
 \subsection{Preliminary notes}
 
 The notation in brackets \texttt{[]} indicate optional arguments/inputs;
-arguments in angles \texttt{<>} require human input.
+arguments in angles \texttt{<>} require human input;
+a bar \texttt{|} indicates alternatives.
 
 The following abbreviations will be used:
 \begin{rslisttt}{ARG}
+  \item[opt] Short for option(s)
   \item[ARG] String type argument
   \item[INT] Positive integer
   \item[NUM] Whole number
@@ -197,7 +199,7 @@ Usage: \texttt{g16.getfreq.sh [opt] <file(s)>}
 A tool to convert a checkpoint file to an \texttt{xyz} file. 
 This formats the \texttt{chk} first to a \texttt{fchk}.
 
-Usage: \texttt{g16.chk2xyz.sh [option] <checkpointfile(s)>}
+Usage: \texttt{g16.chk2xyz.sh -f | <checkpointfile(s)>}
 
 \begin{rslisttt}{-m <ARG>}
   \item[-f      ] Formats all checkpointfiles that are found in the current directory
@@ -206,10 +208,12 @@ Usage: \texttt{g16.chk2xyz.sh [option] <checkpointfile(s)>}
 
 \section{Author, Bugs, and the Rest}
 
+\begin{flushright}
 Martin C Schwarzer  
 \faStackExchange~\href{https://chemistry.stackexchange.com/users/4945}{Martin-\begin{CJK*}{UTF8}{min}マーチン\end{CJK*}}
 \faGithub~\href{https://github.com/polyluxus}{polyluxus}
 
 This document is licensed \ccbysa.
+\end{flushright}
 
 \end{document}
