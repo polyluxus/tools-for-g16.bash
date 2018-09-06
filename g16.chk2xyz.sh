@@ -271,7 +271,7 @@ fi
 debug "Initialising option index."
 OPTIND="1"
 
-while getopts :fh options ; do
+while getopts :fsh options ; do
   #hlp   Options:
   #hlp
   case $options in
@@ -284,6 +284,10 @@ while getopts :fh options ; do
        debug "Found: ${checkpoint_list[*]}"
        (( ${#checkpoint_list[*]} == 0 )) &&  warning "No checkpoint files found in this directory."
        ;;
+    #hlp     -s         Suppress messages, warnings, and errors of this script
+    #hlp                (May be specified multiple times.)
+    #hlp
+    s) (( stay_quiet++ )) ;; 
     #hlp     -h      Prints this help text
     #hlp
     h) helpme ;; 
