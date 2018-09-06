@@ -1,4 +1,5 @@
 .g16.toolsrc
+.g16.*
 backup
 examples
 .tmp*
