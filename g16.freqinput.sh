@@ -249,7 +249,7 @@ process_inputfile ()
     fi
 
     # Assign new checkpoint/inputfile
-    local file_suffix_temp file_suffix_pres
+    local use_file_suffix file_suffix_temp file_suffix_pres
     if [[ -z $use_temp_keyword ]] ; then
       debug "No temperature set, no suffix to extract."
     else
