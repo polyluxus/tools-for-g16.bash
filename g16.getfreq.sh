@@ -391,7 +391,7 @@ process_options ()
     local ignore_verbosity_switch=false
     local printlevel
     # Evaluate options
-    while getopts :vV:cO:qh options ; do
+    while getopts :vV:cO:sh options ; do
       #hlp   Usage: $scriptname [options] filenames(s)
       #hlp 
       #hlp   Options:
@@ -438,10 +438,10 @@ process_options ()
             backup_if_exists "$write_outputfile"
             ;;
     
-          #hlp     -q         Suppress messages, warnings, and errors of this script
-          #hlp              (May be specified multiple times.)
+          #hlp     -s         Suppress messages, warnings, and errors of this script
+          #hlp                (May be specified multiple times.)
           #hlp
-          q) (( stay_quiet++ )) ;; 
+          s) (( stay_quiet++ )) ;; 
 
           #hlp     -h         display this help
           #hlp

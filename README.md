@@ -65,9 +65,12 @@ This reposity comes with the following scripts (and files):
    More keywords can be added with commandline options, too.
    The script can now interface to Turbomole and GFN-xTB coord files, too.
 
+ * `g16.dissolve.sh`
+   This tool parses a Gaussian input file and adds keywords for solvent corrections.
+
  * `g16.tools.rc`
    This file contains the settings for the scripts.
 
 All of the scripts come with a `-h` switch to give a summary of the available options.
 
-Martin (0.0.14, 2018-08-20)
+Martin (0.0.15, 2018-09-06)
