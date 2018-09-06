@@ -172,10 +172,13 @@ process_inputfile ()
     # The script adds the freq keyword, if it is already present, 
     # a syntax error will occour. It needs to be removed and re-added (with options).
     while ! modified_route=$(remove_freq_keyword     "$modified_route") ; do : ; done
-    if [[ -z $use_freq_opts ]] ; then 
+    if (( ${#use_freq_opts[@]} == 0 )) ; then 
       additional_keywords+=("Freq")
     else
-      additional_keywords+=("Freq($use_freq_opts)")
+      local concatenate_freq_opts
+      concatenate_freq_opts=$(printf ',%s' "${use_freq_opts[@]}")
+      concatenate_freq_opts=${concatenate_freq_opts:1}
+      additional_keywords+=("Freq($concatenate_freq_opts)")
     fi
     message "Added '${additional_keywords[-1]}' to the route section."
     # Temperature/Pressure should be added via switches
@@ -221,13 +224,16 @@ process_inputfile ()
     fi
 
     # Add the custom route options
-    if [[ -z "$use_custom_route_keywords" ]] ; then
+    if (( ${#use_custom_route_keywords[@]} == 0 )) ; then
       debug "No custom route keywords specified."
     else
-      additional_keywords+=("$use_custom_route_keywords")
-      debug "Added the following keywords to route section:"
-      debug "$(fold -w80 -c -s <<< "${additional_keywords[*]}")"
+      additional_keywords+=("${use_custom_route_keywords[@]}")
+      debug "Added the following custom keywords to route section:"
+      debug "$(fold -w80 -c -s <<< "${use_custom_route_keywords[*]}")"
     fi
+
+    debug "Added the following keywords to route section:"
+    debug "$(fold -w80 -c -s <<< "${additional_keywords[*]}")"
 
     # Merge all keywords
     route_section="$modified_route ${additional_keywords[*]}"
@@ -305,11 +311,7 @@ process_options ()
           #hlp              Example Options: NoRaman, VCD, ReadFC
           #hlp
           o) 
-            if [[ -z $use_freq_opts ]] ; then
-              use_freq_opts="$OPTARG"
-            else
-              use_freq_opts="$use_freq_opts, $OPTARG" 
-            fi
+            use_freq_opts+=("$OPTARG")
             ;;
 
           #hlp   -R         Writes a property run input file to redo a frequency calculation.
@@ -321,11 +323,7 @@ process_options ()
           #hlp
           R) 
             g16_checkpoint_save="false" 
-            if [[ -z $use_freq_opts ]] ; then
-              use_freq_opts="ReadFC"
-            else
-              use_freq_opts="ReadFC, $use_freq_opts"
-            fi
+            use_freq_opts+=("ReadFC")
             warning "If not based on a frequency calculation, this will produce an error."
             ;;
 
@@ -364,7 +362,7 @@ process_options ()
           #hlp              The stack will be collated, but no sanity check will be performed.
           #hlp 
           r) 
-            use_custom_route_keywords="$use_custom_route_keywords $OPTARG" 
+            use_custom_route_keywords+=("$OPTARG" )
             ;;
 
           #hlp   -t <ARG>   Adds <ARG> to the end (tail) of the new input file.
@@ -496,6 +494,11 @@ if [[ ! -z $g16_tools_rc_loc ]] ; then
 else
   debug "No custom settings found."
 fi
+
+# Initialise some variables
+
+declare -a use_freq_opts
+declare -a use_custom_route_keywords
 
 # Evaluate Options
 
