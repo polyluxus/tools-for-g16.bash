@@ -73,4 +73,4 @@ This reposity comes with the following scripts (and files):
 
 All of the scripts come with a `-h` switch to give a summary of the available options.
 
-Martin (0.0.15dev, 2018-09-05)
+Martin (0.0.15, 2018-09-06)
