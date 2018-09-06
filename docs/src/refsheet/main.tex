@@ -1,0 +1,262 @@
+\documentclass[   % inherits article
+  final,          % or
+  % draft,
+  a4paper,        % or
+  % letterpaper   % (etc. pp.)
+  rscols=3,       % this is the default
+  margin=1.0cm,   % default, or
+]{refsheet}
+
+% Typesetting codeprettier
+\usepackage[dvipsnames]{xcolor}
+\definecolor{lightgray}{gray}{0.95}
+\usepackage{listings}
+\lstdefinestyle{mytex}{
+  language=[LaTeX]TeX,%
+  backgroundcolor=\color{lightgray},%
+  basicstyle=\footnotesize\ttfamily,%
+  keywordstyle=\bfseries,%
+  breaklines=true,%
+  morekeywords={part,chapter,subsection,subsubsection,paragraph,subparagraph}%
+}
+
+\lstset{style=mytex}
+
+% Symbols for SE and GH
+\usepackage{fontawesome} 
+% Symbols for creative commons
+\usepackage{ccicons}
+% linking to the outside world
+\usepackage{hyperref}
+% Martin's weird SE handle
+% (use a different package and Xe/LuaLaTeX if you're doing proper Japanese cheat sheets.)
+\usepackage{CJKutf8} 
+
+% Please no font errors
+% https://tex.stackexchange.com/a/9366/33413
+\newcommand\mybackslash{\char`\\}
+
+% What this is about
+\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.0.15, 2018-09-06)}
+\author{Martin C Schwarzer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+This accompanies the repository \href{https://github.com/polyluxus/tools-for-g16.bash}{polyluxus/tools-for-g16.bash}.
+
+Various bash scripts to aid the use of the quantum chemistry software package Gaussian 16.
+
+\subsection{Preliminary notes}
+
+The notation in brackets \texttt{[ ]} indicate optional arguments/inputs;
+arguments in angles \texttt{< >} require human input;
+a bar \texttt{|} indicates alternatives.
+
+The following abbreviations will be used:
+\begin{rslisttt}{ARG}
+  \item[opt] Short for option(s)
+  \item[ARG] String type argument
+  \item[INT] Positive integer
+  \item[NUM] Whole number
+  \item[FLT] Floating point number
+  \item[DUR] Duration in format \texttt{[[HH:]MM:]SS} 
+\end{rslisttt}
+
+\subsection{Installation \& Configuration}
+
+General settings for the scripts can be found in the file \texttt{g16.tools.rc}.
+Alternatively, settings can be stored in \texttt{.g16.toolsrc}, 
+which always has precedence.
+Every script will check three different directories in the order
+\begin{enumerate*}
+\item installation directory
+\item user's home
+\item parent working directory.
+\end{enumerate*}
+It will load the last configuration file it finds.
+
+Setting files can be generated with the \texttt{configure/configure.sh} script.
+
+\section{\texttt{g16.prepare.sh}}
+
+This tool reads in a file containing a set of cartesian coordinates and
+writes a Gaussian inputfile with predefined keywords. 
+The script interfaces to Xmol format, 
+Turbomole/ GFN-xTB \texttt{coord} format, too.
+
+Usage: \texttt{g16.prepare.sh [opt] <file>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-T <FLT>] Temperature (kelvin)
+  \item[-P <FLT>] Pressure (atmosphere)
+  \item[-r <ARG>] Add \texttt{<ARG>} to route section
+  \item[-R <ARG>] Specific route section \texttt{<ARG>}
+  \item[-l <INT>] Load predefined route section 
+  \item[-l list ] Show all predefined route sections
+  \item[-t <ARG>] Adds \texttt{<ARG>} to end of file
+  \item[-C <ARG>] Specify caption/title of job;\\ Replacements:
+  \begin{rsinline} %Does not work as expected :(
+    \item[\%F] input filename;
+    \item[\%f] input filename without \texttt{.xyz};
+    \item[\%s] like \texttt{\%f}, also filtering \texttt{start};
+    \item[\%j] jobname.
+  \end{rsinline}
+  \item[-j <ARG>] Jobname 
+  \item[-j \%s  ] Jobname is filename filtering \texttt{start.xyz}
+  \item[-f <ARG>] Filename of generated input
+  \item[-c <NUM>] Charge 
+  \item[-M <INT>] Multiplicity (not zero
+  \item[-U <INT>] Memory
+  \item[-m <INT>] Memory (megabyte)
+  \item[-p <INT>] Processors
+  \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+\section{\texttt{g16.testroute.sh}}
+
+This tool parses a Gaussian 16 inputfile and 
+tests the route section for syntax errors 
+with the Gaussian 16 utility \texttt{testrt}.
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+\section{\texttt{g16.freqinput.sh}}
+
+This tool reads in a Gaussian 16 inputfile and 
+adds relevant keywords for solvent corrections.
+
+Usage: \texttt{g16.freqinput.sh [opt] <file>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-o <ARG>] Adds option \texttt{<ARG>} to the \texttt{scrf} keyword.
+  \item[-S <ARG>] Adds option \texttt{solvent=<ARG>} to the \texttt{scrf} option list.
+  \item[-O      ] Runs an optimisation (preserves or adds \texttt{OPT})
+  \item[-r <ARG>] Add \texttt{<ARG>} to route section
+  \item[-t <ARG>] Adds \texttt{<ARG>} to end of file
+  \item[-m <INT>] Memory (megabyte)
+  \item[-p <INT>] Processors
+  \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+\section{\texttt{g16.dissolve.sh}}
+
+This tool reads in a Gaussian 16 inputfile and 
+adds relevant keywords for a frequency calculation.
+
+Usage: \texttt{g16.freqinput.sh [opt] <file>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-o <ARG>] Adds option \texttt{<ARG>} to the \texttt{freq} keyword.
+  \item[-R      ] Adds option \texttt{ReadFC} to the \texttt{freq} option list.
+  \item[-T <FLT>] Temperature (kelvin)
+  \item[-P <FLT>] Pressure (atmosphere)
+  \item[-r <ARG>] Add \texttt{<ARG>} to route section
+  \item[-t <ARG>] Adds \texttt{<ARG>} to end of file
+  \item[-m <INT>] Memory (megabyte)
+  \item[-p <INT>] Processors
+  \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+\section{\texttt{g16.submit.sh}}
+
+This tool parses and then submits a Gaussian 16 inputfile to a queueing system.
+
+Usage: \texttt{g16.submit.sh [opt] <file>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-m <INT>] Memory (megabyte)
+  \item[-p <INT>] Processors
+  \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+  \item[-w <DUR>] Walltime limit
+    %\item[-b <ARG>] Specify binary (TODO)
+  \item[-e <ARG>] Specify an environment variable, format \texttt{VAR=<value>}
+  \item[-j <INT>] Wait for job with ID \texttt{<INT>}
+  \item[-H      ] Submit with status hold (PBS) or \texttt{PSUSP} (BSUB)
+  \item[-k      ] Only create (keep) the jobscript, do not submit it.
+  \item[-Q <ARG>] Queue for which job script should be created 
+    (\texttt{pbs-gen}/\texttt{bsub-rwth})
+    %\item[-q <ARG>] Specify queue (TODO)
+  \item[-P <ARG>] Account to project (BSUB);
+    if \texttt{<ARG>} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
+  \item[-u <ARG>] set user email address (BSUB);
+    if \texttt{<ARG>} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+
+\section{\texttt{g16.getenergy.sh}}
+
+This tool finds energy statements from Gaussian 16 calculations.
+
+Usage: \texttt{g16.getenergy.sh [opt] [<file(s)>]}
+
+If no files given, it finds energy statements from all log files in the current directory.
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-i <ARG>] Specify input suffix if processing directory
+  \item[-o <ARG>] Specify output suffix if processing directory
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+\section{\texttt{g16.getfreq.sh}}
+
+This tool summarises a frequency calculation and extracts the thermochemistry data.
+
+Usage: \texttt{g16.getfreq.sh [opt] <file(s)>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-v      ] Incrementally increase verbosity
+  \item[-V <INT>] Set level of verbosity directly, (0-4)
+  \item[-c      ] Separate values by comma (\texttt{-V0} or \texttt{-V1})
+  \item[-O <ARG>] Write summary to file instead of screen
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+\section{\texttt{g16.chk2xyz.sh}}
+
+A tool to convert a checkpoint file to an \texttt{xyz} file. 
+This formats the \texttt{chk} first to a \texttt{fchk}.
+
+Usage: \texttt{g16.chk2xyz.sh [-s] -h | -f | <chk-file(s)>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-f      ] Formats all checkpointfiles that are found in the current directory
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+% move to end
+\vfill
+\section{Author, Bugs, and the Rest}
+
+\begin{flushright}
+Martin C Schwarzer  
+\faStackExchange~\href{https://chemistry.stackexchange.com/users/4945}{Martin-\begin{CJK*}{UTF8}{min}マーチン\end{CJK*}}
+\faGithub~\href{https://github.com/polyluxus}{polyluxus}
+
+This document is licensed \ccbysa.
+\end{flushright}
+
+%because there currently is not enough to fill the second page
+\columnbreak
+\null\vfill\null
+\columnbreak
+\null\vfill\null
+
+\end{document}
