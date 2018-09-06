@@ -155,8 +155,16 @@ process_inputfile ()
 
     # Firstly assume it is a single point calculation, therefore
     # remove the opt keyword (it can be added later)
-    # TODO: Command switch to run optimisations
-    while ! modified_route=$(remove_opt_keyword      "$modified_route") ; do : ; done
+    if [[ $use_opt_keyword =~ [Tt][Rr][Uu][Ee] ]] ; then
+      if check_opt_keyword "$modified_route" ; then
+        debug "Opt keyword not present in input stream."
+        additional_keywords+=("OPT")
+      else
+        debug "Found Opt keyword in input stream, it will be preserved."
+      fi
+    else
+      while ! modified_route=$(remove_opt_keyword      "$modified_route") ; do : ; done
+    fi
     
     # If adding solvent corrections, the molecular structure is not optimised
     # a frequency calculation would be meaningless, therefore
@@ -263,7 +271,7 @@ process_options ()
     #hlp    
     local OPTIND=1 
 
-    while getopts :o:S:r:t:m:p:d:sh options ; do
+    while getopts :o:S:Or:t:m:p:d:sh options ; do
         case $options in
           #hlp   -o <ARG>   Adds options <ARG> to the SCRF keyword.
           #hlp              May be specified multiple times.
@@ -285,6 +293,15 @@ process_options ()
             else
               use_scrf_opts+=("solvent=$OPTARG")
             fi
+            ;;
+
+          #hlp   -O         Run an optimisation
+          #hlp              This will preserve a present OPT keyword, or add it.
+          #hlp              If you want to use specific options, use the -r switch instead.
+          #hlp              For example: -r 'OPT(MaxCycles=222)'
+          #hlp
+          O)
+            use_opt_keyword="true"
             ;;
 
           #hlp   -r <ARG>   Adds custom command <ARG> to the route section.
@@ -429,6 +446,7 @@ fi
 
 declare -a use_custom_route_keywords
 declare -a use_scrf_opts
+use_opt_keyword="false"
 
 # Evaluate Options
 

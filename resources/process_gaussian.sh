@@ -1047,7 +1047,7 @@ check_allcheck_option ()
 check_freq_keyword ()
 {
     debug "Checking if the Freq keyword is set in the route section."
-    # Assigning the allcheck option to the pattern
+    # Assigning the freq option to the pattern
     local parseline="$1"
     local pattern="[Ff][Rr][Ee][Qq]"
     local keyword_alias="Freq"
@@ -1064,7 +1064,7 @@ check_freq_keyword ()
 check_denfit_keyword ()
 {
     debug "Checking if the Denfit keyword is set in the route section."
-    # Assigning the allcheck option to the pattern
+    # Assigning the denfit option to the pattern
     local parseline="$1"
     local pattern="[Dd][Ee][Nn][Ff][Ii][Tt]"
     local keyword_alias="Denfit"
@@ -1081,7 +1081,7 @@ check_denfit_keyword ()
 check_gen_keyword ()
 {
     debug "Checking if the Gen keyword is set in the route section."
-    # Assigning the allcheck option to the pattern
+    # Assigning the gen option to the pattern
     local parseline="$1"
     local pattern="[Ge][Ee][Nn]"
     local keyword_alias="Gen"
@@ -1095,6 +1095,22 @@ check_gen_keyword ()
     return 1
 }
 
+check_opt_keyword ()
+{
+    debug "Checking if the Opt keyword is set in the route section."
+    # Assigning the opt option to the pattern
+    local parseline="$1"
+    local pattern="[Oo][Pp][Tt]"
+    local keyword_alias="Opt"
+    debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
+    if check_any_keyword "$parseline" "$pattern" ; then
+      message "Keyword '$keyword_alias' found in input stream."
+      debug "Again returning with 0."
+      return 0
+    fi
+    debug "Keyword '$keyword_alias' not found. (Return 1)"
+    return 1
+}
 
 
 
