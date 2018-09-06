@@ -550,9 +550,8 @@ process_options ()
       fatal "There is no inputfile specified"
     fi
 
-    # If a filename is specified, it must exist, otherwise exit
-    # different mode let's you only use the jobname
-    #requested_inputfile=$(is_readable_file_or_exit "$1") || exit 1 
+    # The test whether the file exists or not will be done 
+    # when extracting more information
     requested_inputfile="$1"
     shift
     debug "Specified input: $requested_inputfile"

@@ -387,8 +387,7 @@ process_options ()
 
     # If a filename is specified, it must exist, otherwise exit
     # different mode let's you only use the jobname
-    #requested_inputfile=$(is_readable_file_or_exit "$1") || exit 1 
-    requested_inputfile="$1"
+    requested_inputfile=$(is_readable_file_or_exit "$1") || exit 1 
     shift
     debug "Specified input: $requested_inputfile"
 
