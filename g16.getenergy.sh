@@ -218,7 +218,7 @@ get_scriptpath_and_source_files || exit 1
 # Initialise options
 OPTIND="1"
 
-while getopts :hqi:o: options ; do
+while getopts :hsi:o: options ; do
   #hlp   Usage: $scriptname [options] <filenames>
   #hlp
   #hlp   If no filenames are specified, the script looks for all '*.com'
@@ -231,10 +231,10 @@ while getopts :hqi:o: options ; do
     #hlp
     h) helpme ;; 
 
-    #hlp     -q        Suppress messages, warnings, and errors
+    #hlp     -s        Suppress messages, warnings, and errors
     #hlp               (May be specified multiple times.)
     #hlp
-    q) (( stay_quiet++ )) ;; 
+    s) (( stay_quiet++ )) ;; 
 
     #hlp     -i <ARG>  Specify input suffix if processing a directory.
     #hlp               (Will look for input files with given suffix and

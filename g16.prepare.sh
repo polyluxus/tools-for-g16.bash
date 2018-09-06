@@ -203,11 +203,11 @@ process_inputfile ()
       route_section="$route_section $use_pres_keyword"
       message "Added '$use_pres_keyword' to route section."
     fi
-    if [[ -z $use_custom_route_keywords ]] ; then
+    if (( ${use_custom_route_keywords[@]} == 0 )) ; then
       debug "No user specified keywords to be added."
     else
-      route_section="$route_section $use_custom_route_keywords"
-      message "Added '$use_custom_route_keywords' to the route section."
+      route_section="$route_section ${use_custom_route_keywords[*]}"
+      message "Added '${use_custom_route_keywords[*]}' to the route section."
     fi
 
     local substitute
@@ -282,7 +282,7 @@ process_options ()
           #hlp              The stack will be collated, but no sanity check will be performed.
           #hlp 
           r) 
-            use_custom_route_keywords="$use_custom_route_keywords $OPTARG" 
+            use_custom_route_keywords+=("$OPTARG")
             ;;
 
           #hlp   -R <ARG>   Specify the complete route section.
@@ -522,6 +522,10 @@ if [[ ! -z $g16_tools_rc_loc ]] ; then
 else
   debug "No custom settings found."
 fi
+
+# Initialise some variables
+
+declare -a use_custom_route_keywords
 
 # Evaluate Options
 
