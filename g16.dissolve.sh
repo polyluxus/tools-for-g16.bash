@@ -157,10 +157,10 @@ process_inputfile ()
     # remove the opt keyword (it can be added later)
     if [[ $use_opt_keyword =~ [Tt][Rr][Uu][Ee] ]] ; then
       if check_opt_keyword "$modified_route" ; then
+        debug "Found Opt keyword in input stream, it will be preserved."
+      else
         debug "Opt keyword not present in input stream."
         additional_keywords+=("OPT")
-      else
-        debug "Found Opt keyword in input stream, it will be preserved."
       fi
     else
       while ! modified_route=$(remove_opt_keyword      "$modified_route") ; do : ; done
