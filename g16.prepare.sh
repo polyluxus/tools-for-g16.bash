@@ -203,7 +203,7 @@ process_inputfile ()
       route_section="$route_section $use_pres_keyword"
       message "Added '$use_pres_keyword' to route section."
     fi
-    if (( ${use_custom_route_keywords[@]} == 0 )) ; then
+    if (( ${#use_custom_route_keywords[@]} == 0 )) ; then
       debug "No user specified keywords to be added."
     else
       route_section="$route_section ${use_custom_route_keywords[*]}"
