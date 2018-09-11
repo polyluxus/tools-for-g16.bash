@@ -142,22 +142,6 @@ get_scriptpath_and_source_files ()
 # Specific functions for this script only
 #
 
-validate_g16_route ()
-{
-    local read_route="$1"
-    local g16_output
-    debug "Read the following route section:"
-    debug "$read_route"
-    if g16_output=$($g16_testrt_cmd "$read_route" 2>&1) ; then
-      message "Route section has no syntax errors."
-      debug "$g16_output"
-    else
-      warning "There was an error in the route section"
-      message "$g16_output"
-      return 1
-    fi
-}
-
 process_inputfile ()
 {
     local testfile="$1"
@@ -288,7 +272,6 @@ process_inputfile ()
 
     write_g16_input_file > "$inputfile"
     message "Written modified inputfile '$inputfile'."
-    # validate_g16_route "$route_section"
 }
 
 #

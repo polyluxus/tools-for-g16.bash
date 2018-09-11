@@ -147,7 +147,12 @@ validate_g16_route ()
     local g16_output
     debug "Read the following route section:"
     debug "$read_route"
-    [[ -z $read_route ]] && warning "Route section appears to be empty."
+    if [[ -z $read_route ]] ; then 
+      warning "Route section appears to be empty."
+      warning "Check if there is an actual route card '#(|N|P|T)' in the input."
+    else
+      debug "Found route card and will process."
+    fi 
     if g16_output=$($g16_testrt_cmd "$read_route" 2>&1) ; then
       message "Route section has no syntax errors."
       debug "$g16_output"
@@ -164,7 +169,7 @@ process_inputfile ()
     testfile=$(is_readable_file_or_exit "$1") || return 1
     debug "Processing Input: $testfile"
     read_g16_input_file "$testfile" 
-    validate_g16_route "$route_section"
+    validate_g16_route "$route_section" || return 1
 }
 
 #
@@ -263,8 +268,9 @@ fi
 # Evaluate Options
 
 process_options "$@"
-process_inputfile "$requested_inputfile"
+process_inputfile "$requested_inputfile" || exit_status="$?"
 
 #hlp   $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"
+exit $exit_status
