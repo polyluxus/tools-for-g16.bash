@@ -256,7 +256,6 @@ process_inputfile ()
 
     write_g16_input_file > "$inputfile"
     message "Written modified inputfile '$inputfile'."
-    # validate_g16_route "$route_section"
 }
 
 #
