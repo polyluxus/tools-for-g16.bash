@@ -93,11 +93,11 @@ Usage: \texttt{g16.prepare.sh [opt] <file>}
 \begin{rslisttt}{-m <ARG>}
   \item[-T <FLT>] Temperature (kelvin)
   \item[-P <FLT>] Pressure (atmosphere)
-  \item[-r <ARG>] Add \texttt{<ARG>} to route section
-  \item[-R <ARG>] Specific route section \texttt{<ARG>}
+  \item[-r <ARG>] Add \texttt{ARG} to route section
+  \item[-R <ARG>] Specific route section \texttt{ARG}
   \item[-l <INT>] Load predefined route section 
   \item[-l list ] Show all predefined route sections
-  \item[-t <ARG>] Adds \texttt{<ARG>} to end of file
+  \item[-t <ARG>] Adds \texttt{ARG} to end of file
   \item[-C <ARG>] Specify caption/title of job;\\ Replacements:
   \begin{rsinline} %Does not work as expected :(
     \item[\%F] input filename;
@@ -109,8 +109,8 @@ Usage: \texttt{g16.prepare.sh [opt] <file>}
   \item[-j \%s  ] Jobname is filename filtering \texttt{start.xyz}
   \item[-f <ARG>] Filename of generated input
   \item[-c <NUM>] Charge 
-  \item[-M <INT>] Multiplicity (not zero
-  \item[-U <INT>] Memory
+  \item[-M <INT>] Multiplicity (\( > 1 \))
+  \item[-U <INT>] Unpaired electrons (\( > 0 \))
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
@@ -137,11 +137,11 @@ adds relevant keywords for solvent corrections.
 Usage: \texttt{g16.freqinput.sh [opt] <file>}
 
 \begin{rslisttt}{-m <ARG>}
-  \item[-o <ARG>] Adds option \texttt{<ARG>} to the \texttt{scrf} keyword.
-  \item[-S <ARG>] Adds option \texttt{solvent=<ARG>} to the \texttt{scrf} option list.
+  \item[-o <ARG>] Adds option \texttt{ARG} to the \texttt{scrf} keyword.
+  \item[-S <ARG>] Adds option \texttt{solvent=ARG} to the \texttt{scrf} option list.
   \item[-O      ] Runs an optimisation (preserves or adds \texttt{OPT})
-  \item[-r <ARG>] Add \texttt{<ARG>} to route section
-  \item[-t <ARG>] Adds \texttt{<ARG>} to end of file
+  \item[-r <ARG>] Add \texttt{ARG} to route section
+  \item[-t <ARG>] Adds \texttt{ARG} to end of file
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
@@ -157,12 +157,12 @@ adds relevant keywords for a frequency calculation.
 Usage: \texttt{g16.freqinput.sh [opt] <file>}
 
 \begin{rslisttt}{-m <ARG>}
-  \item[-o <ARG>] Adds option \texttt{<ARG>} to the \texttt{freq} keyword.
+  \item[-o <ARG>] Adds option \texttt{ARG} to the \texttt{freq} keyword.
   \item[-R      ] Adds option \texttt{ReadFC} to the \texttt{freq} option list.
   \item[-T <FLT>] Temperature (kelvin)
   \item[-P <FLT>] Pressure (atmosphere)
-  \item[-r <ARG>] Add \texttt{<ARG>} to route section
-  \item[-t <ARG>] Adds \texttt{<ARG>} to end of file
+  \item[-r <ARG>] Add \texttt{ARG} to route section
+  \item[-t <ARG>] Adds \texttt{ARG} to end of file
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
@@ -182,17 +182,17 @@ Usage: \texttt{g16.submit.sh [opt] <file>}
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
   \item[-w <DUR>] Walltime limit
     %\item[-b <ARG>] Specify binary (TODO)
-  \item[-e <ARG>] Specify an environment variable, format \texttt{VAR=<value>}
-  \item[-j <INT>] Wait for job with ID \texttt{<INT>}
+  \item[-e <ARG>] Specify an environment variable \texttt{ARG} in format \texttt{<VAR=value>}
+  \item[-j <INT>] Wait for job with ID \texttt{INT}
   \item[-H      ] Submit with status hold (PBS) or \texttt{PSUSP} (BSUB)
   \item[-k      ] Only create (keep) the jobscript, do not submit it.
   \item[-Q <ARG>] Queue for which job script should be created 
     (\texttt{pbs-gen}/\texttt{bsub-rwth})
     %\item[-q <ARG>] Specify queue (TODO)
   \item[-P <ARG>] Account to project (BSUB);
-    if \texttt{<ARG>} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
+    if \texttt{ARG} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
   \item[-u <ARG>] set user email address (BSUB);
-    if \texttt{<ARG>} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
+    if \texttt{ARG} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
