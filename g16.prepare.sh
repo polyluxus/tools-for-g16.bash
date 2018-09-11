@@ -150,8 +150,10 @@ validate_g16_route ()
 {
     local read_route="$1"
     local g16_output
+    local route_pattern="^[[:space:]]*#[nNpPtT]?[[:space:]]+.*$"
     debug "Read the following route section:"
     debug "$read_route"
+    [[ "$read_route" =~ $route_pattern ]] || { warning "No route card found." ; return 1 ; }
     if g16_output=$($g16_testrt_cmd "$read_route" 2>&1) ; then
       message "Route section has no syntax errors."
       debug "$g16_output"
