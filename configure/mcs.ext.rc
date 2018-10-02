@@ -82,6 +82,7 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
   g16_route_section_predefined[19]="#P BP86/def2TZVPP/W06 DenFit EmpiricalDispersion=GD3BJ int(ultrafinegrid) opt(AddGIC,MaxCycle=100, VeryTight)  scf(xqc) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
   g16_route_section_predefined[20]="#P BP86/def2SVP/W06   DenFit EmpiricalDispersion=GD3BJ int(ultrafinegrid) scrf(smd,solvent=water) opt(AddGIC,MaxCycle=100, VeryTight)  scf(xqc) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
   g16_route_section_predefined[21]="#P BP86/def2TZVPP/W06 DenFit EmpiricalDispersion=GD3BJ int(ultrafinegrid) scrf(smd,solvent=water) opt(AddGIC,MaxCycle=100, VeryTight)  scf(xqc) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
+  g16_route_section_predefined[22]="#P TPSSh/def2TZVP opt(MaxCycle=100,VeryTight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) EmpiricalDispersion=GD3BJ IOp(3/174=1000000) IOp(3/175=2238200) IOp(3/177=452900) IOp(3/178=4655000)"
 #
 
 # Default options for printing and verbosity
