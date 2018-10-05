@@ -212,8 +212,13 @@ process_inputfile ()
       message "Added '${use_custom_route_keywords[*]}' to the route section."
     fi
 
+    # Setting charge before substitutions
+    [[ -z $molecule_charge ]] && molecule_charge=0
+    [[ -z $molecule_mult ]] && molecule_mult=1
+    message "Setting charge ($molecule_charge) and multiplicity ($molecule_mult)."
+
     local substitute
-    [[ -z $title_section ]] && title_section="Calculation: %j"
+    [[ -z $title_section ]] && title_section="Calculation: %j; %c; %M; %U; $(date +"%F %T (%Z)")"
     while [[ $title_section =~ ^(.*)(%.)(.*)$ ]] ; do
       case ${BASH_REMATCH[2]} in
         %f)   substitute="${testfile/.xyz}" ;;
@@ -221,17 +226,18 @@ process_inputfile ()
         %s)   substitute="${testfile/start/}"
               substitute="${substitute/../.}" ;;
         %j)   substitute="$jobname" ;;
-         *)   warning "Substitution pattern '${BASH_REMATCH[2]}' not supported." 
-              substitute="${BASH_REMATCH[2]}" ;;
+        %c)   substitute="chrg $molecule_charge" ;;
+        %M)   substitute="mult $molecule_mult" ;;
+        %U)   substitute="uhf $(( molecule_mult - 1 ))" ;;
+         *)   warning "Removed unsupported substitution pattern '${BASH_REMATCH[2]}'." 
+              # Remove from string to avoid looping
+              substitute="" ;;
       esac
       title_section="${BASH_REMATCH[1]}$substitute${BASH_REMATCH[3]}"
       [[ -z $title_section ]] && title_section="Title card required"
     done
     message "Using caption '$title_section'."
 
-    [[ -z $molecule_charge ]] && molecule_charge=0
-    [[ -z $molecule_mult ]] && molecule_mult=1
-    message "Setting charge ($molecule_charge) and multiplicity ($molecule_mult)."
     write_g16_input_file > "$inputfile"
     message "Written modified inputfile '$inputfile'."
 }
@@ -242,8 +248,6 @@ process_inputfile ()
 
 process_options ()
 {
-  ##Needs complete rework
-
     #hlp   Options:
     #hlp    
     local OPTIND=1 
@@ -346,7 +350,10 @@ process_options ()
           #hlp                '%f' input without the xyz suffix
           #hlp                '%s' like '%f' filters out 'start'
           #hlp                '%j' job name
-          #hlp              Default: 'Calculation : %s'
+          #hlp                '%c' writes 'chrg {charge}'
+          #hlp                '%M' writes 'mult {multiplicity}'
+          #hlp                '%c' writes 'uhf {unpaired electrons}'
+          #hlp              Default: 'Calculation: %j; %c; %M; %U; $(date +"%F %T (%Z)")'
           #hlp 
           C) 
             title_section="$OPTARG"

@@ -1,6 +1,6 @@
 %&tex
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{refsheet}[2018/08/29 v1.0 Reference Sheet Class]
+\ProvidesClass{refsheet}[2018/10/05 v1.1 Reference Sheet Class]
 
 %%% OPTION DEFINITIONS
 %
@@ -129,7 +129,7 @@
 \RequirePackage{calc} 
 
 % generate dense lists
-\setlist{noitemsep,topsep=0.05ex,}
+\setlist{noitemsep,topsep=0.05ex}
 \setlist[itemize]{label=\textendash,leftmargin=*}
 \setlist[description]{leftmargin=!}
 % Provide a list-type for truetype descriptions
@@ -171,7 +171,7 @@
 % Provide inline description lists
 \newenvironment{rsinline}[1][\ttfamily]
 {
-  \begin{description*}[font={#1}]
+  \begin{description*}[mode=unboxed,font={#1},itemjoin={{; }},afterlabel={{\nobreakspace}},after={{.}}]
 }{
     \end{description*}
 }

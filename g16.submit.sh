@@ -270,12 +270,32 @@ write_jobscript ()
 
     echo "" >&9
 
+    # Inistialise variables, insert cleanup procedure, trap cleanup
+
+    cat >&9 <<-EOF
+			# Make a new scratch directory
+			g16_subscratch="$g16_scratch/g16job\$jobid"
+			mkdir -p "\$g16_subscratch"
+			
+			cleanup () {
+			  echo "Looking for files with filesize zero and delete them in '\$g16_subscratch'."
+			  find "\$g16_subscratch" -type f -size 0 -exec rm -v {} \\;
+			  echo "Deleting scratch '\$g16_subscratch' if empty."
+			  find "\$g16_subscratch" -maxdepth 0 -empty -exec rmdir -v {} \\;
+			  [[ -e "\$g16_subscratch" ]] && mv -v "\$g16_subscratch" "$PWD/${jobname}.scr\$jobid"
+			}
+			
+			trap cleanup EXIT SIGTERM
+			EOF
+
+    echo "" >&9
+
     # How Gaussian is loaded
     if [[ "$load_modules" =~ [Tt][Rr][Uu][Ee] ]] ; then
       (( ${#g16_modules[*]} == 0 )) && fatal "No modules to load."
+      # Only necessary in interactive mode for rwth
+      # source /usr/local_host/etc/init_modules.sh
       cat >&9 <<-EOF
-      # Might only be necessary for rwth (?)
-			source /usr/local_host/etc/init_modules.sh
 			module load ${g16_modules[*]} 2>&1
 			# Because otherwise it would go to the error output.
 			
@@ -304,9 +324,7 @@ write_jobscript ()
 		
 		cd "$PWD" || exit 1
 		
-		# Make a new scratch directory
-		g16_subscratch="$g16_scratch/g16job\$jobid"
-		mkdir -p "\$g16_subscratch"
+    # Pass scratch on to Gaussian (overwrites defaults from module)
 		export GAUSS_SCRDIR="\$g16_subscratch"
 		
 		EOF
@@ -322,12 +340,6 @@ write_jobscript ()
 		date
 		g16 < "$inputfile_modified" > "$outputfile"
 		joberror=\$?
-		
-		echo "Looking for files with filesize zero and delete them in '\$g16_subscratch'."
-		find "\$g16_subscratch" -type f -size 0 -exec rm -v {} \\;
-		echo "Deleting scratch '\$g16_subscratch' if empty."
-		find "\$g16_subscratch" -maxdepth 0 -empty -exec rmdir -v {} \\;
-		[[ -e "\$g16_subscratch" ]] && mv -v "\$g16_subscratch" "$PWD/${jobname}.scr\$jobid"
 		echo -n "End  : "
 		date
 		exit \$joberror
