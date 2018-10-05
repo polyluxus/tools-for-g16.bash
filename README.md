@@ -73,4 +73,7 @@ This reposity comes with the following scripts (and files):
 
 All of the scripts come with a `-h` switch to give a summary of the available options.
 
-Martin (0.0.15, 2018-09-06)
+A reference card (or cheat-sheet) with a summary can be found as a
+[pdf-file](./docs/refsheet.pdf) in the docs directory.
+
+Martin (0.0.16, 2018-10-05)
