@@ -59,6 +59,11 @@ This reposity comes with the following scripts (and files):
  * `g16.freqinput.sh`
    This tool reads in a Gaussian 16 inputfile and adds relevant keywords for a frequency calculation.
 
+ * `g16.ircinput.sh`
+   This tool reads in a Gaussian 16 inputfile from a frequncy calculation 
+   and adds relevant keywords for an IRC calculation, 
+   then writes two new inputfiles (for forward and reverse direction).
+
  * `g16.prepare.sh`
    This tool reads in a file containing a set of cartesian coordinates (might be a Gaussian input file)
    and writes a Gaussian inputfile with predefined keywords.
