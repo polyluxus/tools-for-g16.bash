@@ -154,7 +154,15 @@ process_inputfile ()
     local -a additional_keywords
     # The opt and irc keywords are mutually exclusive, therefore opt needs to be removed
     while ! modified_route=$(remove_opt_keyword      "$modified_route") ; do : ; done
-    # IRC calculations build upon Freq calculations, hence the latter needs to be removed
+    # IRC calculations build upon Freq calculations, hence the latter should be present in the source
+    if check_freq_keyword "$modified_route" ; then
+      debug "Source input was frequency calculation."
+    else
+      warning "Keyword 'freq' was not found in input stream. Please check source input."
+      warning "Running an IRC calculation makes only sense on a successful frequency calculation."
+      warning "Please also check the created IRC inputfiles manually for errors."
+    fi
+    # remove the freq keyword, we don't need it anymore
     while ! modified_route=$(remove_freq_keyword     "$modified_route") ; do : ; done
     # The irc keyword will be added, therefore it should not be present
     while ! modified_route=$(remove_irc_keyword      "$modified_route") ; do : ; done
