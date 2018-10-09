@@ -13,8 +13,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-g16.bash"
-version="0.0.16"
-versiondate="2018-10-05"
+version="0.0.17"
+versiondate="2018-10-09"
 
 #
 # Standard commands for external software:

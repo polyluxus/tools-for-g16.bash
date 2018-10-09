@@ -37,7 +37,7 @@
 \newcommand\mybackslash{\char`\\}
 
 % What this is about
-\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.0.16, 2018-10-05)}
+\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.0.17, 2018-10-09)}
 \author{Martin C Schwarzer}
 \date{\today}
 
@@ -152,8 +152,6 @@ Usage: \texttt{g16.dissolve.sh [opt] <file>}
   \item[-h      ] Help file 
 \end{rslisttt}
 
-\columnbreak
-
 \section{\texttt{g16.freqinput.sh}}
 
 This tool reads in a Gaussian 16 inputfile and 
@@ -174,6 +172,44 @@ Usage: \texttt{g16.freqinput.sh [opt] <file>}
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
+
+\section{\texttt{g16.ircinput.sh}}
+
+This tool reads in a Gaussian 16 inputfile from a frequency run and 
+adds relevant keywords for two separate irc calculations.
+
+Usage: \texttt{g16.ircinput.sh [opt] <file>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-o <ARG>] Adds option \texttt{ARG} to the \texttt{irc} keyword.
+  \item[-r <ARG>] Add \texttt{ARG} to route section
+  \item[-t <ARG>] Adds \texttt{ARG} to end of file
+  \item[-m <INT>] Memory (megabyte)
+  \item[-p <INT>] Processors
+  \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+\section{\texttt{g16.optinput.sh}}
+
+This tool reads in a Gaussian 16 inputfile preferably from an IRC run and 
+writes and inputfile for a subsequent structure optimisation.
+
+Usage: \texttt{g16.optinput.sh [opt] <file>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-o <ARG>] Adds option \texttt{ARG} to the \texttt{opt} keyword.
+  \item[-r <ARG>] Add \texttt{ARG} to route section
+  \item[-t <ARG>] Adds \texttt{ARG} to end of file
+  \item[-m <INT>] Memory (megabyte)
+  \item[-p <INT>] Processors
+  \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+\newpage
 
 \section{\texttt{g16.submit.sh}}
 
@@ -201,8 +237,6 @@ Usage: \texttt{g16.submit.sh [opt] <file>}
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
-
-\newpage
 
 \section{\texttt{g16.getenergy.sh}}
 
@@ -259,10 +293,10 @@ Martin C Schwarzer
 This document is licensed \ccbysa.
 \end{flushright}
 
-%because there currently is not enough to fill the second page
-\columnbreak
-\null\vfill\null
-\columnbreak
-\null\vfill\null
+%%because there currently is not enough to fill the second page
+%\columnbreak
+%\null\vfill\null
+%\columnbreak
+%\null\vfill\null
 
 \end{document}
