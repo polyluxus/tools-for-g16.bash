@@ -191,6 +191,26 @@ Usage: \texttt{g16.ircinput.sh [opt] <file>}
   \item[-h      ] Help file 
 \end{rslisttt}
 
+\section{\texttt{g16.optinput.sh}}
+
+This tool reads in a Gaussian 16 inputfile preferably from an IRC run and 
+writes and inputfile for a subsequent structure optimisation.
+
+Usage: \texttt{g16.optinput.sh [opt] <file>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-o <ARG>] Adds option \texttt{ARG} to the \texttt{opt} keyword.
+  \item[-r <ARG>] Add \texttt{ARG} to route section
+  \item[-t <ARG>] Adds \texttt{ARG} to end of file
+  \item[-m <INT>] Memory (megabyte)
+  \item[-p <INT>] Processors
+  \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+\newpage
+
 \section{\texttt{g16.submit.sh}}
 
 This tool parses and then submits a Gaussian 16 inputfile to a queueing system.
@@ -273,10 +293,10 @@ Martin C Schwarzer
 This document is licensed \ccbysa.
 \end{flushright}
 
-%because there currently is not enough to fill the second page
-\columnbreak
-\null\vfill\null
-\columnbreak
-\null\vfill\null
+%%because there currently is not enough to fill the second page
+%\columnbreak
+%\null\vfill\null
+%\columnbreak
+%\null\vfill\null
 
 \end{document}
