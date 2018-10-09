@@ -64,6 +64,10 @@ This reposity comes with the following scripts (and files):
    and adds relevant keywords for an IRC calculation, 
    then writes two new inputfiles (for forward and reverse direction).
 
+ * `g16.optinput.sh`
+   This tool reads in a Gaussian 16 inputfile preferably from an IRC calculation 
+   and writes an input file for a subsequent structure optimisation.
+
  * `g16.prepare.sh`
    This tool reads in a file containing a set of cartesian coordinates (might be a Gaussian input file)
    and writes a Gaussian inputfile with predefined keywords.
