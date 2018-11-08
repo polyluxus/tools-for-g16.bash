@@ -13,8 +13,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-g16.bash"
-version="0.0.17"
-versiondate="2018-10-09"
+version="0.1.0.dev"
+versiondate="2018-10-XX"
 
 #
 # Standard commands for external software:
@@ -24,7 +24,9 @@ versiondate="2018-10-09"
 # General path to the g16 directory (this should work on every system)
 g16_installpath="/path/is/not/set"
 # Define where scratch files shall be written to
-g16_scratch="$TEMP"
+# We want to use the value of the $TEMP variable at runtime,
+# so a string with the variable name must be passed on (escape $)
+g16_scratch="\$TEMP"
 # Define the overhead you'd like to give Gaussian in MB 
 g16_overhead=2000
 # The 2000 might be a very conservative guess, but additionally
