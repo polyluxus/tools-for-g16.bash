@@ -266,7 +266,7 @@ Usage: \texttt{g16.getfreq.sh [opt] <file(s)>}
   \item[-v      ] Incrementally increase verbosity
   \item[-V <INT>] Set level of verbosity directly, (0-4)
   \item[-c      ] Separate values by comma (\texttt{-V0} or \texttt{-V1})
-  \item[-O <ARG>] Write summary to file instead of screen
+  \item[-f <ARG>] Write summary to file instead of screen
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
@@ -276,10 +276,10 @@ Usage: \texttt{g16.getfreq.sh [opt] <file(s)>}
 A tool to convert a checkpoint file to an \texttt{xyz} file. 
 This formats the \texttt{chk} first to a \texttt{fchk}.
 
-Usage: \texttt{g16.chk2xyz.sh [-s] -h | -f | <chk-file(s)>}
+Usage: \texttt{g16.chk2xyz.sh [-s] -h | -a | <chk-file(s)>}
 
 \begin{rslisttt}{-m <ARG>}
-  \item[-f      ] Formats all checkpointfiles that are found in the current directory
+  \item[-a      ] Formats all checkpointfiles that are found in the current directory
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
