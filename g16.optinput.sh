@@ -229,8 +229,10 @@ process_inputfile ()
     # Assign new checkpoint/inputfile 
     use_file_suffix="opt"
     jobname="${jobbasename}.$use_file_suffix"
-    checkpoint="${jobname}.chk"
-    inputfile="${jobname}.com"
+
+    [[ -z $inputfile ]] && inputfile="${jobname}.com"
+    checkpoint="${inputfile%.*}.chk"
+
     backup_if_exists "$inputfile"
 
     local concatenate_opt_opts opt_keyword
@@ -259,7 +261,7 @@ process_options ()
     #hlp    
     local OPTIND=1 
 
-    while getopts :o:r:t:m:p:d:sh options ; do
+    while getopts :o:r:t:f:m:p:d:sh options ; do
         case $options in
           #hlp   -o <ARG>   Adds options <ARG> to the opt keyword.
           #hlp              May be specified multiple times.
@@ -283,6 +285,12 @@ process_options ()
           #hlp 
           t) 
             use_custom_tail[${#use_custom_tail[@]}]="$OPTARG" 
+            ;;
+
+          #hlp   -f <ARG>   Write inputfile to <ARG>.
+          #hlp
+          f)
+            inputfile="$OPTARG"
             ;;
 
           # Link 0 related options
