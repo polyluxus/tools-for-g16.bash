@@ -230,10 +230,10 @@ process_inputfile ()
     use_file_suffix="opt"
     jobname="${jobbasename}.$use_file_suffix"
 
-    [[ -z $inputfile ]] && inputfile="${jobname}.com"
-    checkpoint="${inputfile%.*}.chk"
+    [[ -z $inputfile_new ]] && inputfile_new="${jobname}.$g16_input_suffix"
+    checkpoint="${inputfile_new%.*}.chk"
 
-    backup_if_exists "$inputfile"
+    backup_if_exists "$inputfile_new"
 
     local concatenate_opt_opts opt_keyword
     if (( ${#use_opt_opts[@]} == 0 )) ; then
@@ -247,8 +247,8 @@ process_inputfile ()
 
     route_section="$modified_route $opt_keyword"
 
-    write_g16_input_file > "$inputfile"
-    message "Written modified inputfile '$inputfile'."
+    write_g16_input_file > "$inputfile_new"
+    message "Written modified inputfile '$inputfile_new'."
 }
 
 #
@@ -290,7 +290,8 @@ process_options ()
           #hlp   -f <ARG>   Write inputfile to <ARG>.
           #hlp
           f)
-            inputfile="$OPTARG"
+            inputfile_new="$OPTARG"
+            debug "Setting inputfile='$inputfile'."
             ;;
 
           # Link 0 related options
