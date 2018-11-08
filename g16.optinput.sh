@@ -221,7 +221,7 @@ process_inputfile ()
     unset inputfile_body
 
     # declare a variable to hold the suffix
-    local jobbasename use_file_suffix
+    local jobbasename use_file_suffix 
     # The following only ensures, that if it is based on a freq run,
     # the suffix is removed, because the new job will have no frequencies
     jobbasename="${jobname%.freq*}"
@@ -232,18 +232,14 @@ process_inputfile ()
     checkpoint="${jobname}.chk"
     inputfile="${jobname}.com"
     backup_if_exists "$inputfile"
-
-    local concatenate_opt_opts opt_keyword
     if (( ${#use_opt_opts[@]} == 0 )) ; then
-      opt_keyword="OPT"
+      route_section="$modified_route OPT"
     else
+      local concatenate_opt_opts
       concatenate_opt_opts=$(printf ',%s' "${use_opt_opts[@]}")
       concatenate_opt_opts=${concatenate_opt_opts:1}
-      opt_keyword="OPT($concatenate_opt_opts)"
+      route_section="$modified_route OPT($concatenate_opt_opts)"
     fi
-    message "Added '$opt_keyword' to the route section."
-
-    route_section="$modified_route $opt_keyword"
 
     write_g16_input_file > "$inputfile"
     message "Written modified inputfile '$inputfile'."

@@ -231,30 +231,23 @@ process_inputfile ()
     local jobbasename use_file_suffix 
     jobbasename="${jobname%.freq*}"
 
-    # create variables for irc keyword
-    local concatenate_irc_opts irc_keyword
-
-    if (( ${#use_irc_opts[@]} > 0 )) ; then
-      concatenate_irc_opts=$(printf ',%s' "${use_irc_opts[@]}")
-      concatenate_irc_opts=${concatenate_irc_opts:1}
-    fi
-
     # Assign new checkpoint/inputfile in forward direction
     use_file_suffix="irc.fwd"
     jobname="${jobbasename}.$use_file_suffix"
     checkpoint="${jobname}.chk"
     inputfile="${jobname}.com"
     backup_if_exists "$inputfile"
-
-    irc_keyword="IRC(RCFC,forward"
-    [[ ! -z $concatenate_irc_opts]] && irc_keyword+=",$concatenate_irc_opts"
-    irc_keyword+=")"
-    message "Added '$irc_keyword' to the route section."
-    route_section="$modified_route $irc_keyword"
+    if (( ${#use_irc_opts[@]} == 0 )) ; then
+      route_section="$modified_route IRC(RCFC,forward)"
+    else
+      local concatenate_irc_opts
+      concatenate_irc_opts=$(printf ',%s' "${use_irc_opts[@]}")
+      concatenate_irc_opts=${concatenate_irc_opts:1}
+      route_section="$modified_route IRC(RCFC,forward,$concatenate_irc_opts)"
+    fi
 
     write_g16_input_file > "$inputfile"
     message "Written modified inputfile '$inputfile'."
-     unset irc_keyword
 
     # Assign new checkpoint/inputfile in reverse direction
     use_file_suffix="irc.rev"
@@ -262,12 +255,11 @@ process_inputfile ()
     checkpoint="${jobname}.chk"
     inputfile="${jobname}.com"
     backup_if_exists "$inputfile"
-
-    irc_keyword="IRC(RCFC,reverse"
-    [[ ! -z $concatenate_irc_opts]] && irc_keyword+=",$concatenate_irc_opts"
-    irc_keyword+=")"
-    message "Added '$irc_keyword' to the route section."
-    route_section="$modified_route $irc_keyword"
+    if (( ${#use_irc_opts[@]} == 0 )) ; then
+      route_section="$modified_route IRC(RCFC,reverse)"
+    else
+      route_section="$modified_route IRC(RCFC,forward,$concatenate_irc_opts)"
+    fi
 
     write_g16_input_file > "$inputfile"
     message "Written modified inputfile '$inputfile'."
