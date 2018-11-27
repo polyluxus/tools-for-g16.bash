@@ -262,6 +262,15 @@ write_jobscript ()
       else
         echo "#BSUB -u $bsub_email" >&9
       fi
+      if [[ "$bsub_machinetype" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
+        if [[ "$queue" =~ [Rr][Ww][Tt][Hh] ]] ; then
+          warning "No machine type selected."
+        else
+          message "No machine type selected."
+        fi
+      else
+        echo "#BSUB -m $bsub_machinetype" >&9
+      fi
       echo "jobid=\"\${LSB_JOBID}\"" >&9
 
     else
@@ -432,7 +441,7 @@ process_options ()
     #hlp    
     local OPTIND=1 
 
-    while getopts :m:p:d:w:b:e:j:Hkq:Q:P:u:sh options ; do
+    while getopts :m:p:d:w:b:e:j:Hkq:Q:P:M:u:sh options ; do
         case $options in
 
           #hlp     -m <ARG> Define the total memory to be used in megabyte.
@@ -528,6 +537,16 @@ process_options ()
           #hlp
             P) 
                bsub_project="$OPTARG"
+               request_qsys="bsub-rwth"  
+               ;;
+
+          #hlp     -M <ARG> Request a certain machine type, also selects '-Q bsub-rwth'.
+          #hlp              Writes '#BSUB -m <ARG>' to the submit file.
+          #hlp              No sanity check will performed.
+          #hlp              If the argument is 'default', '0', or '', it reverts to system settings.
+          #hlp
+            M) 
+               bsub_machinetype="$OPTARG"
                request_qsys="bsub-rwth"  
                ;;
 

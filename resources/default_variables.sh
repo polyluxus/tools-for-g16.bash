@@ -85,6 +85,8 @@ requested_maxdisk=10000
 bsub_project=default
 # E-Mail address to send notifications to
 bsub_email=default
+# Request a certain machine type
+bsub_machinetype=default
 # Calculations will be submitted to run (hold/keep)
 requested_submit_status="run"
 

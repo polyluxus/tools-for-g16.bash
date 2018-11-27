@@ -208,7 +208,7 @@ read_email ()
   local verified_email
   until is_email "$verified_email" ; do
     verified_email=$(read_human_input)
-    [[ "$verified_email" == 0 ]] && unset readvar && break
+    [[ -z $verified_email ]] && unset verified_email && break
   done
   debug "verified_email=$verified_email"
   echo "$verified_email"
@@ -532,6 +532,11 @@ ask_qsys_details ()
       ask "What what email address should recieve notifications?"
       use_bsub_email=$(read_email)
       debug "use_bsub_email=$use_bsub_email"
+
+      ask "What machine type would you like to specify?"
+      use_bsub_machinetype=$(read_human_input)
+      debug "use_bsub_machinetype=$use_bsub_machinetype"
+
       ;;&
     *[Rr][Ww][Tt][Hh] )
       use_request_qsys="bsub-rwth"
@@ -785,6 +790,9 @@ get_configuration_interactive ()
   debug "use_values_separator=$use_values_separator"
 
   use_request_qsys="$request_qsys"
+  use_bsub_project="$bsub_project"
+  use_bsub_email="$bsub_email"
+  use_bsub_machinetype="$bsub_machinetype"
   if [[ -z $use_request_qsys ]] ; then
     ask_qsys_details
   else
@@ -792,7 +800,6 @@ get_configuration_interactive ()
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_qsys_details ; fi
   fi
-  use_bsub_project="$bsub_project"
   if [[ "$use_request_qsys" =~ [Bb][Ss][Uu][Bb] && -z $use_bsub_project ]] ; then
     ask_qsys_details
   else
@@ -800,7 +807,6 @@ get_configuration_interactive ()
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_qsys_details ; fi
   fi
-  use_bsub_email="$bsub_email"
   if [[ "$use_request_qsys" =~ [Bb][Ss][Uu][Bb] && -z $use_bsub_email ]] ; then
     ask_qsys_details
   else
@@ -808,9 +814,17 @@ get_configuration_interactive ()
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_qsys_details ; fi
   fi
+  if [[ "$use_request_qsys" =~ [Bb][Ss][Uu][Bb] && -z $use_bsub_machinetype ]] ; then
+    ask_qsys_details
+  else
+    message "Recovered setting: 'bsub_machinetype=$use_bsub_machinetype'"
+    ask "Would you like to change this setting?"
+    if read_boolean ; then ask_qsys_details ; fi
+  fi
   debug "use_request_qsys=$use_request_qsys"
   debug "use_bsub_project=$use_bsub_project"
   debug "use_bsub_email=$use_bsub_email"
+  debug "use_bsub_machinetype=$use_bsub_machinetype"
 
   use_requested_walltime="$requested_walltime"
   if [[ -z $use_requested_walltime ]] ; then
@@ -1084,6 +1098,15 @@ print_configuration ()
     echo "# bsub_email=default@default.com"
   else
     echo "  bsub_email=\"$use_bsub_email\""
+  fi
+  echo ""
+
+  echo "# Use following machine type (only for bsub)"
+  echo "#"
+  if [[ -z $use_bsub_machinetype ]] ; then
+    echo "# bsub_machinetype=default"
+  else
+    echo "  bsub_machinetype=\"$use_bsub_machinetype\""
   fi
   echo ""
 
