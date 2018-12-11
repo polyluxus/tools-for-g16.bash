@@ -574,7 +574,7 @@ read_g16_input_file ()
     # The next two entries may be present (but only together).
     # It is immediately followed by the title section, which can also consist of 
     # multiple lines made up of (almost) anything. It is also terminated by a blank line.
-    # Following that is the charge and multiplicity.
+    # Following that is the charge and multiplicity of the molecule and all defined fragments.
     # After that come geometry and other input sections, we trust the user knows how to
     # specify these and read them as they are.
 
@@ -588,7 +588,7 @@ read_g16_input_file ()
     local store_link0=1 link0_index=0 link0_temp
     # Flags when to read what
     local store_route=0 store_title=0 store_charge_mult=0 
-    # content stored in global variables 'title_section', 'molecule_charge', 'molecule_mult'
+    # content stored in global variables 'title_section', 'molecule_charge', 'molecule_mult', 'molecule_fragments'
     # The remainder of the inputfile also goes into an array, 
     # which is a global variable called 'inputfile_body'
     local body_index=0
@@ -697,13 +697,47 @@ read_g16_input_file ()
       if (( store_charge_mult == 1 )) ; then
         debug "Reading charge and multiplicity."
         appendline=$(remove_g16_input_comment "$line") 
-        # Change the pattern to the '<+/-><number> <number>' format
-        pattern="^[[:space:]]*([+-]?[0-9]+)[[:space:]]+([0-9]+)[[:space:]]*$"
+        # Define how the items can be separated
+        local separator="[[:space:]]*[,[:space:]][[:space:]]*"
+        # Change the pattern to the '<+/-><number>< ,><number><extra stuff for fragments>' format
+        # This will take care of the overall molecule specification
+        pattern="^[[:space:]]*([+-]?[0-9]+)$separator([0-9]+)(.*)$"
         if [[ $appendline =~ $pattern ]] ; then
           molecule_charge="${BASH_REMATCH[1]}"
           molecule_mult="${BASH_REMATCH[2]}"
+          appendline="${BASH_REMATCH[3]}"
+          debug "Read charge ($molecule_charge) and multiplicity ($molecule_mult)."
+          debug "Remaining: '$appendline'"
         fi
-        debug "Finished reading charge ($molecule_charge) and multiplicity ($molecule_mult)."
+        # Redefine the pattern to match fragment specifications, may start with a separator
+        # < ,><+/-><number>< ,><+/-><number>
+        pattern="^$separator([+-]?[0-9]+)$separator([+-]?[0-9]+)(.*)?$"
+        # define local arrays to hold fragment information
+        local -a fragment
+        local fragment_charge fragment_mult
+        while [[ $appendline =~ $pattern ]] ; do
+          debug "Testing for fragments."
+          fragment_charge="${BASH_REMATCH[1]}"
+          fragment_mult="${BASH_REMATCH[2]}"
+          appendline="${BASH_REMATCH[3]}"
+          fragment+=( "$fragment_charge" "$fragment_mult" )
+          debug "Read fragment charge (${fragment[-2]}) and multiplicity (${fragment[-1]})."
+          debug "Remaining: '$appendline'"
+        done
+        if [[ $appendline =~ ^[[:space:]]*$ ]] ; then
+          unset appendline
+        else
+          warning "Ignoring extra content '$appendline' from charge/multiplicity line."
+          unset appendline
+        fi
+        # Issue some warnings
+        (( ${#fragment[@]} % 2 == 1 )) && warning "Unpaired charge/multiplicity present, input probably corrupted."
+        (( ${#fragment[@]} / 2 == 1 )) && warning "Only one fragment charge/multiplicity present."
+
+        # Store fragment information on one string
+        molecule_fragments="$( printf ' %s, %s  ' "${fragment[@]}" )"
+        debug "Read fragments: $molecule_fragments"
+
         store_charge_mult=2
         # Next should be geometry and other stuff
         continue
@@ -1252,8 +1286,12 @@ write_g16_input_file ()
       echo ""
       [[ -z $molecule_charge ]] && fatal "Charge unset; somewhere, something went wrong."
       [[ -z $molecule_mult ]] && fatal "Multiplicity unset; somewhere, something went wrong."
-      # After the charge and multiplicity the molecule specification i9s entered
-      echo "$molecule_charge   $molecule_mult"
+      # After the charge and multiplicity the molecule specification is entered
+      if [[ -z $molecule_fragments ]] ; then
+        echo "$molecule_charge   $molecule_mult"
+      else
+        echo "$molecule_charge, $molecule_mult    $molecule_fragments"
+      fi
     fi
 
     # Append the rest of the input file
