@@ -735,7 +735,11 @@ read_g16_input_file ()
         (( ${#fragment[@]} / 2 == 1 )) && warning "Only one fragment charge/multiplicity present."
 
         # Store fragment information on one string
-        molecule_fragments="$( printf ' %s, %s  ' "${fragment[@]}" )"
+        if (( ${#fragment[@]} > 0 )) ; then
+          molecule_fragments="$( printf ' %s, %s  ' "${fragment[@]}" )"
+        else
+          unset molecule_fragments
+        fi
         debug "Read fragments: $molecule_fragments"
 
         store_charge_mult=2
