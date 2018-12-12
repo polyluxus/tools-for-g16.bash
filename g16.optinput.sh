@@ -163,9 +163,13 @@ process_inputfile ()
     while ! modified_route=$(remove_guess_keyword    "$modified_route") ; do : ; done
     additional_keywords+=("guess(read)")
     message "Added '${additional_keywords[-1]}' to the route section."
-    while ! modified_route=$(remove_geom_keyword     "$modified_route") ; do : ; done
-    additional_keywords+=("geom(check)")
-    message "Added '${additional_keywords[-1]}' to the route section."
+    if check_allcheck_option "$modified_route" ; then 
+      : 
+    else 
+      while ! modified_route=$(remove_geom_keyword     "$modified_route") ; do : ; done
+      additional_keywords+=("geom(check)")
+      message "Added '${additional_keywords[-1]}' to the route section."
+    fi
     # Population analysis might be beneficial, but should be added with a -r switch
     while ! modified_route=$(remove_pop_keyword      "$modified_route") ; do : ; done
     # Writing additional output should also be added via -r

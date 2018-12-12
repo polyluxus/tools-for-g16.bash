@@ -189,9 +189,13 @@ process_inputfile ()
     while ! modified_route=$(remove_guess_keyword    "$modified_route") ; do : ; done
     additional_keywords+=("guess(read)")
     message "Added '${additional_keywords[-1]}' to the route section."
-    while ! modified_route=$(remove_geom_keyword     "$modified_route") ; do : ; done
-    additional_keywords+=("geom(check)")
-    message "Added '${additional_keywords[-1]}' to the route section."
+    if check_allcheck_option "$modified_route" ; then 
+      : 
+    else 
+      while ! modified_route=$(remove_geom_keyword     "$modified_route") ; do : ; done
+      additional_keywords+=("geom(check)")
+      message "Added '${additional_keywords[-1]}' to the route section."
+    fi
     
     if modified_route=$(remove_gen_keyword "$modified_route") ; then
       debug "No gen keyword present."
