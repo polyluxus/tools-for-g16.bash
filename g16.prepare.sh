@@ -175,6 +175,10 @@ process_inputfile ()
       # Remove trailing directories
       jobname="${testfile##*/}"
       jobname="${jobname/..xyz/}"
+    elif [[ "$jobname" == "%f" ]] ; then 
+      # Remove trailing directories
+      jobname="${testfile##*/}"
+      jobname="${jobname/.xyz/}"
     elif [[ "$jobname" == "%s" ]] ; then 
       # Remove trailing directories
       jobname="${testfile##*/}"
@@ -360,8 +364,8 @@ process_options ()
             ;;
 
           #hlp   -j <ARG>   Define the name of the job. 
-          #hlp              If the argument is '%s', use the input filename and 
-          #hlp              filter the ending '.start.xyz'.
+          #hlp              If the argument is '%f' or '%s', use the input filename and 
+          #hlp              filter the ending '.xyz' or '.start.xyz', respectively.
           #hlp              This will also be used as the basis for the filename.
           #hlp
           j)
