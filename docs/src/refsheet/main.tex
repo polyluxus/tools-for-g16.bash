@@ -37,7 +37,7 @@
 \newcommand\mybackslash{\char`\\}
 
 % What this is about
-\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.1.0.dev, 2018-11-XX)}
+\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.1.0.dev, 2018-12-XX)}
 \author{Martin C Schwarzer}
 \date{\today}
 
@@ -213,6 +213,27 @@ Usage: \texttt{g16.optinput.sh [opt] <file>}
 
 \newpage
 
+\section{\texttt{g16.spinput.sh}}
+
+This tool reads in a Gaussian 16 inputfile and 
+writes and inputfile for a subsequent calculation.
+It is possible to overwrite the existing route section, but still
+add the \texttt{geom}/\texttt{guess} directives to base it on.
+
+Usage: \texttt{g16.spinput.sh [opt] <file>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-r <ARG>] Add \texttt{ARG} to route section
+  \item[-R <ARG>] Overwites route section with \texttt{ARG}
+  \item[-t <ARG>] Adds \texttt{ARG} to end of file
+  \item[-f <ARG>] Filename of generated input
+  \item[-m <INT>] Memory (megabyte)
+  \item[-p <INT>] Processors
+  \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
 \section{\texttt{g16.submit.sh}}
 
 This tool parses and then submits a Gaussian 16 inputfile to a queueing system.
@@ -241,8 +262,6 @@ Usage: \texttt{g16.submit.sh [opt] <file>}
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
-
-\columnbreak
 
 \section{\texttt{g16.getenergy.sh}}
 
