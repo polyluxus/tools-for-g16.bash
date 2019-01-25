@@ -530,7 +530,7 @@ read_xyz_geometry_file ()
           warning "Overwriting previously set multiplicity ($molecule_mult)."
         fi
         molecule_mult="$molecule_mult_local"
-        message "Use molecule's multiplicity: $molecule_mult."
+        debug "Use molecule's multiplicity: $molecule_mult."
       fi
       if [[ "$line" =~ $pattern_uhf ]] ; then
         molecule_uhf_local="${BASH_REMATCH[1]}"
