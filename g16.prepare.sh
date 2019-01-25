@@ -217,8 +217,23 @@ process_inputfile ()
     fi
 
     # Setting charge before substitutions
-    [[ -z $molecule_charge ]] && molecule_charge=0
-    [[ -z $molecule_mult ]] && molecule_mult=1
+    # If no charge and no multiplicity is set, take defaults
+    [[ -z $molecule_charge && -z $molecule_set_charge ]] && molecule_charge=0
+    [[ -z $molecule_mult && -z $molecule_set_mult ]] && molecule_mult=1
+
+    # The commandline options should overwrite settings that have been applied from reading input files
+    # Check whether both are set, and whether they are equal
+    if [[ -n $molecule_charge && -n $molecule_set_charge ]] && (( molecule_charge != molecule_set_charge )) ; then 
+      warning "Read charge from file ($molecule_charge) will be overwritten with command line option ($molecule_set_charge)."
+      # Apply the commandline setting (otherwise they would be the same and set already)
+      molecule_charge="$molecule_set_charge"
+    fi
+    if [[ -n $molecule_mult && -n $molecule_set_mult ]] && (( molecule_mult != molecule_set_mult )) ; then 
+      warning "Read multiplicity from file ($molecule_mult) will be overwritten with command line option ($molecule_set_mult)."
+      # Apply the commandline setting (otherwise they would be the same and set already)
+      molecule_mult="$molecule_set_mult"
+    fi
+    
     message "Setting charge ($molecule_charge) and multiplicity ($molecule_mult)."
 
     local substitute
@@ -356,7 +371,7 @@ process_options ()
           #hlp                '%j' job name
           #hlp                '%c' writes 'chrg {charge}'
           #hlp                '%M' writes 'mult {multiplicity}'
-          #hlp                '%c' writes 'uhf {unpaired electrons}'
+          #hlp                '%U' writes 'uhf {unpaired electrons}'
           #hlp              Default: 'Calculation: %j; %c; %M; %U; $(date +"%F %T (%Z)")'
           #hlp 
           C) 
@@ -384,8 +399,8 @@ process_options ()
           #hlp
           c) 
             validate_whole_number "$OPTARG" "charge"
-            [[ -z $molecule_charge ]] || warning "Overwriting previously set charge ($molecule_charge)."
-            molecule_charge="$OPTARG"
+            [[ -z $molecule_set_charge ]] || warning "Overwriting previously set charge ($molecule_set_charge)."
+            molecule_set_charge="$OPTARG"
             ;;
 
           #hlp   -M <ARG>   Define the Multiplicity of the molecule. (Default: 1)
@@ -396,8 +411,8 @@ process_options ()
           M) 
             validate_integer "$OPTARG" "multiplicity"
             (( OPTARG == 0 )) && fatal "Multiplicity must not be zero."
-            [[ -z $molecule_mult ]] || warning "Overwriting previously set multiplicity ($molecule_mult)."
-            molecule_mult="$OPTARG"
+            [[ -z $molecule_set_mult ]] || warning "Overwriting previously set multiplicity ($molecule_set_mult)."
+            molecule_set_mult="$OPTARG"
             ;;
 
           #hlp   -U <ARG>   Define the number of unpaired electrons in the molecule. (Default: 0)
@@ -407,8 +422,8 @@ process_options ()
           #hlp
           U) 
             validate_integer "$OPTARG" "unpaired electrons"
-            [[ -z $molecule_mult ]] || warning "Overwriting previously set multiplicity ($molecule_mult)."
-            molecule_mult="$(( OPTARG + 1 ))"
+            [[ -z $molecule_set_mult ]] || warning "Overwriting previously set multiplicity ($molecule_set_mult)."
+            molecule_set_mult="$(( OPTARG + 1 ))"
             ;;
 
           # Link 0 related options
