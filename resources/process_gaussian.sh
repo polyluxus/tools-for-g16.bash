@@ -484,9 +484,9 @@ read_xyz_geometry_file ()
     pattern_element="[A-Za-z]+[A-Za-z]*"
     pattern="^[[:space:]]*($pattern_element)[[:space:]]*($pattern_num)[[:space:]]*($pattern_num)[[:space:]]*($pattern_num)[[:space:]]*(.*)$"
     pattern_print="%-3s %15.8f %15.8f %15.8f"
-    pattern_charge="[Cc][Hh][Rr][Gg][[:space:]]+([+-]?[0-9]+)"
-    pattern_mult="[Mm][Uu][Ll][Tt][[:space:]]+([0-9]+)"
-    pattern_uhf="[Uu][Hh][Ff][[:space:]]+([0-9]+)"
+    pattern_charge="[Cc][Hh][Rr][Gg][[:space:]]*([+-]?[0-9]+)"
+    pattern_mult="[Mm][Uu][Ll][Tt][[:space:]]*([0-9]+)"
+    pattern_uhf="[Uu][Hh][Ff][[:space:]]*([0-9]+)"
     while read -r line || [[ -n "$line" ]] ; do
       debug "Read line: $line"
       
@@ -517,20 +517,30 @@ read_xyz_geometry_file ()
       if [[ "$line" =~ $pattern_charge ]] ; then
         molecule_charge_local="${BASH_REMATCH[1]}"
         message "Found molecule's charge: $molecule_charge_local."
-        [[ -z $molecule_charge ]] || warning "Overwriting previously set charge ($molecule_charge)."
+        if [[ -n $molecule_charge ]] && (( $molecule_charge != $molecule_charge_local )) ; then
+          warning "Overwriting previously set charge ($molecule_charge)."
+        fi
         molecule_charge="$molecule_charge_local"
         debug "Use molecule's charge: $molecule_charge."
-      elif [[ "$line" =~ $pattern_mult ]] ; then
+      fi
+      if [[ "$line" =~ $pattern_mult ]] ; then
         molecule_mult_local="${BASH_REMATCH[1]}"
         message "Found molecule's multiplicity: $molecule_mult_local."
-        [[ -z $molecule_mult ]] || warning "Overwriting previously set multiplicity ($molecule_mult)."
+        if [[ -n $molecule_mult ]] && (( $molecule_mult != $molecule_mult_local )) ; then
+          warning "Overwriting previously set multiplicity ($molecule_mult)."
+        fi
         molecule_mult="$molecule_mult_local"
         message "Use molecule's multiplicity: $molecule_mult."
-      elif [[ "$line" =~ $pattern_uhf ]] ; then
+      fi
+      if [[ "$line" =~ $pattern_uhf ]] ; then
         molecule_uhf_local="${BASH_REMATCH[1]}"
         message "Found number of unpaired electrons for the molecule: $molecule_uhf_local."
-        [[ -z $molecule_mult ]] || warning "Overwriting previously set multiplicity ($molecule_mult)."
-        molecule_mult="$(( molecule_uhf_local + 1 ))"
+        molecule_mult_local="$(( molecule_uhf_local + 1 ))"
+        debug "Converted to multiplicity: $molecule_mult_local"
+        if [[ -n $molecule_mult ]] && (( $molecule_mult != $molecule_mult_local )) ; then
+          warning "Overwriting previously set multiplicity ($molecule_mult)."
+        fi
+        molecule_mult="$molecule_mult_local"
         message "Use molecule's multiplicity: $molecule_mult."
       fi
 
