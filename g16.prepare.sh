@@ -216,24 +216,35 @@ process_inputfile ()
       message "Added '${use_custom_route_keywords[*]}' to the route section."
     fi
 
-    # Setting charge before substitutions
-    # If no charge and no multiplicity is set, take defaults
+    # Setting charge before substitutions (TODO: There is probably a more elegant way to compute this)
+    # There are four cases to be considered:
+    # ( -- 1 -- ) If no charge and no multiplicity is set, take defaults
+    debug "Molecule charge: molecule_charge='$molecule_charge' molecule_set_charge='$molecule_set_charge'"
+    debug "Molecule multiplicity: molecule_mult='$molecule_mult' molecule_set_mult='$molecule_set_mult'"
     [[ -z $molecule_charge && -z $molecule_set_charge ]] && molecule_charge=0
     [[ -z $molecule_mult && -z $molecule_set_mult ]] && molecule_mult=1
 
-    # The commandline options should overwrite settings that have been applied from reading input files
-    # Check whether both are set, and whether they are equal
+    # ( -- 2 -- ) If no charge/mult. is found in the input, take the one that is set via the commandline
+    [[ -z $molecule_charge && -n $molecule_set_charge ]] && molecule_charge="$molecule_set_charge"
+    [[ -z $molecule_mult && -n $molecule_set_mult ]] && molecule_mult="$molecule_set_mult"
+
+    # ( -- 3 -- ) If charge/mult. is found in the input, the commandline should overwrite the former
+    #             Check whether both are set, and whether they are equal, issue warning if there is conflict.
     if [[ -n $molecule_charge && -n $molecule_set_charge ]] && (( molecule_charge != molecule_set_charge )) ; then 
-      warning "Read charge from file ($molecule_charge) will be overwritten with command line option ($molecule_set_charge)."
+      warning "The charge read from input file ($molecule_charge) will be overwritten with command line option ($molecule_set_charge)."
       # Apply the commandline setting (otherwise they would be the same and set already)
       molecule_charge="$molecule_set_charge"
     fi
     if [[ -n $molecule_mult && -n $molecule_set_mult ]] && (( molecule_mult != molecule_set_mult )) ; then 
-      warning "Read multiplicity from file ($molecule_mult) will be overwritten with command line option ($molecule_set_mult)."
+      warning "The multiplicity read from input file ($molecule_mult) will be overwritten with command line option ($molecule_set_mult)."
       # Apply the commandline setting (otherwise they would be the same and set already)
       molecule_mult="$molecule_set_mult"
     fi
+
+    # ( -- 4 -- ) The charge/mult. is read from input, but no setting via commandline
+    #             In these cases nothing needs to be done.
     
+    # Finish with a notification
     message "Setting charge ($molecule_charge) and multiplicity ($molecule_mult)."
 
     local substitute
