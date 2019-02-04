@@ -13,8 +13,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-g16.bash"
-version="0.0.17"
-versiondate="2018-10-09"
+version="0.1.0"
+versiondate="2019-02-04"
 
 #
 # Standard commands for external software:
@@ -83,6 +83,8 @@ requested_maxdisk=10000
 bsub_project=default
 # E-Mail address to send notifications to
 bsub_email=default
+# Request a certain machine type
+bsub_machinetype=default
 # Calculations will be submitted to run (hold/keep)
 requested_submit_status="run"
 

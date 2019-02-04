@@ -85,4 +85,4 @@ All of the scripts come with a `-h` switch to give a summary of the available op
 A reference card (or cheat-sheet) with a summary can be found as a
 pdf-file in the [docs](./docs) directory.
 
-Martin (0.0.17, 2018-10-09)
+Martin (0.1.0, 2019-02-04)

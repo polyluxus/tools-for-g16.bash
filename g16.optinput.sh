@@ -163,9 +163,13 @@ process_inputfile ()
     while ! modified_route=$(remove_guess_keyword    "$modified_route") ; do : ; done
     additional_keywords+=("guess(read)")
     message "Added '${additional_keywords[-1]}' to the route section."
-    while ! modified_route=$(remove_geom_keyword     "$modified_route") ; do : ; done
-    additional_keywords+=("geom(check)")
-    message "Added '${additional_keywords[-1]}' to the route section."
+    if check_allcheck_option "$modified_route" ; then 
+      : 
+    else 
+      while ! modified_route=$(remove_geom_keyword     "$modified_route") ; do : ; done
+      additional_keywords+=("geom(check)")
+      message "Added '${additional_keywords[-1]}' to the route section."
+    fi
     # Population analysis might be beneficial, but should be added with a -r switch
     while ! modified_route=$(remove_pop_keyword      "$modified_route") ; do : ; done
     # Writing additional output should also be added via -r
@@ -221,7 +225,7 @@ process_inputfile ()
     unset inputfile_body
 
     # declare a variable to hold the suffix
-    local jobbasename use_file_suffix 
+    local jobbasename use_file_suffix
     # The following only ensures, that if it is based on a freq run,
     # the suffix is removed, because the new job will have no frequencies
     jobbasename="${jobname%.freq*}"
@@ -229,20 +233,26 @@ process_inputfile ()
     # Assign new checkpoint/inputfile 
     use_file_suffix="opt"
     jobname="${jobbasename}.$use_file_suffix"
-    checkpoint="${jobname}.chk"
-    inputfile="${jobname}.com"
-    backup_if_exists "$inputfile"
+
+    [[ -z $inputfile_new ]] && inputfile_new="${jobname}.$g16_input_suffix"
+    checkpoint="${inputfile_new%.*}.chk"
+
+    backup_if_exists "$inputfile_new"
+
+    local concatenate_opt_opts opt_keyword
     if (( ${#use_opt_opts[@]} == 0 )) ; then
-      route_section="$modified_route OPT"
+      opt_keyword="OPT"
     else
-      local concatenate_opt_opts
       concatenate_opt_opts=$(printf ',%s' "${use_opt_opts[@]}")
       concatenate_opt_opts=${concatenate_opt_opts:1}
-      route_section="$modified_route OPT($concatenate_opt_opts)"
+      opt_keyword="OPT($concatenate_opt_opts)"
     fi
+    message "Added '$opt_keyword' to the route section."
 
-    write_g16_input_file > "$inputfile"
-    message "Written modified inputfile '$inputfile'."
+    route_section="$modified_route $opt_keyword"
+
+    write_g16_input_file > "$inputfile_new"
+    message "Written modified inputfile '$inputfile_new'."
 }
 
 #
@@ -255,7 +265,7 @@ process_options ()
     #hlp    
     local OPTIND=1 
 
-    while getopts :o:r:t:m:p:d:sh options ; do
+    while getopts :o:r:t:f:m:p:d:sh options ; do
         case $options in
           #hlp   -o <ARG>   Adds options <ARG> to the opt keyword.
           #hlp              May be specified multiple times.
@@ -279,6 +289,13 @@ process_options ()
           #hlp 
           t) 
             use_custom_tail[${#use_custom_tail[@]}]="$OPTARG" 
+            ;;
+
+          #hlp   -f <ARG>   Write inputfile to <ARG>.
+          #hlp
+          f)
+            inputfile_new="$OPTARG"
+            debug "Setting inputfile='$inputfile'."
             ;;
 
           # Link 0 related options

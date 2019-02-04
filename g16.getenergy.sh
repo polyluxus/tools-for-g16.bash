@@ -100,6 +100,7 @@ get_scriptpath_and_source_files ()
     # exit_status=0
     stay_quiet=0
     process_input_files="true"
+    print_full_logname="false"
     
     # Import other functions
     #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
@@ -134,13 +135,14 @@ get_scriptpath_and_source_files ()
 process_one_file ()
 {
   # run only for one file at the time
-  local testfile="$1" logfile logname
+  local testfile="$1" logfile logname print_format_logname
   local readline returned_array
   local functional energy cycles
   if logfile="$(match_output_file "$testfile")" ; then
     logname=${logfile%.*}
     logname=${logname/\.\//}
     (( ${#logname} > 25 )) && logname="${logname:0:10}*${logname:(-14)}"
+    debug "Using: '$logname' for '$filename'."
     # Could also be achived with getlines_g16_output_file but would be overkill
     readline=$(tac "$logfile" | grep -m1 'SCF Done')
     mapfile -t returned_array < <( find_energy "$readline" )
@@ -148,14 +150,24 @@ process_one_file ()
     functional="${returned_array[0]}"
     energy="${returned_array[1]}"
     cycles="${returned_array[2]}"
-    if (( ${#returned_array[@]} > 0 )) ; then
-      printf '%-25s %-15s = %20s ( %6s )\n' "$logname" "$functional" "$energy" "$cycles"
+    if [[ "$print_full_logname" == "true" ]] ; then
+      print_format_logname="%s:\\n  "
+      logname="$logfile"
     else
-      printf '%-25s No energy found.\n' "$logname"
+      print_format_logname="%-25s"
+    fi
+
+    if (( ${#returned_array[@]} > 0 )) ; then
+      # shellcheck disable=SC2059
+      printf "$print_format_logname %-15s = %20s ( %6s )\\n" "$logname" "$functional" "$energy" "$cycles"
+    else
+      # shellcheck disable=SC2059
+      printf "$print_format_logname No energy found.\\n" "$logname"
       return 1
     fi
   else
-    printf '%-25s No output file found.\n' "${testfile%.*}"
+    # shellcheck disable=SC2059
+    printf "$print_format_logname No output file found.\\n" "${testfile%.*}"
     return 1
   fi
 }
@@ -165,12 +177,19 @@ process_directory ()
   # Find all files in a directory
   local suffix="$1" returncode=0
   local -a file_list
-  local process_file 
+  local testfile process_file 
   printf '%-25s %s\n' "Summary for " "${PWD#\/*\/*\/}" 
   printf '%-25s %s\n\n' "Created " "$(date +"%Y/%m/%d %k:%M:%S")"
   # Print a header
-  printf '%-25s %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
-  mapfile -t file_list < <( ls ./*."$suffix" 2> /dev/null ) 
+  if [[ "$print_full_logname" == "true" ]] ; then
+    printf '%s\n   %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
+  else
+    printf '%-25s %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
+  fi
+  for testfile in ./*."$suffix" ; do
+    [[ -e $testfile ]] || continue
+    file_list+=( "$testfile" )
+  done
   if (( ${#file_list[*]} == 0 )) ; then
     warning "No output files found in this directory."
     return 1
@@ -218,7 +237,7 @@ get_scriptpath_and_source_files || exit 1
 # Initialise options
 OPTIND="1"
 
-while getopts :hsi:o: options ; do
+while getopts :hsLi:o: options ; do
   #hlp   Usage: $scriptname [options] <filenames>
   #hlp
   #hlp   If no filenames are specified, the script looks for all '*.com'
@@ -235,6 +254,10 @@ while getopts :hsi:o: options ; do
     #hlp               (May be specified multiple times.)
     #hlp
     s) (( stay_quiet++ )) ;; 
+
+    #hlp     -L        Print the full name and path (relative to pwd) of the logfile
+    #hlp
+    L) print_full_logname="true" ;;
 
     #hlp     -i <ARG>  Specify input suffix if processing a directory.
     #hlp               (Will look for input files with given suffix and
@@ -274,7 +297,13 @@ if (( $# == 0 )) ; then
   fi
 else
   # Print a header if more than one file specified
-  (( $# > 1 )) && printf '%-25s %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
+  if (( $# > 1 )) ; then 
+    if [[ "$print_full_logname" == "true" ]] ; then
+      printf '%s\n   %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
+    else
+      printf '%-25s %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
+    fi
+  fi
   for inputfile in "$@"; do
     process_one_file "$inputfile"
   done

@@ -271,13 +271,13 @@ fi
 debug "Initialising option index."
 OPTIND="1"
 
-while getopts :fsh options ; do
+while getopts :ash options ; do
   #hlp   Options:
   #hlp
   case $options in
-    #hlp     -f      Formats all checkpointfiles that are found in the current directory
+    #hlp     -a      Formats all checkpointfiles that are found in the current directory
     #hlp
-    f) 
+    a) 
        ### get_all_checkpoint checkpoint_list # Needs Bash > 4.3
        debug "Executing for directory; looking for all checkpoint files."
        mapfile -t checkpoint_list < <( ls ./*.chk 2> /dev/null ) 

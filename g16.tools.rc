@@ -33,7 +33,7 @@
 # They have to appear in the correct order (if they happen to depend on each other).
 # 
   g16_modules[0]="CHEMISTRY"
-  g16_modules[1]="gaussian/16.a03_bin"
+  g16_modules[1]="gaussian/16.b03_bin"
 
 # Set the commands or paths for utilities:
 #
@@ -130,6 +130,10 @@
 # Account to project (only for bsub)
 #
 # bsub_project=default
+
+# Request a certain machine type (only for bsub)
+#
+# bsub_machinetype=default
 
 # Calculations will be submitted to run (hold/keep)
 requested_submit_status="run"

@@ -298,17 +298,17 @@ process_one_file ()
           [Vv][Ii][Bb]*)
             descriptor="vibrat." ;;
         esac
-        # shellcheck disable=SC2059
+        # shellcheck disable=SC2059,SC2102
         printf -v print_entropy[$name_index] "$print_format" \
           "entropy ($descriptor)" "S $name_index" \
           "${entropy[$name_index]}" "cal/(mol K)"
         debug "print_entropy[$name_index]=${print_entropy[$name_index]}"
-        # shellcheck disable=SC2059
+        # shellcheck disable=SC2059,SC2102
         printf -v print_heatcap[$name_index] "$print_format" \
           "heat capacity ($descriptor)" "Cv $name_index" \
           "${heatcap[$name_index]}" "cal/(mol K)"
         debug "print_heatcap[$name_index]=${print_heatcap[$name_index]}"
-        # shellcheck disable=SC2059
+        # shellcheck disable=SC2059,SC2102
         printf -v print_thermal[$name_index] "$print_format" \
           "thermal corr. ($descriptor)" "U $name_index" \
           "${thermal[$name_index]}" "kcal/mol"
@@ -391,7 +391,7 @@ process_options ()
     local ignore_verbosity_switch=false
     local printlevel
     # Evaluate options
-    while getopts :vV:cO:sh options ; do
+    while getopts :vV:cf:sh options ; do
       #hlp   Usage: $scriptname [options] filenames(s)
       #hlp 
       #hlp   Options:
@@ -431,9 +431,9 @@ process_options ()
             values_separator="," 
             ;;
 
-          #hlp     -O <ARG>   Write summary to file <ARG> instead of displaying it.
+          #hlp     -f <ARG>   Write summary to file <ARG> instead of displaying it.
           #hlp
-          O)
+          f)
             write_outputfile="$OPTARG"
             backup_if_exists "$write_outputfile"
             ;;

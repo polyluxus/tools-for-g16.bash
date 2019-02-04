@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Gaussian 16 submission script
+# Gaussian 16 Input preparation script
 #
 # You might not want to make modifications here.
 # If you do improve it, I would be happy to learn about it.
@@ -9,9 +9,15 @@
 # 
 # The help lines are distributed throughout the script and grepped for
 #
-#hlp   << WORK IN PROGRESS >>
-#hlp   This script reads an input file, extracts the route section,
-#hlp   and writes a new input file adding solvent corrections.
+#hlp   WIP
+#hlp   This script reads a Gaussian input file 
+#hlp   extracts (or replaces) the route section,
+#hlp   removes and 'opt' keyword, uses 'geom(check)' and 'guess(read) to 
+#hlp   set up and write a new input file for a single point calculation.
+#hlp
+#hlp   This script may generally be useful to base additional calculations,
+#hlp   like NMR tensors, or energy calculations using a different level of theory,
+#hlp   on already converged calculations.
 #hlp
 #hlp   This software comes with absolutely no warrenty. None. Nada.
 #hlp
@@ -151,40 +157,12 @@ process_inputfile ()
     
     local modified_route="$route_section"
     local -a additional_keywords
-    local use_file_suffix
-
-    # Firstly assume it is a single point calculation, therefore
-    # remove the opt keyword (it can be added later)
-    if [[ $use_opt_keyword =~ [Tt][Rr][Uu][Ee] ]] ; then
-      if check_opt_keyword "$modified_route" ; then
-        debug "Found Opt keyword in input stream, it will be preserved."
-      else
-        debug "Opt keyword not present in input stream."
-        additional_keywords+=("OPT")
-      fi
-    else
-      while ! modified_route=$(remove_opt_keyword      "$modified_route") ; do : ; done
-    fi
-    
-    # If adding solvent corrections, the molecular structure is not optimised
-    # a frequency calculation would be meaningless, therefore
-    # remove the freq keyword
+    # The new input should be a single point calculation, therefore remove opt
+    while ! modified_route=$(remove_opt_keyword      "$modified_route") ; do : ; done
+    # To avoid compound jobs, the freq keyword is also removed
     while ! modified_route=$(remove_freq_keyword     "$modified_route") ; do : ; done
-
-    # Remove any solvent information present, and add new ones
-    while ! modified_route=$(remove_scrf_keyword     "$modified_route") ; do : ; done
-    if (( ${#use_scrf_opts[@]} == 0 )) ; then
-      additional_keywords+=("SCRF(PCM,solvent=water)")
-    else
-      local collated_scrf_opts
-      collated_scrf_opts=$(printf ',%s' "${use_scrf_opts[@]}")
-      # Remove first character (comma)
-      collated_scrf_opts=${collated_scrf_opts:1}
-      debug "Found options: $collated_scrf_opts"
-      additional_keywords+=("SCRF($collated_scrf_opts)")
-    fi
-    message "Added '${additional_keywords[-1]}' to the route section."
-
+    # The new input should be a single point calculation, therefore remove irc
+    while ! modified_route=$(remove_irc_keyword      "$modified_route") ; do : ; done
     # The guess/geom keyword will be added, it will clash if already present
     while ! modified_route=$(remove_guess_keyword    "$modified_route") ; do : ; done
     additional_keywords+=("guess(read)")
@@ -196,6 +174,10 @@ process_inputfile ()
       additional_keywords+=("geom(check)")
       message "Added '${additional_keywords[-1]}' to the route section."
     fi
+    # Population analysis might be beneficial, but should be added with a -r switch
+    while ! modified_route=$(remove_pop_keyword      "$modified_route") ; do : ; done
+    # Writing additional output should also be added via -r
+    while ! modified_route=$(remove_output_keyword   "$modified_route") ; do : ; done
     
     if modified_route=$(remove_gen_keyword "$modified_route") ; then
       debug "No gen keyword present."
@@ -224,8 +206,8 @@ process_inputfile ()
     debug "Added the following keywords to route section:"
     debug "$(fold -w80 -c -s <<< "${additional_keywords[*]}")"
 
-    # Merge all keywords
-    route_section="$modified_route ${additional_keywords[*]}"
+    # add the custom keywords
+    modified_route="$modified_route ${additional_keywords[*]}"
 
     local verified_checkpoint
     if [[ -z $checkpoint ]] ; then
@@ -243,23 +225,39 @@ process_inputfile ()
       old_checkpoint="$checkpoint"
     fi
 
-    # Assign new checkpoint/inputfile
-    # Hook in for better suffixes, like smd/pcm/etc
-    if [[ -z $use_file_suffix ]] ; then
-      jobname="${jobname}.scrf"
-    else
-      jobname="${jobname}.$use_file_suffix"
-    fi
-    checkpoint="${jobname}.chk"
-    inputfile="${jobname}.com"
-   
-    backup_if_exists "$inputfile"
-
     # Throw away the body of the input file
     unset inputfile_body
 
-    write_g16_input_file > "$inputfile"
-    message "Written modified inputfile '$inputfile'."
+    # declare a variable to hold the suffix
+    local jobbasename use_file_suffix
+    # The following only ensures, that if it is based on a freq run,
+    # the suffix is removed, because the new job will have no frequencies
+    jobbasename="${jobname%.freq*}"
+
+    # Assign new checkpoint/inputfile 
+    use_file_suffix="sp"
+    jobname="${jobbasename}.$use_file_suffix"
+
+    [[ -z $inputfile_new ]] && inputfile_new="${jobname}.$g16_input_suffix"
+    checkpoint="${inputfile_new%.*}.chk"
+
+    backup_if_exists "$inputfile_new"
+
+#    local concatenate_opt_opts opt_keyword
+#    if (( ${#use_opt_opts[@]} == 0 )) ; then
+#      opt_keyword="OPT"
+#    else
+#      concatenate_opt_opts=$(printf ',%s' "${use_opt_opts[@]}")
+#      concatenate_opt_opts=${concatenate_opt_opts:1}
+#      opt_keyword="OPT($concatenate_opt_opts)"
+#    fi
+#    message "Added '$opt_keyword' to the route section."
+
+#    route_section="$modified_route $opt_keyword"
+    route_section="$modified_route"
+
+    write_g16_input_file > "$inputfile_new"
+    message "Written modified inputfile '$inputfile_new'."
 }
 
 #
@@ -268,58 +266,48 @@ process_inputfile ()
 
 process_options ()
 {
-  ##Needs complete rework
-
     #hlp   Options:
     #hlp    
     local OPTIND=1 
 
-    while getopts :o:S:Or:t:m:p:d:sh options ; do
+    while getopts :r:R:t:f:m:p:d:sh options ; do
         case $options in
-          #hlp   -o <ARG>   Adds options <ARG> to the SCRF keyword.
-          #hlp              May be specified multiple times.
-          #hlp              If nothing specified, this defaults to 'SCRF(PCM,solvent=water)'
-          #hlp              Example Options: CPCM, SMD, Dipole
-          #hlp              Solvents can be set with the -S switch.
-          #hlp
-          o) 
-            use_scrf_opts+=("$OPTARG")
-
-            ;;
-
-          #hlp   -S <ARG>   Adds 'solvent=<ARG>' to the SCRF options.
-          #hlp              Example solvents: water, heptane, aceticacid, krypton
-          #hlp
-          S) 
-            if [[ ${use_scrf_opts[*]} =~ [Ss][Oo][Ll][Vv][Ee][Nn][Tt] ]] ; then
-              fatal "Multiple solvents specified in 'SCRF($(printf '%s,' "${use_scrf_opts[@]}" "solvent=$OPTARG"))'."
-            else
-              use_scrf_opts+=("solvent=$OPTARG")
-            fi
-            ;;
-
-          #hlp   -O         Run an optimisation
-          #hlp              This will preserve a present OPT keyword, or add it.
-          #hlp              If you want to use specific options, use the -r switch instead.
-          #hlp              For example: -r 'OPT(MaxCycles=222)'
-          #hlp
-          O)
-            use_opt_keyword="true"
-            ;;
-
           #hlp   -r <ARG>   Adds custom command <ARG> to the route section.
           #hlp              May be specified multiple times.
           #hlp              The stack will be collated, but no sanity check will be performed.
           #hlp 
           r) 
-            use_custom_route_keywords+=("$OPTARG") 
+            use_custom_route_keywords+=("$OPTARG" )
+            ;;
+
+          #hlp   -R <ARG>   Specify the complete route section.
+          #hlp              If specified multiple times, only the last has an effect.
+          #hlp              This overwrites any previously specified route section.
+          #hlp              This can be amended with other switches, like -r.
+          #hlp 
+          R) 
+            route_section="$OPTARG" 
+            if validate_g16_route "$route_section" ; then
+              debug "Route specified with -R is fine."
+            else
+              warning "Syntax error in specified route section:"
+              warning "  $route_section"
+              fatal "Emergency stop."
+            fi
             ;;
 
           #hlp   -t <ARG>   Adds <ARG> to the end (tail) of the new input file.
           #hlp              If specified multiple times, each argument goes to a new line.
           #hlp 
           t) 
-            use_custom_tail+=("$OPTARG")
+            use_custom_tail[${#use_custom_tail[@]}]="$OPTARG" 
+            ;;
+
+          #hlp   -f <ARG>   Write inputfile to <ARG>.
+          #hlp
+          f)
+            inputfile_new="$OPTARG"
+            debug "Setting inputfile='$inputfile'."
             ;;
 
           # Link 0 related options
@@ -446,9 +434,8 @@ fi
 
 # Initialise some variables
 
+# declare -a use_opt_opts
 declare -a use_custom_route_keywords
-declare -a use_scrf_opts
-use_opt_keyword="false"
 
 # Evaluate Options
 
