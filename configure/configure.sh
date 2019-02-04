@@ -291,10 +291,6 @@ ask_gaussian_scratch ()
   ask "Where shall temporary files be stored?"
   message "This may be any directory, such as locally '~/scratch', or globally '/scratch';"
   message "it can also be an environment variable such as '\$TEMP'."
-  message "If you want to use the '\$TEMP' variable at execution time,"
-  message "i.e. when the submission script is executed, the dollar sign must be escaped."
-  message "The default value of this is actually the string '\\\$TEMP'."
-  # Within "" slashes need to be escaped, dollars also to print '\$TEMP'.
   message "No sanity check of the input will be performed."
   use_g16_scratch=$(read_human_input)
   # Will be empty if skipped; can return without assigning/testing empty values
