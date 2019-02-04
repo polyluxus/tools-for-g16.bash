@@ -251,7 +251,7 @@ process_inputfile ()
     backup_if_exists "$inputfile"
 
     irc_keyword="IRC(RCFC,forward"
-    [[ ! -z $concatenate_irc_opts ]] && irc_keyword+=",$concatenate_irc_opts"
+    [[ -n $concatenate_irc_opts ]] && irc_keyword+=",$concatenate_irc_opts"
     irc_keyword+=")"
     message "Added '$irc_keyword' to the route section."
     route_section="$modified_route $irc_keyword"
@@ -268,7 +268,7 @@ process_inputfile ()
     backup_if_exists "$inputfile"
 
     irc_keyword="IRC(RCFC,reverse"
-    [[ ! -z $concatenate_irc_opts ]] && irc_keyword+=",$concatenate_irc_opts"
+    [[ -n $concatenate_irc_opts ]] && irc_keyword+=",$concatenate_irc_opts"
     irc_keyword+=")"
     message "Added '$irc_keyword' to the route section."
     route_section="$modified_route $irc_keyword"
