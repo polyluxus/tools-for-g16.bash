@@ -9,7 +9,6 @@
 # 
 # The help lines are distributed throughout the script and grepped for
 #
-#hlp   << WORK IN PROGESS >>
 #hlp   This script reads an input file, extracts the geometry,
 #hlp   and writes a new input file from default parameter.
 #hlp

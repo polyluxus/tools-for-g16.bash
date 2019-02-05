@@ -9,7 +9,6 @@
 # 
 # The help lines are distributed throughout the script and grepped for
 #
-#hlp   << WORK IN PROGRESS >>
 #hlp   This script reads an input file, extracts the route section,
 #hlp   and writes a new input file adding solvent corrections.
 #hlp
@@ -268,8 +267,6 @@ process_inputfile ()
 
 process_options ()
 {
-  ##Needs complete rework
-
     #hlp   Options:
     #hlp    
     local OPTIND=1 

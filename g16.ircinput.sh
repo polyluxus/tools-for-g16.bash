@@ -9,7 +9,6 @@
 # 
 # The help lines are distributed throughout the script and grepped for
 #
-#hlp   WIP
 #hlp   This script reads an input file of a frequency calculation, 
 #hlp   extracts the route section,
 #hlp   and writes new input files for a IRC runs.
@@ -283,8 +282,6 @@ process_inputfile ()
 
 process_options ()
 {
-  ##Needs complete rework
-
     #hlp   Options:
     #hlp    
     local OPTIND=1 

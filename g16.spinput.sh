@@ -9,8 +9,7 @@
 # 
 # The help lines are distributed throughout the script and grepped for
 #
-#hlp   WIP
-#hlp   This script reads a Gaussian input file 
+#hlp   This script reads a Gaussian input file, 
 #hlp   extracts (or replaces) the route section,
 #hlp   removes and 'opt' keyword, uses 'geom(check)' and 'guess(read) to 
 #hlp   set up and write a new input file for a single point calculation.

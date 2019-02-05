@@ -9,10 +9,8 @@
 # 
 # The help lines are distributed throughout the script and grepped for
 #
-#hlp   WIP
 #hlp   This script reads an input file (presumably) of an IRC calculation, 
-#hlp   - which it does not have to be -,
-#hlp   extracts the route section,
+#hlp   - which it does not have to be -, extracts the route section,
 #hlp   and writes a new input file for a following structure optimisation.
 #hlp
 #hlp   This software comes with absolutely no warrenty. None. Nada.
