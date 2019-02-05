@@ -359,9 +359,13 @@ ask_load_modules ()
 
 ask_g16_utilities ()
 {
+  local check_g16_formchk_cmd
   ask "Which command shall be used to execute Gaussians 'formchk' utility?"
   message "This may be any string used to call the program, be it via a wrapper,"
   message "loaded via PATH, or the absolute location of the program."
+  if check_g16_formchk_cmd="$(command -v formchk)" ; then
+    message "Found executable command 'formchk' as '$check_g16_formchk_cmd'."
+  fi
   message "(In preparation: g16.wrapper shortcuts from this toolbox.)"
   message "No sanity check of the input will be performed."
   message "Please do not include options, they will be specified next."
@@ -375,17 +379,26 @@ ask_g16_utilities ()
     use_g16_formchk_opts=" "
   fi
   debug "use_g16_formchk_opts=$use_g16_formchk_opts"
+
+  local check_g16_testrt_cmd
   ask "Which command shall be used to execute Gaussians 'testrt' utility?"
   message "This should be very similar to the above."
+  if check_g16_testrt_cmd="$(command -v testrt)" ; then
+    message "Found executable command 'testrt' as '$check_g16_testrt_cmd'."
+  fi
   use_g16_testrt_cmd=$(read_human_input)
   debug "use_g16_testrt_cmd=$use_g16_testrt_cmd"
 }
 
 ask_other_utilities ()
 {
+  local check_obabel_cmd
   ask "Which command shall be used to execute Open Babel (obabel)?"
   message "This may be any string used to call the program, be it via a wrapper,"
   message "loaded via PATH, or the absolute location of the program."
+  if check_obabel_cmd="$(command -v obabel)" ; then
+    message "Found executable command 'obabel' as '$check_obabel_cmd'."
+  fi
   use_obabel_cmd=$(read_human_input)
   debug "use_obabel_cmd=$use_obabel_cmd"
   # Maybe some more are necessary later
