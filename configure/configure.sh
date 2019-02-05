@@ -291,6 +291,10 @@ ask_gaussian_scratch ()
   ask "Where shall temporary files be stored?"
   message "This may be any directory, such as locally '~/scratch', or globally '/scratch';"
   message "it can also be an environment variable such as '\$TEMP'."
+  message "If you want to use the '\$TEMP' variable at execution time," 
+  message "i.e. when the submission script is executed, the dollar sign must be escaped." 
+  message "The default value of this is actually the string '\\\$TEMP'."  
+  # Within "" slashes need to be escaped, dollars also to print '\$TEMP'.
   message "No sanity check of the input will be performed."
   use_g16_scratch=$(read_human_input)
   # Will be empty if skipped; can return without assigning/testing empty values
@@ -355,9 +359,13 @@ ask_load_modules ()
 
 ask_g16_utilities ()
 {
+  local check_g16_formchk_cmd
   ask "Which command shall be used to execute Gaussians 'formchk' utility?"
   message "This may be any string used to call the program, be it via a wrapper,"
   message "loaded via PATH, or the absolute location of the program."
+  if check_g16_formchk_cmd="$(command -v formchk)" ; then
+    message "Found executable command 'formchk' as '$check_g16_formchk_cmd'."
+  fi
   message "(In preparation: g16.wrapper shortcuts from this toolbox.)"
   message "No sanity check of the input will be performed."
   message "Please do not include options, they will be specified next."
@@ -371,17 +379,26 @@ ask_g16_utilities ()
     use_g16_formchk_opts=" "
   fi
   debug "use_g16_formchk_opts=$use_g16_formchk_opts"
+
+  local check_g16_testrt_cmd
   ask "Which command shall be used to execute Gaussians 'testrt' utility?"
   message "This should be very similar to the above."
+  if check_g16_testrt_cmd="$(command -v testrt)" ; then
+    message "Found executable command 'testrt' as '$check_g16_testrt_cmd'."
+  fi
   use_g16_testrt_cmd=$(read_human_input)
   debug "use_g16_testrt_cmd=$use_g16_testrt_cmd"
 }
 
 ask_other_utilities ()
 {
+  local check_obabel_cmd
   ask "Which command shall be used to execute Open Babel (obabel)?"
   message "This may be any string used to call the program, be it via a wrapper,"
   message "loaded via PATH, or the absolute location of the program."
+  if check_obabel_cmd="$(command -v obabel)" ; then
+    message "Found executable command 'obabel' as '$check_obabel_cmd'."
+  fi
   use_obabel_cmd=$(read_human_input)
   debug "use_obabel_cmd=$use_obabel_cmd"
   # Maybe some more are necessary later
@@ -620,7 +637,9 @@ get_configuration_from_file ()
   # Check for settings in three default locations (increasing priority):
   #   install path of the script, user's home directory, current directory
   g16_tools_path=$(get_absolute_dirname "$scriptpath/../g16.tools.rc")
-  g16_tools_rc_loc="$(get_rc "$g16_tools_path" "/home/$USER" "$PWD")"
+  local g16_tools_rc_searchlocations
+  g16_tools_rc_searchlocations=( "$g16_tools_path" "$HOME" "$HOME/.config" "$PWD" )
+  g16_tools_rc_loc="$( get_rc "${g16_tools_rc_searchlocations[@]}" )"
   debug "g16_tools_rc_loc=$g16_tools_rc_loc"
   
   # Load custom settings from the rc

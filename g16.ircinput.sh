@@ -9,7 +9,6 @@
 # 
 # The help lines are distributed throughout the script and grepped for
 #
-#hlp   WIP
 #hlp   This script reads an input file of a frequency calculation, 
 #hlp   extracts the route section,
 #hlp   and writes new input files for a IRC runs.
@@ -251,7 +250,7 @@ process_inputfile ()
     backup_if_exists "$inputfile"
 
     irc_keyword="IRC(RCFC,forward"
-    [[ ! -z $concatenate_irc_opts ]] && irc_keyword+=",$concatenate_irc_opts"
+    [[ -n $concatenate_irc_opts ]] && irc_keyword+=",$concatenate_irc_opts"
     irc_keyword+=")"
     message "Added '$irc_keyword' to the route section."
     route_section="$modified_route $irc_keyword"
@@ -268,7 +267,7 @@ process_inputfile ()
     backup_if_exists "$inputfile"
 
     irc_keyword="IRC(RCFC,reverse"
-    [[ ! -z $concatenate_irc_opts ]] && irc_keyword+=",$concatenate_irc_opts"
+    [[ -n $concatenate_irc_opts ]] && irc_keyword+=",$concatenate_irc_opts"
     irc_keyword+=")"
     message "Added '$irc_keyword' to the route section."
     route_section="$modified_route $irc_keyword"
@@ -283,8 +282,6 @@ process_inputfile ()
 
 process_options ()
 {
-  ##Needs complete rework
-
     #hlp   Options:
     #hlp    
     local OPTIND=1 
@@ -424,7 +421,8 @@ get_scriptpath_and_source_files || exit 1
 
 # Check for settings in three default locations (increasing priority):
 #   install path of the script, user's home directory, current directory
-g16_tools_rc_loc="$(get_rc "$scriptpath" "/home/$USER" "$PWD")"
+g16_tools_rc_searchlocations=( "$scriptpath" "$HOME" "$HOME/.config" "$PWD" )
+g16_tools_rc_loc="$( get_rc "${g16_tools_rc_searchlocations[@]}" )"
 debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 
 # Load custom settings from the rc

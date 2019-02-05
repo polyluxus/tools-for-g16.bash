@@ -435,8 +435,6 @@ submit_jobscript ()
 
 process_options ()
 {
-  ##Needs complete rework
-
     #hlp   Options:
     #hlp    
     local OPTIND=1 
@@ -624,7 +622,8 @@ get_scriptpath_and_source_files || exit 1
 
 # Check for settings in three default locations (increasing priority):
 #   install path of the script, user's home directory, current directory
-g16_tools_rc_loc="$(get_rc "$scriptpath" "/home/$USER" "$PWD")"
+g16_tools_rc_searchlocations=( "$scriptpath" "$HOME" "$HOME/.config" "$PWD" )
+g16_tools_rc_loc="$( get_rc "${g16_tools_rc_searchlocations[@]}" )"
 debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 
 # Load custom settings from the rc
