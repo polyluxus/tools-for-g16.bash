@@ -911,12 +911,11 @@ print_configuration ()
   echo ""
 
   echo "# Define where scratch files shall be written to"
-  # shellcheck disable=SC2016
-  echo '# [Default: $TEMP]'
+  echo '# [Default: \$TEMP]'
   echo "#"
   if [[ -z $use_g16_scratch ]] ; then
     # shellcheck disable=SC2016
-    echo '# g16_scratch="$TEMP"'
+    echo '# g16_scratch="\$TEMP"'
   else
     echo "  g16_scratch=\"$use_g16_scratch\""
   fi
