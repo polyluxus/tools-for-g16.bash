@@ -71,10 +71,11 @@ The following abbreviations will be used:
 General settings for the scripts can be found in the file \texttt{g16.tools.rc}.
 Alternatively, settings can be stored in \texttt{.g16.toolsrc}, 
 which always has precedence.
-Every script will check three different directories in the order
+Every script will check four different directories in the order
 \begin{enumerate*}
-\item installation directory
-\item user's home
+\item installation directory,
+\item user's home,
+\item \texttt{.config} in user's home,
 \item parent working directory.
 \end{enumerate*}
 It will load the last configuration file it finds.
@@ -318,11 +319,5 @@ Martin C Schwarzer
 
 This document is licensed \ccbysa.
 \end{flushright}
-
-%%because there currently is not enough to fill the second page
-%\columnbreak
-%\null\vfill\null
-%\columnbreak
-%\null\vfill\null
 
 \end{document}

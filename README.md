@@ -15,7 +15,7 @@ This 'software' comes with absolutely no warrenty. None. Nada.
 There is also absolutely no warranty in any case. 
 If you decide to use any of the scripts, it is entirely your resonsibility. 
 
-## Installation
+## Installation and configuration
 
 The files of this repository are not self-contained. 
 They each need access to the resources directory.
@@ -33,6 +33,14 @@ must be in the `PATH` variable.
 Alternatively, you can create softlinks to those files in a directory, 
 which is already recognised by `PATH`, e.g. `~/bin` in my case.
 The configure script also lets you create softlinks for the tools contained within.
+
+The scripts will search for configuration settings in the following order of directories:
+(1) the path to the script itself 
+(2) the user's home directory
+(3) the `.config` directory in the user's home directory
+(4) the current working directory, i.e. from where the script is called.
+If it does not find the file `.g16.toolsrc`, then it will also look for `g16.tools.rc`.
+The last found file will be applied.
 
 ## Utilities
 

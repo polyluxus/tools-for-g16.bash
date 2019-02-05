@@ -637,7 +637,9 @@ get_configuration_from_file ()
   # Check for settings in three default locations (increasing priority):
   #   install path of the script, user's home directory, current directory
   g16_tools_path=$(get_absolute_dirname "$scriptpath/../g16.tools.rc")
-  g16_tools_rc_loc="$(get_rc "$g16_tools_path" "/home/$USER" "$PWD")"
+  local g16_tools_rc_searchlocations
+  g16_tools_rc_searchlocations=( "$g16_tools_path" "$HOME" "$HOME/.config" "$PWD" )
+  g16_tools_rc_loc="$( get_rc "${g16_tools_rc_searchlocations[@]}" )"
   debug "g16_tools_rc_loc=$g16_tools_rc_loc"
   
   # Load custom settings from the rc
