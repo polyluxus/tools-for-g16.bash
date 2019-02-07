@@ -23,10 +23,11 @@ versiondate="2019-02-05"
 #
 # General path to the g16 directory (this should work on every system)
 g16_installpath="/path/is/not/set"
-# Define where scratch files shall be written to
-# We want to use the value of the $TEMP variable at runtime,  g16_scratch="$TEMP"
-# so a string with the variable name must be passed on (escape $) 
-g16_scratch="\$TEMP"
+# Define where scratch files shall be written to.
+# As default we will write a 'mktemp' statement to the submitfile.
+# To use this feature, values from TMP...tmp...tempdir...TEMPDIR, default, 0, (empty)
+# are accepted settings; if the pattern is not matched, the value will be taken as a directory
+g16_scratch="default"
 # Define the overhead you'd like to give Gaussian in MB 
 g16_overhead=2000
 # The 2000 might be a very conservative guess, but additionally

@@ -289,12 +289,11 @@ ask_installation_path ()
 ask_gaussian_scratch ()
 {
   ask "Where shall temporary files be stored?"
-  message "This may be any directory, such as locally '~/scratch', or globally '/scratch';"
-  message "it can also be an environment variable such as '\$TEMP'."
-  message "If you want to use the '\$TEMP' variable at execution time," 
-  message "i.e. when the submission script is executed, the dollar sign must be escaped." 
-  message "The default value of this is actually the string '\\\$TEMP'."  
-  # Within "" slashes need to be escaped, dollars also to print '\$TEMP'.
+  message "This may be any directory, such as locally '~/scratch', or globally '/scratch', etc.."
+  message "The default of this script will write a 'mktemp' statement to the submitfile," 
+  message "which creates a temporary directory at runtime (based on \$TEMPDIR."
+  message "Valid values for this: T(E)MP(DIR) [case insensitive], default, 0, (empty)"
+  message "If no pattern is matched, the value will be taken as a directory."
   message "No sanity check of the input will be performed."
   use_g16_scratch=$(read_human_input)
   # Will be empty if skipped; can return without assigning/testing empty values
@@ -910,12 +909,14 @@ print_configuration ()
   fi
   echo ""
 
-  echo "# Define where scratch files shall be written to"
-  echo '# [Default: \$TEMP]'
+  echo "# Define where scratch files shall be written to. [Default: default]"
+  echo "# The default will write a 'mktemp' statement to the submitfile, "
+  echo "# creating a directory at runtime."
+  echo "# Valid values for this: T(E)MP(DIR) [case insensitive], default, 0, (empty)"
+  echo "# If the pattern is not matched, the value will be taken as a directory, but not checked."
   echo "#"
   if [[ -z $use_g16_scratch ]] ; then
-    # shellcheck disable=SC2016
-    echo '# g16_scratch="\$TEMP"'
+    echo '# g16_scratch="default"'
   else
     echo "  g16_scratch=\"$use_g16_scratch\""
   fi

@@ -13,10 +13,12 @@
 #
   g16_installpath="/path/is/not/set"
 
-# Define where scratch files shall be written to
-# [Default: \$TEMP]
-#
-  g16_scratch="\$TEMP"
+# Define where scratch files shall be written to. [Default: default]
+# The default will write a 'mktemp' statement to the submitfile, 
+# creating a directory at runtime.
+# Valid values for this: T(E)MP(DIR) [case insensitive], default, 0, (empty)
+# If the pattern is not matched, the value will be taken as a directory, but not checked.
+  g16_scratch="default"
 
 # Define the overhead you'd like to give Gaussian in MB 
 # [Default: 2000]
