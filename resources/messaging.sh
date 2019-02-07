@@ -6,6 +6,9 @@ if (( ${#BASH_SOURCE[*]} == 1 )) ; then
   exit 0
 fi
 
+# Set verbosity to 0 if undefined
+stay_quiet=${stay_quiet:-0}
+
 #
 # Print logging information and warnings nicely.
 # If there is an unrecoverable error: display a message and exit.
@@ -115,19 +118,34 @@ warn_additional_args ()
 # Issue warning if locale is wrong
 #
 
-# If the used locale is not English, the formatting of floating numbers of the 
+# If the used locale is not English or POSIX, the formatting of floating numbers of the 
 # printf commands will produce an error
+check_locale ()
+{
+  local -a locale_settings
+  mapfile -t locale_settings < <(locale)
+  debug "Current locale settings:"
+  debug "$( fold -w80 -c -s <<< "$( printf '%s; ' "${locale_settings[@]}"; printf '\n' )" )"
+
+  local exit_status=0
+  debug "Testing LANG='$LANG' and LC_NUMERIC='$LC_NUMERIC'."
+  [[ "$LANG" =~ ^en_US.(UTF-8|utf8)$ || -z $LANG ]] || exit_status=1
+  [[ "$LC_NUMERIC" =~ ^(en_US.(UTF-8|utf8)|POSIX)$ || -z $LC_NUMERIC ]] || exit_status=1
+  debug "Returning with $exit_status"
+  return $exit_status
+}
+
 warn_and_set_locale ()
 {
-    if [[ "$LANG" =~ ^en_US.(UTF-8|utf8)$ ]]; then 
-      debug "Locale is '$LANG'"
-    else
-      warning "Formatting might not properly work for '$LANG'."
-      warning "Setting locale for this script to 'en_US.UTF-8'."
-      set -x
-        export LC_NUMERIC="en_US.UTF-8"
-      set +x
-    fi
+  if ! check_locale ; then
+    warning "Formatting might not properly work for current locale."
+    warning "Setting locale POSIX compliant."
+    unset LANG LC_ALL LC_NUMERIC
+    local -a locale_settings
+    mapfile -t locale_settings < <(locale)
+    debug "New locale settings:"
+    debug "$( fold -w80 -c -s <<< "$( printf '%s; ' "${locale_settings[@]}"; printf '\n' )" )"
+  fi
 }
 
 #
