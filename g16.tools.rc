@@ -13,10 +13,12 @@
 #
   g16_installpath="/path/is/not/set"
 
-# Define where scratch files shall be written to
-# [Default: $TEMP]
-#
-  g16_scratch="$TEMP"
+# Define where scratch files shall be written to. [Default: default]
+# The default will write a 'mktemp' statement to the submitfile, 
+# creating a directory at runtime.
+# Valid values for this: T(E)MP(DIR) [case insensitive], default, 0, (empty)
+# If the pattern is not matched, the value will be taken as a directory, but not checked.
+  g16_scratch="default"
 
 # Define the overhead you'd like to give Gaussian in MB 
 # [Default: 2000]
@@ -33,7 +35,11 @@
 # They have to appear in the correct order (if they happen to depend on each other).
 # 
   g16_modules[0]="CHEMISTRY"
-  g16_modules[1]="gaussian/16.b03_bin"
+  g16_modules[1]="gaussian/16.b01_bin"
+# 
+# or
+# g16_modules=( "CHEMISTRY" "gaussian/16.b01_bin" )
+#
 
 # Set the commands or paths for utilities:
 #
@@ -88,12 +94,14 @@
 #
   g16_route_section_default="# B97D3/def2SVP"
   g16_route_section_predefined[00]="# PM6"
-  g16_route_section_predefined[01]="#P B97D3/def2SVP"
-  g16_route_section_predefined[02]="#P B97D3/def2TZVP"
-  g16_route_section_predefined[03]="#P B97D3/def2TZVPP"
-  g16_route_section_predefined[11]="#P BP86/def2SVP   EmpiricalDispersion=GD3BJ"
-  g16_route_section_predefined[12]="#P BP86/def2TZVP  EmpiricalDispersion=GD3BJ"
-  g16_route_section_predefined[13]="#P BP86/def2TZVPP EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined[01]="#P B97D3/def2SVP/W06                            DenFit"
+  g16_route_section_predefined[02]="#P B97D3/def2TZVPP/W06                          DenFit"
+  g16_route_section_predefined[03]="#P BP86/def2SVP/W06   EmpiricalDispersion=GD3BJ DenFit"
+  g16_route_section_predefined[04]="#P BP86/def2TZVPP/W06 EmpiricalDispersion=GD3BJ DenFit"
+  g16_route_section_predefined[05]="#P PBE1PBE/def2SVP    EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined[06]="#P PBE1PBE/def2TZVPP  EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined[07]="#P B3LYP/def2SVP      EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined[08]="#P B3LYP/def2TZVPP    EmpiricalDispersion=GD3BJ"
 #
 
 # Default options for printing and verbosity

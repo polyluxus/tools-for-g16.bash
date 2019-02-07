@@ -79,9 +79,10 @@ get_absolute_dirname ()
     echo "$return_dirname"
 }
 
+
 get_scriptpath_and_source_files ()
 {
-    local error_count tmplog line tmpmsg
+    local error_count tmplog line
     tmplog=$(mktemp tmp.XXXXXXXX) 
     # Who are we and where are we?
     scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
@@ -129,12 +130,10 @@ get_scriptpath_and_source_files ()
       while read -r line || [[ -n "$line" ]] ; do
         debug "$line"
       done < "$tmplog"
-      tmpmsg=$(rm -v "$tmplog")
-      debug "$tmpmsg"
+      debug "$(rm -v -- "$tmplog")"
       exit 1
     else
-      tmpmsg=$(rm -v "$tmplog")
-      debug "$tmpmsg"
+      debug "$(rm -v -- "$tmplog")"
     fi
 }
 
@@ -279,19 +278,31 @@ write_jobscript ()
 
     echo "" >&9
 
-    # Inistialise variables, insert cleanup procedure, trap cleanup
+    # Initialise variables, insert cleanup procedure, trap cleanup
+    local tempdir_pattern='^(|[Tt][Ee]?[Mm][Pp]([Dd][Ii][Rr])?|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$'
+    debug "g16_scratch='$g16_scratch'; pattern: $tempdir_pattern"
+    if [[ "$g16_scratch" =~ $tempdir_pattern ]] ; then
+      debug "Pattern was found."
+      #shellcheck disable=SC2016
+      g16_scratch='$( mktemp --directory --tmpdir )'
+    else
+      debug "Pattern was not found."
+    fi
 
     cat >&9 <<-EOF
 			# Make a new scratch directory
-			g16_subscratch="$g16_scratch/g16job\$jobid"
-			mkdir -p "\$g16_subscratch"
+			g16_basescratch="$g16_scratch"
+			g16_subscratch="\$g16_basescratch/g16job\$jobid"
+			mkdir -p "\$g16_subscratch" || { echo "Failed to create scratch directory" >&2 ; exit 1 ; }
 			
 			cleanup () {
 			  echo "Looking for files with filesize zero and delete them in '\$g16_subscratch'."
 			  find "\$g16_subscratch" -type f -size 0 -exec rm -v {} \\;
 			  echo "Deleting scratch '\$g16_subscratch' if empty."
 			  find "\$g16_subscratch" -maxdepth 0 -empty -exec rmdir -v {} \\;
-			  [[ -e "\$g16_subscratch" ]] && mv -v "\$g16_subscratch" "$PWD/${jobname}.scr\$jobid"
+			  [[ -e "\$g16_subscratch" ]] && mv -v -- "\$g16_subscratch" "$PWD/${jobname}.scr\$jobid"
+			  echo "Deleting scratch '\$g16_basescratch' if empty."
+			  find "\$g16_basescratch" -maxdepth 0 -empty -exec rmdir -v {} \\;
 			}
 			
 			trap cleanup EXIT SIGTERM
@@ -333,7 +344,7 @@ write_jobscript ()
 		
 		cd "$PWD" || exit 1
 		
-    # Pass scratch on to Gaussian (overwrites defaults from module)
+		# Pass scratch on to Gaussian (overwrites defaults from module)
 		export GAUSS_SCRDIR="\$g16_subscratch"
 		
 		EOF
@@ -565,6 +576,11 @@ process_options ()
           #hlp
             h) helpme ;;
 
+            -)
+               debug "Finished reading command line arguments."
+               break
+               ;;
+
            \?) fatal "Invalid option: -$OPTARG." ;;
 
             :) fatal "Option -$OPTARG requires an argument." ;;
@@ -619,6 +635,9 @@ else
 fi
 
 get_scriptpath_and_source_files || exit 1
+
+# Check whether we have the right numeric format (set it if not)
+warn_and_set_locale
 
 # Check for settings in three default locations (increasing priority):
 #   install path of the script, user's home directory, current directory

@@ -37,7 +37,7 @@
 \newcommand\mybackslash{\char`\\}
 
 % What this is about
-\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.1.1, 2019-02-05)}
+\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.1.2, 2019-02-07)}
 \author{Martin C Schwarzer}
 \date{\today}
 
@@ -119,6 +119,7 @@ Usage: \texttt{g16.prepare.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+  \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
@@ -130,6 +131,7 @@ tests the route section for syntax errors
 with the Gaussian 16 utility \texttt{testrt}.
 
 \begin{rslisttt}{-m <ARG>}
+  \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
@@ -150,6 +152,7 @@ Usage: \texttt{g16.dissolve.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+  \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
@@ -171,6 +174,7 @@ Usage: \texttt{g16.freqinput.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+  \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
@@ -189,9 +193,12 @@ Usage: \texttt{g16.ircinput.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+  \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
+
+\newpage
 
 \section{\texttt{g16.optinput.sh}}
 
@@ -208,11 +215,10 @@ Usage: \texttt{g16.optinput.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+  \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
-
-\newpage
 
 \section{\texttt{g16.spinput.sh}}
 
@@ -231,6 +237,7 @@ Usage: \texttt{g16.spinput.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+  \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
@@ -260,6 +267,7 @@ Usage: \texttt{g16.submit.sh [opt] <file>}
     if \texttt{ARG} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
   \item[-u <ARG>] set user email address (BSUB);
     if \texttt{ARG} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
+  \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
@@ -276,6 +284,7 @@ If no files given, it finds energy statements from all log files in the current 
   \item[-i <ARG>] Specify input suffix if processing directory
   \item[-o <ARG>] Specify output suffix if processing directory
   \item[-L      ] Print the full file and path name (seperated by newline)
+  \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
@@ -291,6 +300,7 @@ Usage: \texttt{g16.getfreq.sh [opt] <file(s)>}
   \item[-V <INT>] Set level of verbosity directly, (0-4)
   \item[-c      ] Separate values by comma (\texttt{-V0} or \texttt{-V1})
   \item[-f <ARG>] Write summary to file instead of screen
+  \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
@@ -304,6 +314,7 @@ Usage: \texttt{g16.chk2xyz.sh [-s] -h | -a | <chk-file(s)>}
 
 \begin{rslisttt}{-m <ARG>}
   \item[-a      ] Formats all checkpointfiles that are found in the current directory
+  \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}

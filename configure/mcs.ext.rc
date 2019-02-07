@@ -6,10 +6,13 @@
 #
   g16_installpath="/path/is/not/set"
 
-# Define where scratch files shall be written to
-# [Default: $TEMP]
+# Define where scratch files shall be written to. [Default: default]
+# The default will write a 'mktemp' statement to the submitfile, 
+# creating a directory at runtime.
+# Valid values for this: T(E)MP(DIR) [case insensitive], default, 0, (empty)
+# If the pattern is not matched, the value will be taken as a directory, but not checked.
 #
-  g16_scratch="$TEMP"
+  g16_scratch="default"
 
 # Define the overhead you'd like to give Gaussian in MB 
 # [Default: 2000]
@@ -39,7 +42,7 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
 #
     g16_formchk_cmd="wrapper.g16 formchk"
 #   No options should be included in the above, but can be set:
-    g16_formchk_opts=""
+    g16_formchk_opts="-3"
 #
 # - checking the route section (this is similar to above)
 #   
@@ -101,7 +104,7 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
 
 # Specify a default value for the memory (does not include overhead)
 #
-  requested_memory="2000"
+  requested_memory="4000"
 
 # Set the number of professors doing the calculation
 #
@@ -117,14 +120,18 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
 
 # Account to project (only for bsub)
 #
-# bsub_project=default
+  bsub_project="default"
 
 # Sent notifications to the following email address (only for bsub)
 #
-# bsub_email="default@default.com"
+  bsub_email="default"
+
+# Use following machine type (only for bsub)
+#
+  bsub_machinetype="default"
 
 # Calculations will be submitted to run (hold/keep)
   requested_submit_status="run"
 
 #
-# End of automatic configuration, Mon Aug 20 14:59:11 CEST 2018.
+# End of automatic configuration, Thu Feb  7 19:39:27 CET 2019.

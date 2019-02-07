@@ -13,8 +13,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-g16.bash"
-version="0.1.1"
-versiondate="2019-02-05"
+version="0.1.2"
+versiondate="2019-02-07"
 
 #
 # Standard commands for external software:
@@ -23,10 +23,11 @@ versiondate="2019-02-05"
 #
 # General path to the g16 directory (this should work on every system)
 g16_installpath="/path/is/not/set"
-# Define where scratch files shall be written to
-# We want to use the value of the $TEMP variable at runtime,  g16_scratch="$TEMP"
-# so a string with the variable name must be passed on (escape $) 
-g16_scratch="\$TEMP"
+# Define where scratch files shall be written to.
+# As default we will write a 'mktemp' statement to the submitfile.
+# To use this feature, values from TMP...tmp...tempdir...TEMPDIR, default, 0, (empty)
+# are accepted settings; if the pattern is not matched, the value will be taken as a directory
+g16_scratch="default"
 # Define the overhead you'd like to give Gaussian in MB 
 g16_overhead=2000
 # The 2000 might be a very conservative guess, but additionally
@@ -55,10 +56,8 @@ obabel_cmd="obabel"
 g16_input_suffix="com"
 g16_output_suffix="log"
 g16_route_section_predefined[00]="# PM6"
-g16_route_section_predefined[01]="#P B97D3/def2SVP"
-g16_route_section_predefined[02]="#P B97D3/def2TZVPP"
-g16_route_section_predefined[03]="#P BP86/def2SVP   EmpiricalDispersion=GD3BJ"
-g16_route_section_predefined[04]="#P BP86/def2TZVPP EmpiricalDispersion=GD3BJ"
+g16_route_section_predefined[01]="#P BP86/def2SVP   EmpiricalDispersion=GD3BJ"
+g16_route_section_predefined[02]="#P B97D3/def2SVP"
 g16_route_section_default="# B97D3/def2SVP"
 
 #

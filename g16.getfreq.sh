@@ -73,9 +73,10 @@ get_absolute_dirname ()
     echo "$return_dirname"
 }
 
+
 get_scriptpath_and_source_files ()
 {
-    local error_count tmplog line tmpmsg
+    local error_count tmplog line
     tmplog=$(mktemp tmp.XXXXXXXX) 
     # Who are we and where are we?
     scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
@@ -100,10 +101,6 @@ get_scriptpath_and_source_files ()
     # Set more default variables
     exit_status=0
     stay_quiet=0
-
-    # Ensure that in/outputfile variables are empty
-    unset inputfile
-    unset outputfile
     
     # Import other functions
     #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
@@ -124,12 +121,10 @@ get_scriptpath_and_source_files ()
       while read -r line || [[ -n "$line" ]] ; do
         debug "$line"
       done < "$tmplog"
-      tmpmsg=$(rm -v "$tmplog")
-      debug "$tmpmsg"
+      debug "$(rm -v -- "$tmplog")"
       exit 1
     else
-      tmpmsg=$(rm -v "$tmplog")
-      debug "$tmpmsg"
+      debug "$(rm -v -- "$tmplog")"
     fi
 }
 
@@ -449,6 +444,11 @@ process_options ()
             helpme 
             ;;
     
+          -)
+            debug "Finished reading command line arguments."
+            break
+            ;;
+
           \?) 
             warning "Invalid option: -$OPTARG." 
             ;;
@@ -496,6 +496,9 @@ fi
 
 get_scriptpath_and_source_files || exit 1
 
+# Check whether we have the right numeric format (set it if not)
+warn_and_set_locale
+
 # Check for settings in three default locations (increasing priority):
 #   install path of the script, user's home directory, current directory
 g16_tools_rc_searchlocations=( "$scriptpath" "$HOME" "$HOME/.config" "$PWD" )
@@ -526,7 +529,6 @@ else
   exec 5> "$write_outputfile"
 fi
 
-warn_and_set_locale
 print_header_inline "$output_verbosity" >&5
 for file in "${file_list[@]}" ; do
   if (( output_verbosity > 1 && ${#file_list[@]} > 1 )) ; then
