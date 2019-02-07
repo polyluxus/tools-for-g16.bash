@@ -94,12 +94,12 @@
   g16_route_section_predefined[00]="# PM6"
   g16_route_section_predefined[01]="#P B97D3/def2SVP/W06                            DenFit"
   g16_route_section_predefined[02]="#P B97D3/def2TZVPP/W06                          DenFit"
-  g16_route_section_predefined[11]="#P BP86/def2SVP/W06   EmpiricalDispersion=GD3BJ DenFit"
-  g16_route_section_predefined[12]="#P BP86/def2TZVPP/W06 EmpiricalDispersion=GD3BJ DenFit"
-  g16_route_section_predefined[21]="#P PBE1PBE/def2SVP    EmpiricalDispersion=GD3BJ"
-  g16_route_section_predefined[22]="#P PBE1PBE/def2TZVPP  EmpiricalDispersion=GD3BJ"
-  g16_route_section_predefined[31]="#P B3LYP/def2SVP      EmpiricalDispersion=GD3BJ"
-  g16_route_section_predefined[32]="#P B3LYP/def2TZVPP    EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined[03]="#P BP86/def2SVP/W06   EmpiricalDispersion=GD3BJ DenFit"
+  g16_route_section_predefined[04]="#P BP86/def2TZVPP/W06 EmpiricalDispersion=GD3BJ DenFit"
+  g16_route_section_predefined[05]="#P PBE1PBE/def2SVP    EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined[06]="#P PBE1PBE/def2TZVPP  EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined[07]="#P B3LYP/def2SVP      EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined[08]="#P B3LYP/def2TZVPP    EmpiricalDispersion=GD3BJ"
 #
 
 # Default options for printing and verbosity
