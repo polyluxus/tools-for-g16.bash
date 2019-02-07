@@ -463,6 +463,9 @@ fi
 
 get_scriptpath_and_source_files || exit 1
 
+# Check whether we have the right numeric format (set it if not)
+warn_and_set_locale
+
 # Check for settings in three default locations (increasing priority):
 #   install path of the script, user's home directory, current directory
 g16_tools_rc_searchlocations=( "$scriptpath" "$HOME" "$HOME/.config" "$PWD" )

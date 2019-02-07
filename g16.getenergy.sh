@@ -233,6 +233,9 @@ fi
 
 get_scriptpath_and_source_files || exit 1
 
+# Check whether we have the right numeric format (set it if not)
+warn_and_set_locale
+
 # Get options
 # Initialise options
 OPTIND="1"

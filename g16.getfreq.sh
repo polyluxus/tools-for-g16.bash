@@ -496,6 +496,9 @@ fi
 
 get_scriptpath_and_source_files || exit 1
 
+# Check whether we have the right numeric format (set it if not)
+warn_and_set_locale
+
 # Check for settings in three default locations (increasing priority):
 #   install path of the script, user's home directory, current directory
 g16_tools_rc_searchlocations=( "$scriptpath" "$HOME" "$HOME/.config" "$PWD" )
@@ -526,7 +529,6 @@ else
   exec 5> "$write_outputfile"
 fi
 
-warn_and_set_locale
 print_header_inline "$output_verbosity" >&5
 for file in "${file_list[@]}" ; do
   if (( output_verbosity > 1 && ${#file_list[@]} > 1 )) ; then

@@ -249,6 +249,9 @@ fi
 
 get_scriptpath_and_source_files || exit 1
 
+# Check whether we have the right numeric format (set it if not)
+warn_and_set_locale
+
 # Abort if neither options nor a file list is given
 (( $# == 0 )) &&  fatal "No checkpointfile specified."
 
