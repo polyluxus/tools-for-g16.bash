@@ -299,6 +299,11 @@ while getopts :ash options ; do
     #hlp
     h) helpme ;; 
 
+    -)
+      debug "Finished reading command line arguments."
+      break
+      ;;
+
    \?) fatal "Invalid option: -$OPTARG." ;;
 
     :) fatal "Option -$OPTARG requires an argument." ;;

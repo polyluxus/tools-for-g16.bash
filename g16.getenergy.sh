@@ -278,6 +278,11 @@ while getopts :hsLi:o: options ; do
        ;;
 
     #hlp   More options in preparation.
+    -)
+      debug "Finished reading command line arguments."
+      break
+      ;;
+
    \?) fatal "Invalid option: -$OPTARG." ;;
 
     :) fatal "Option -$OPTARG requires an argument." ;;

@@ -444,6 +444,11 @@ process_options ()
             helpme 
             ;;
     
+          -)
+            debug "Finished reading command line arguments."
+            break
+            ;;
+
           \?) 
             warning "Invalid option: -$OPTARG." 
             ;;

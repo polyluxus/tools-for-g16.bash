@@ -363,6 +363,11 @@ process_options ()
             helpme 
             ;;
 
+          -)
+            debug "Finished reading command line arguments."
+            break
+            ;;
+
           \?) 
             fatal "Invalid option: -$OPTARG." 
             ;;
