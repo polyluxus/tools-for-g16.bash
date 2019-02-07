@@ -552,7 +552,7 @@ read_xyz_geometry_file ()
       debug "$(ls -lh "$tmplog")"
       mapfile -t inputfile_coord2xyz < <("$obabel_cmd" -itmol "$parsefile" -oxyz 2> "$tmplog")
       debug "$(cat "$tmplog")"
-      debug "$(rm -v "$tmplog")"
+      debug "$(rm -v -- "$tmplog")"
 
       # First line is the number of atoms.
       # Second line is a comment.

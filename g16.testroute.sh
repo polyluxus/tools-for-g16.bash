@@ -78,9 +78,10 @@ get_absolute_dirname ()
     echo "$return_dirname"
 }
 
+
 get_scriptpath_and_source_files ()
 {
-    local error_count tmplog line tmpmsg
+    local error_count tmplog line
     tmplog=$(mktemp tmp.XXXXXXXX) 
     # Who are we and where are we?
     scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
@@ -128,12 +129,10 @@ get_scriptpath_and_source_files ()
       while read -r line || [[ -n "$line" ]] ; do
         debug "$line"
       done < "$tmplog"
-      tmpmsg=$(rm -v "$tmplog")
-      debug "$tmpmsg"
+      debug "$(rm -v -- "$tmplog")"
       exit 1
     else
-      tmpmsg=$(rm -v "$tmplog")
-      debug "$tmpmsg"
+      debug "$(rm -v -- "$tmplog")"
     fi
 }
 

@@ -61,8 +61,8 @@ test_file_location ()
 backup_file ()
 {
     local move_message move_source="$1" move_target="$2"
-    debug "Will attempt: mv -v $move_source $move_target"
-    move_message="$(mv -v "$move_source" "$move_target")" || fatal "Backup went wrong."
+    debug "Will attempt: mv -v -- $move_source $move_target"
+    move_message="$( mv -v -- "$move_source" "$move_target" 2>&1 )" || fatal "Backup went wrong. $move_message"
     message "File will be backed up."
     message "$move_message"
 }

@@ -72,9 +72,10 @@ get_absolute_dirname ()
     echo "$return_dirname"
 }
 
+
 get_scriptpath_and_source_files ()
 {
-    local error_count tmplog line tmpmsg
+    local error_count tmplog line
     tmplog=$(mktemp tmp.XXXXXXXX) 
     # Who are we and where are we?
     scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
@@ -111,6 +112,8 @@ get_scriptpath_and_source_files ()
     source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
     #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/process_gaussian.sh
     source "$resourcespath/process_gaussian.sh" &> "$tmplog" || (( error_count++ ))
+    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/validate_numbers.sh
+    source "$resourcespath/validate_numbers.sh" &> "$tmplog" || (( error_count++ ))
 
     if (( error_count > 0 )) ; then
       echo "ERROR: Unable to locate library functions. Check installation." >&2
@@ -119,12 +122,10 @@ get_scriptpath_and_source_files ()
       while read -r line || [[ -n "$line" ]] ; do
         debug "$line"
       done < "$tmplog"
-      tmpmsg=$(rm -v "$tmplog")
-      debug "$tmpmsg"
+      debug "$(rm -v -- "$tmplog")"
       exit 1
     else
-      tmpmsg=$(rm -v "$tmplog")
-      debug "$tmpmsg"
+      debug "$(rm -v -- "$tmplog")"
     fi
 }
 

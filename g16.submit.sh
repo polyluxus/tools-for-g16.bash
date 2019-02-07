@@ -79,9 +79,10 @@ get_absolute_dirname ()
     echo "$return_dirname"
 }
 
+
 get_scriptpath_and_source_files ()
 {
-    local error_count tmplog line tmpmsg
+    local error_count tmplog line
     tmplog=$(mktemp tmp.XXXXXXXX) 
     # Who are we and where are we?
     scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
@@ -129,12 +130,10 @@ get_scriptpath_and_source_files ()
       while read -r line || [[ -n "$line" ]] ; do
         debug "$line"
       done < "$tmplog"
-      tmpmsg=$(rm -v "$tmplog")
-      debug "$tmpmsg"
+      debug "$(rm -v -- "$tmplog")"
       exit 1
     else
-      tmpmsg=$(rm -v "$tmplog")
-      debug "$tmpmsg"
+      debug "$(rm -v -- "$tmplog")"
     fi
 }
 
@@ -301,7 +300,7 @@ write_jobscript ()
 			  find "\$g16_subscratch" -type f -size 0 -exec rm -v {} \\;
 			  echo "Deleting scratch '\$g16_subscratch' if empty."
 			  find "\$g16_subscratch" -maxdepth 0 -empty -exec rmdir -v {} \\;
-			  [[ -e "\$g16_subscratch" ]] && mv -v "\$g16_subscratch" "$PWD/${jobname}.scr\$jobid"
+			  [[ -e "\$g16_subscratch" ]] && mv -v -- "\$g16_subscratch" "$PWD/${jobname}.scr\$jobid"
 			  echo "Deleting scratch '\$g16_basescratch' if empty."
 			  find "\$g16_basescratch" -maxdepth 0 -empty -exec rmdir -v {} \\;
 			}
