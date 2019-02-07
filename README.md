@@ -76,6 +76,9 @@ This reposity comes with the following scripts (and files):
    This tool reads in a Gaussian 16 inputfile preferably from an IRC calculation 
    and writes an input file for a subsequent structure optimisation.
 
+ * `g16.spinput.sh`
+   This tool reads in a Gaussian 16 inputfile and writes an input file for a subsequent calculation.
+
  * `g16.prepare.sh`
    This tool reads in a file containing a set of cartesian coordinates (might be a Gaussian input file)
    and writes a Gaussian inputfile with predefined keywords.
@@ -93,4 +96,4 @@ All of the scripts come with a `-h` switch to give a summary of the available op
 A reference card (or cheat-sheet) with a summary can be found as a
 pdf-file in the [docs](./docs) directory.
 
-Martin (0.1.1, 2019-02-05)
+Martin (0.1.2, 2019-02-07)
