@@ -446,11 +446,13 @@ submit_jobscript ()
 
 process_options ()
 {
+    debug "Processing options: $*"
     #hlp   Options:
     #hlp    
     local OPTIND=1 
 
     while getopts :m:p:d:w:b:e:j:Hkq:Q:P:M:u:sh options ; do
+        debug "Current option: $options"
         case $options in
 
           #hlp     -m <ARG> Define the total memory to be used in megabyte.
@@ -564,7 +566,12 @@ process_options ()
           #hlp              If the argument is 'default', '0', or '', it reverts to system settings.
           #hlp
             u) 
-               bsub_email=$(validate_email "$OPTARG")
+               if [[ "$OPTARG" =~ ^(|0|[Dd][Ee][Ff][Aa][Uu][Ll][Tt])$ ]] ; then
+                 bsub_email="default"
+                 continue
+               elif validate_email "$OPTARG" "the user email address" ; then
+                 bsub_email="$OPTARG"
+               fi
                ;;
 
           #hlp     -s       Suppress logging messages of the script.
