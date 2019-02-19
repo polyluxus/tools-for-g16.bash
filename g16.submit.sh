@@ -15,7 +15,7 @@
 #hlp
 #hlp   This software comes with absolutely no warrenty. None. Nada.
 #hlp
-#hlp   Usage: $scriptname [options] [IPUT_FILE]
+#hlp   Usage: $scriptname [options] [--] <IPUT_FILE>
 #hlp
 
 #
@@ -446,11 +446,13 @@ submit_jobscript ()
 
 process_options ()
 {
+    debug "Processing options: $*"
     #hlp   Options:
     #hlp    
     local OPTIND=1 
 
     while getopts :m:p:d:w:b:e:j:Hkq:Q:P:M:u:sh options ; do
+        debug "Current option: $options"
         case $options in
 
           #hlp     -m <ARG> Define the total memory to be used in megabyte.
@@ -564,7 +566,12 @@ process_options ()
           #hlp              If the argument is 'default', '0', or '', it reverts to system settings.
           #hlp
             u) 
-               bsub_email=$(validate_email "$OPTARG")
+               if [[ "$OPTARG" =~ ^(|0|[Dd][Ee][Ff][Aa][Uu][Ll][Tt])$ ]] ; then
+                 bsub_email="default"
+                 continue
+               elif validate_email "$OPTARG" "the user email address" ; then
+                 bsub_email="$OPTARG"
+               fi
                ;;
 
           #hlp     -s       Suppress logging messages of the script.
@@ -576,10 +583,8 @@ process_options ()
           #hlp
             h) helpme ;;
 
-            -)
-               debug "Finished reading command line arguments."
-               break
-               ;;
+          #hlp     --       Close reading options.
+          # This is the standard closing argument for getopts, it needs no implemenation.
 
            \?) fatal "Invalid option: -$OPTARG." ;;
 
@@ -650,7 +655,7 @@ debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 if [[ ! -z $g16_tools_rc_loc ]] ; then
   #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
   . "$g16_tools_rc_loc"
-  message "Configuration file '$g16_tools_rc_loc' applied."
+  message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
 else
   debug "No custom settings found."
 fi

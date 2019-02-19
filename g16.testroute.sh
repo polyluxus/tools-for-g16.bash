@@ -14,7 +14,7 @@
 #hlp
 #hlp   This software comes with absolutely no warrenty. None. Nada.
 #hlp
-#hlp   Usage: $scriptname [options] [IPUT_FILE]
+#hlp   Usage: $scriptname [options] [--] <IPUT_FILE>
 #hlp
 
 #
@@ -193,10 +193,8 @@ process_options ()
           #hlp
             h) helpme ;;
 
-            -)
-              debug "Finished reading command line arguments."
-              break
-              ;;
+          #hlp     --       Close reading options.
+          # This is the standard closing argument for getopts, it needs no implemenation.
 
            \?) fatal "Invalid option: -$OPTARG." ;;
 
@@ -268,7 +266,7 @@ debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 if [[ ! -z $g16_tools_rc_loc ]] ; then
   #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
   . "$g16_tools_rc_loc"
-  message "Configuration file '$g16_tools_rc_loc' applied."
+  message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
 else
   debug "No custom settings found."
 fi

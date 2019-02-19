@@ -14,7 +14,7 @@
 #hlp
 #hlp   This software comes with absolutely no warrenty. None. Nada.
 #hlp
-#hlp   Usage: $scriptname [options] [IPUT_FILE]
+#hlp   Usage: $scriptname [options] [--] <IPUT_FILE>
 #hlp
 
 #
@@ -264,16 +264,17 @@ process_inputfile ()
     else
       jobname="${jobname}.freq.$use_file_suffix"
     fi
-    checkpoint="${jobname}.chk"
-    inputfile="${jobname}.com"
+
+    [[ -z $inputfile_new ]] && inputfile_new="${jobname}.$g16_input_suffix"
+    checkpoint="${inputfile_new%.*}.chk"
    
-    backup_if_exists "$inputfile"
+    backup_if_exists "$inputfile_new"
 
     # Throw away the body of the input file
     unset inputfile_body
 
-    write_g16_input_file > "$inputfile"
-    message "Written modified inputfile '$inputfile'."
+    write_g16_input_file > "$inputfile_new"
+    message "Written modified inputfile '$inputfile_new'."
 }
 
 #
@@ -286,7 +287,7 @@ process_options ()
     #hlp    
     local OPTIND=1 
 
-    while getopts :o:RT:P:r:t:m:p:d:sh options ; do
+    while getopts :o:RT:P:r:t:f:m:p:d:sh options ; do
         case $options in
           #hlp   -o <ARG>   Adds options <ARG> to the frequency keyword.
           #hlp              May be specified multiple times.
@@ -355,6 +356,13 @@ process_options ()
             use_custom_tail[${#use_custom_tail[@]}]="$OPTARG" 
             ;;
 
+          #hlp   -f <ARG>   Write inputfile to <ARG>.
+          #hlp
+          f)
+            inputfile_new="$OPTARG"
+            debug "Setting inputfile_new='$inputfile_new'."
+            ;;
+
           # Link 0 related options
           #hlp   -m <ARG>   Define the total memory to be used in megabyte.
           #hlp              The total request will be larger to account for 
@@ -403,10 +411,8 @@ process_options ()
             helpme 
             ;;
 
-          -)
-            debug "Finished reading command line arguments."
-            break
-            ;;
+          #hlp     --       Close reading options.
+          # This is the standard closing argument for getopts, it needs no implemenation.
 
           \?) 
             fatal "Invalid option: -$OPTARG." 
@@ -481,7 +487,7 @@ debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 if [[ ! -z $g16_tools_rc_loc ]] ; then
   #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
   . "$g16_tools_rc_loc"
-  message "Configuration file '$g16_tools_rc_loc' applied."
+  message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
 else
   debug "No custom settings found."
 fi

@@ -3,7 +3,7 @@
 #hlp   A very quick script to transform a checkpointfile
 #hlp   to a formatted checkpointfile and then to xyz 
 #hlp   coordinates using Open Babel.
-#hlp   Usage: $scriptname [option] <checkpointfile(s)>
+#hlp   Usage: $scriptname [option] [--] <checkpointfile(s)>
 #hlp
 # 
 
@@ -269,7 +269,7 @@ debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 if [[ ! -z $g16_tools_rc_loc ]] ; then
   #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
   . "$g16_tools_rc_loc"
-  message "Configuration file '$g16_tools_rc_loc' applied."
+  message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
 else
   debug "No custom settings found."
 fi
@@ -295,14 +295,12 @@ while getopts :ash options ; do
     #hlp                (May be specified multiple times.)
     #hlp
     s) (( stay_quiet++ )) ;; 
-    #hlp     -h      Prints this help text
+    #hlp     -h         Prints this help text
     #hlp
     h) helpme ;; 
 
-    -)
-      debug "Finished reading command line arguments."
-      break
-      ;;
+    #hlp     --         Close reading options.
+    # This is the standard closing argument for getopts, it needs no implemenation.
 
    \?) fatal "Invalid option: -$OPTARG." ;;
 

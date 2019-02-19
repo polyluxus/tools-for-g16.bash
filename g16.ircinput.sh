@@ -15,7 +15,7 @@
 #hlp
 #hlp   This software comes with absolutely no warrenty. None. Nada.
 #hlp
-#hlp   Usage: $scriptname [options] [IPUT_FILE]
+#hlp   Usage: $scriptname [options] [--] <IPUT_FILE>
 #hlp
 
 #
@@ -230,8 +230,14 @@ process_inputfile ()
     unset inputfile_body
 
     # declare a variable to hold the suffix
-    local jobbasename use_file_suffix 
-    jobbasename="${jobname%.freq*}"
+    local jobbasename use_file_suffix use_direction_suffix
+    if [[ -n $inputfile_new ]] ; then
+      jobbasename="${inputfile_new%.*}"
+      use_file_suffix="${inputfile_new##*.}"
+    else
+      jobbasename="${jobname%.freq*}.irc"
+      use_file_suffix="$g16_input_suffix"
+    fi
 
     # create variables for irc keyword
     local concatenate_irc_opts irc_keyword
@@ -242,10 +248,10 @@ process_inputfile ()
     fi
 
     # Assign new checkpoint/inputfile in forward direction
-    use_file_suffix="irc.fwd"
-    jobname="${jobbasename}.$use_file_suffix"
+    use_direction_suffix="fwd"
+    jobname="${jobbasename}.$use_direction_suffix"
     checkpoint="${jobname}.chk"
-    inputfile="${jobname}.com"
+    inputfile="${jobname}.$use_file_suffix"
     backup_if_exists "$inputfile"
 
     irc_keyword="IRC(RCFC,forward"
@@ -256,13 +262,13 @@ process_inputfile ()
 
     write_g16_input_file > "$inputfile"
     message "Written modified inputfile '$inputfile'."
-     unset irc_keyword
+    unset irc_keyword
 
     # Assign new checkpoint/inputfile in reverse direction
-    use_file_suffix="irc.rev"
-    jobname="${jobbasename}.$use_file_suffix"
+    use_direction_suffix="rev"
+    jobname="${jobbasename}.$use_direction_suffix"
     checkpoint="${jobname}.chk"
-    inputfile="${jobname}.com"
+    inputfile="${jobname}.$use_file_suffix"
     backup_if_exists "$inputfile"
 
     irc_keyword="IRC(RCFC,reverse"
@@ -309,6 +315,15 @@ process_options ()
           #hlp 
           t) 
             use_custom_tail[${#use_custom_tail[@]}]="$OPTARG" 
+            ;;
+
+          #hlp   -f <ARG>   Write inputfiles to <ARG>, where the argument should contain a dot,
+          #hlp              e.g. the format like 'jobname.suffix' will produce two files
+          #hlp              'jobname.fwd.suffix' and 'jobname.rev.suffix'.
+          #hlp
+          f)
+            inputfile_new="$OPTARG"
+            debug "Setting inputfile_new='$inputfile_new'."
             ;;
 
           # Link 0 related options
@@ -359,10 +374,8 @@ process_options ()
             helpme 
             ;;
 
-          -)
-            debug "Finished reading command line arguments."
-            break
-            ;;
+          #hlp     --       Close reading options.
+          # This is the standard closing argument for getopts, it needs no implemenation.
 
           \?) 
             fatal "Invalid option: -$OPTARG." 
@@ -437,7 +450,7 @@ debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 if [[ ! -z $g16_tools_rc_loc ]] ; then
   #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
   . "$g16_tools_rc_loc"
-  message "Configuration file '$g16_tools_rc_loc' applied."
+  message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
 else
   debug "No custom settings found."
 fi
