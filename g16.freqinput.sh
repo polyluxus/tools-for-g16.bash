@@ -14,7 +14,7 @@
 #hlp
 #hlp   This software comes with absolutely no warrenty. None. Nada.
 #hlp
-#hlp   Usage: $scriptname [options] [IPUT_FILE]
+#hlp   Usage: $scriptname [options] [--] <IPUT_FILE>
 #hlp
 
 #
@@ -403,10 +403,8 @@ process_options ()
             helpme 
             ;;
 
-          -)
-            debug "Finished reading command line arguments."
-            break
-            ;;
+          #hlp     --       Close reading options.
+          # This is the standard closing argument for getopts, it needs no implemenation.
 
           \?) 
             fatal "Invalid option: -$OPTARG." 

@@ -3,7 +3,7 @@
 #hlp   A very quick script to transform a checkpointfile
 #hlp   to a formatted checkpointfile and then to xyz 
 #hlp   coordinates using Open Babel.
-#hlp   Usage: $scriptname [option] <checkpointfile(s)>
+#hlp   Usage: $scriptname [option] [--] <checkpointfile(s)>
 #hlp
 # 
 
@@ -295,14 +295,12 @@ while getopts :ash options ; do
     #hlp                (May be specified multiple times.)
     #hlp
     s) (( stay_quiet++ )) ;; 
-    #hlp     -h      Prints this help text
+    #hlp     -h         Prints this help text
     #hlp
     h) helpme ;; 
 
-    -)
-      debug "Finished reading command line arguments."
-      break
-      ;;
+    #hlp     --         Close reading options.
+    # This is the standard closing argument for getopts, it needs no implemenation.
 
    \?) fatal "Invalid option: -$OPTARG." ;;
 

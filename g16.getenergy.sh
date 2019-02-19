@@ -277,11 +277,8 @@ while getopts :hsLi:o: options ; do
        process_input_files="false"
        ;;
 
-    #hlp   More options in preparation.
-    -)
-      debug "Finished reading command line arguments."
-      break
-      ;;
+    #hlp     --       Close reading options.
+    # This is the standard closing argument for getopts, it needs no implemenation.
 
    \?) fatal "Invalid option: -$OPTARG." ;;
 

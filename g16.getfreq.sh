@@ -443,11 +443,9 @@ process_options ()
           h) 
             helpme 
             ;;
-    
-          -)
-            debug "Finished reading command line arguments."
-            break
-            ;;
+
+          #hlp     --       Close reading options.
+          # This is the standard closing argument for getopts, it needs no implemenation.
 
           \?) 
             warning "Invalid option: -$OPTARG." 
