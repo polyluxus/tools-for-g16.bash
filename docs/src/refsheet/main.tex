@@ -37,7 +37,7 @@
 \newcommand\mybackslash{\char`\\}
 
 % What this is about
-\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.1.2, 2019-02-07)}
+\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.1.3, 2019-02-19)}
 \author{Martin C Schwarzer}
 \date{\today}
 
@@ -109,13 +109,14 @@ Usage: \texttt{g16.prepare.sh [opt] <file>}
     \item[\%M] multiplicity (with indicator \texttt{mult})
     \item[\%U] unpaired electrons (with indicator \texttt{uhf})%
   \end{rsinline}
-  \item[-j <ARG>] Jobname 
-  \item[-j \%f  ] Jobname is filename filtering \texttt{.xyz}
-  \item[-j \%s  ] Jobname is filename filtering \texttt{start.xyz}
+  \item[-j <ARG>] Jobname %
+    (derives filename of generated input; default: \texttt{<file>})
+  \item[-j \%f  ] Jobname is \texttt{<file>} filtering \texttt{.xyz}
+  \item[-j \%s  ] Jobname is \texttt{<file>} filtering \texttt{start.xyz}
   \item[-f <ARG>] Filename of generated input
-  \item[-c <NUM>] Charge 
-  \item[-M <INT>] Multiplicity (\( \geq 1 \))
-  \item[-U <INT>] Unpaired electrons (\( \geq 0 \))
+  \item[-c <NUM>] Charge (default: 0)
+  \item[-M <INT>] Multiplicity (default: 1; \( \geq 1 \))
+  \item[-U <INT>] Unpaired electrons (unset; \( \geq 0 \))
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
@@ -138,8 +139,9 @@ with the Gaussian 16 utility \texttt{testrt}.
 
 \section{\texttt{g16.dissolve.sh}}
 
-This tool reads in a Gaussian 16 inputfile and 
-adds relevant keywords for solvent corrections.
+This tool reads in a Gaussian 16 inputfile (of a preferably completed calculation)
+and adds relevant keywords for solvent corrections.
+(Utilises the \texttt{\%OldChk} directive and the 	exttt{geom}/	exttt{guess} keywords.)
 
 Usage: \texttt{g16.dissolve.sh [opt] <file>}
 
@@ -149,6 +151,7 @@ Usage: \texttt{g16.dissolve.sh [opt] <file>}
   \item[-O      ] Runs an optimisation (preserves or adds \texttt{OPT})
   \item[-r <ARG>] Add \texttt{ARG} to route section
   \item[-t <ARG>] Adds \texttt{ARG} to end of file
+  \item[-f <ARG>] Filename of generated input
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
@@ -159,8 +162,9 @@ Usage: \texttt{g16.dissolve.sh [opt] <file>}
 
 \section{\texttt{g16.freqinput.sh}}
 
-This tool reads in a Gaussian 16 inputfile and 
-adds relevant keywords for a frequency calculation.
+This tool reads in a Gaussian 16 inputfile (of a preferably completed calculation)
+and adds relevant keywords for a frequency calculation.
+(Utilises the \texttt{\%OldChk} directive and the 	exttt{geom}/	exttt{guess} keywords.)
 
 Usage: \texttt{g16.freqinput.sh [opt] <file>}
 
@@ -171,6 +175,7 @@ Usage: \texttt{g16.freqinput.sh [opt] <file>}
   \item[-P <FLT>] Pressure (atmosphere)
   \item[-r <ARG>] Add \texttt{ARG} to route section
   \item[-t <ARG>] Adds \texttt{ARG} to end of file
+  \item[-f <ARG>] Filename of generated input
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
@@ -181,8 +186,9 @@ Usage: \texttt{g16.freqinput.sh [opt] <file>}
 
 \section{\texttt{g16.ircinput.sh}}
 
-This tool reads in a Gaussian 16 inputfile from a frequency run and 
+This tool reads in a Gaussian 16 inputfile from a (previously completed) frequency run and 
 adds relevant keywords for two separate irc calculations.
+(Utilises the \texttt{\%OldChk} directive and the 	exttt{geom}/	exttt{guess} keywords.)
 
 Usage: \texttt{g16.ircinput.sh [opt] <file>}
 
@@ -190,6 +196,8 @@ Usage: \texttt{g16.ircinput.sh [opt] <file>}
   \item[-o <ARG>] Adds option \texttt{ARG} to the \texttt{irc} keyword.
   \item[-r <ARG>] Add \texttt{ARG} to route section
   \item[-t <ARG>] Adds \texttt{ARG} to end of file
+  \item[-f <ARG>] Filenametemplate of generated input files; %
+    \texttt{jobname.suffix} produces \texttt{jobname.fwd.suffix} and \texttt{jobname.rev.suffix} 
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
@@ -202,8 +210,9 @@ Usage: \texttt{g16.ircinput.sh [opt] <file>}
 
 \section{\texttt{g16.optinput.sh}}
 
-This tool reads in a Gaussian 16 inputfile preferably from an IRC run and 
+This tool reads in a Gaussian 16 inputfile preferably from a (previously completed) IRC run and 
 writes and inputfile for a subsequent structure optimisation.
+(Utilises the \texttt{\%OldChk} directive and the 	exttt{geom}/	exttt{guess} keywords.)
 
 Usage: \texttt{g16.optinput.sh [opt] <file>}
 
@@ -226,6 +235,7 @@ This tool reads in a Gaussian 16 inputfile and
 writes and inputfile for a subsequent calculation.
 It is possible to overwrite the existing route section, but still
 add the \texttt{geom}/\texttt{guess} directives to base it on.
+(Utilises the \texttt{\%OldChk} directive.)
 
 Usage: \texttt{g16.spinput.sh [opt] <file>}
 
