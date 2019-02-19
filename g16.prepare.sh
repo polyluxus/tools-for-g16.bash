@@ -184,8 +184,7 @@ process_inputfile ()
     else
       debug "Jobname: $jobname"
     fi
-    input_suffix="$g16_input_suffix"
-    [[ -z $inputfile ]] && inputfile="${jobname}.com"
+    [[ -z $inputfile ]] && inputfile="${jobname}.$g16_input_suffix"
     checkpoint="${inputfile%.*}.chk"
    
     backup_if_exists "$inputfile"
@@ -404,6 +403,7 @@ process_options ()
           #hlp
           f)
             inputfile="$OPTARG"
+            debug "Setting inputfile='$inputfile'."
             ;;
 
           #hlp   -c <ARG>   Define the charge of the molecule. (Default: 0)

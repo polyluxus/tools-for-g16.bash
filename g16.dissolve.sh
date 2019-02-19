@@ -319,7 +319,7 @@ process_options ()
           #hlp
           f)
             inputfile_new="$OPTARG"
-            debug "Setting inputfile='$inputfile'."
+            debug "Setting inputfile_new='$inputfile_new'."
             ;;
 
           # Link 0 related options
