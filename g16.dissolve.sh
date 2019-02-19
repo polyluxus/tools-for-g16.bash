@@ -245,16 +245,16 @@ process_inputfile ()
     else
       jobname="${jobname}.$use_file_suffix"
     fi
-    checkpoint="${jobname}.chk"
-    inputfile="${jobname}.com"
+    [[ -z $inputfile_new ]] && inputfile_new="${jobname}.$g16_input_suffix"
+    checkpoint="${inputfile_new%.*}.chk"
    
-    backup_if_exists "$inputfile"
+    backup_if_exists "$inputfile_new"
 
     # Throw away the body of the input file
     unset inputfile_body
 
-    write_g16_input_file > "$inputfile"
-    message "Written modified inputfile '$inputfile'."
+    write_g16_input_file > "$inputfile_new"
+    message "Written modified inputfile '$inputfile_new'."
 }
 
 #
@@ -267,7 +267,7 @@ process_options ()
     #hlp    
     local OPTIND=1 
 
-    while getopts :o:S:Or:t:m:p:d:sh options ; do
+    while getopts :o:S:Or:t:f:m:p:d:sh options ; do
         case $options in
           #hlp   -o <ARG>   Adds options <ARG> to the SCRF keyword.
           #hlp              May be specified multiple times.
@@ -313,6 +313,13 @@ process_options ()
           #hlp 
           t) 
             use_custom_tail+=("$OPTARG")
+            ;;
+
+          #hlp   -f <ARG>   Write inputfile to <ARG>.
+          #hlp
+          f)
+            inputfile_new="$OPTARG"
+            debug "Setting inputfile='$inputfile'."
             ;;
 
           # Link 0 related options
