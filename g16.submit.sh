@@ -13,6 +13,8 @@
 #hlp   It is designed to work on the RWTH compute cluster in 
 #hlp   combination with the bsub queue.
 #hlp
+#hlp   Work in progress: Adapt setting to new CLAIX18 and slurm.
+#hlp
 #hlp   This software comes with absolutely no warrenty. None. Nada.
 #hlp
 #hlp   Usage: $scriptname [options] [--] <IPUT_FILE>
@@ -190,11 +192,12 @@ write_jobscript ()
     debug "requested_memory=$requested_memory; g16_overhead=$g16_overhead"
     message "Request a total memory of $overhead_memory MB, including overhead for Gaussian."
 
+    # Add a shebang and a comment
+    echo "#!/bin/bash" >&9
+    echo "# Submission script automatically created with $scriptname" >&9
+
     # Header is different for the queueing systems
     if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
-      echo "#!/bin/bash" >&9
-      echo "# Submission script automatically created with $scriptname" >&9
-
       cat >&9 <<-EOF
 			#PBS -l nodes=1:ppn=$requested_numCPU
 			#PBS -l mem=${overhead_memory}m
@@ -204,7 +207,7 @@ write_jobscript ()
 			#PBS -o $submitscript.o\${PBS_JOBID%%.*}
 			#PBS -e $submitscript.e\${PBS_JOBID%%.*}
 			EOF
-      if [[ ! -z $dependency ]] ; then
+      if [[ -n $dependency ]] ; then
         # Dependency is stored in the form ':jobid:jobid:jobid' 
         # which should be recognised by PBS
         echo "#PBS -W depend=afterok$dependency" >&9
@@ -212,12 +215,8 @@ write_jobscript ()
       echo "jobid=\"\${PBS_JOBID%%.*}\"" >&9
 
     elif [[ "$queue" =~ [Bb][Ss][Uu][Bb] ]] ; then
-      echo "#!/usr/bin/env bash" >&9
-      echo "# Submission script automatically created with $scriptname" >&9
-
       cat >&9 <<-EOF
 			#BSUB -n $requested_numCPU
-			#BSUB -a openmp
 			#BSUB -M $overhead_memory
 			#BSUB -W ${requested_walltime%:*}
 			#BSUB -J ${jobname}
@@ -225,7 +224,7 @@ write_jobscript ()
 			#BSUB -o $submitscript.o%J
 			#BSUB -e $submitscript.e%J
 			EOF
-      if [[ ! -z $dependency ]] ; then
+      if [[ -n $dependency ]] ; then
         # Dependency is stored in the form ':jobid:jobid:jobid' (PBS)
         # and needs to be transformed to LSF compatible format
         debug "Resolving dependencies from '$dependency'"
@@ -244,34 +243,65 @@ write_jobscript ()
         echo "#BSUB -w \"$resolve_dependency\"" >&9
       fi
       # Possibly an RWTH cluster specific setting
-      if [[ "$queue" =~ [Rr][Ww][Tt][Hh] && "$PWD" =~ [Hh][Pp][Cc] ]] ; then
-        echo "#BSUB -R select[hpcwork]" >&9
-      fi
-      if [[ "$bsub_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
-        if [[ "$queue" =~ [Rr][Ww][Tt][Hh] ]] ; then
+      if [[ "$queue" =~ [Rr][Ww][Tt][Hh] ]] ; then
+			  echo "#BSUB -a openmp" >&9
+        if [[ "$PWD" =~ [Hh][Pp][Cc] ]] ; then
+          echo "#BSUB -R select[hpcwork]" >&9
+        fi
+        if [[ "$qsys_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
           warning "No project selected."
         else
-          message "No project selected."
+          echo "#BSUB -P $qsys_project" >&9
         fi
-      else
-        echo "#BSUB -P $bsub_project" >&9
-      fi
-      if [[ "$bsub_email" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
-        message "No email address given, notifications will be sent to system default."
-      else
-        echo "#BSUB -u $bsub_email" >&9
-      fi
-      if [[ "$bsub_machinetype" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
-        if [[ "$queue" =~ [Rr][Ww][Tt][Hh] ]] ; then
+        if [[ "$bsub_machinetype" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
           warning "No machine type selected."
         else
-          message "No machine type selected."
+          echo "#BSUB -m $bsub_machinetype" >&9
         fi
+      fi
+
+      if [[ "$user_email" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
+        message "No email address given, notifications will be sent to system default."
       else
-        echo "#BSUB -m $bsub_machinetype" >&9
+        echo "#BSUB -u $user_email" >&9
       fi
       echo "jobid=\"\${LSB_JOBID}\"" >&9
 
+    elif [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
+      warning "This is still inpreparation"
+      cat >&9 <<-EOF
+			#SBATCH --job-name='${jobname}'
+			#SBATCH --output='$submitscript.o%j'
+			#SBATCH --error='$submitscript.e%j'
+			#SBATCH --nodes=1 
+			#SBATCH --ntasks=1
+			#SBATCH --cpus-per-task=$requested_numCPU
+			#SBATCH --mem-per-cpu=$(( overhead_memory / requested_numCPU ))
+			#SBATCH --time=${requested_walltime}
+			#SBATCH --mail-type=END,FAIL
+			EOF
+      if [[ "$qsys_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
+        warning "No project selected."
+      else
+        echo "#SBATCH --account='$qsys_project'" >&9
+      fi
+      if [[ -n "$dependency" ]] ; then
+        # Dependency is stored in the form ':jobid:jobid:jobid' 
+        # which should be recognised by SLURM (like PBS)
+        echo "#SBATCH --depend=afterok$dependency" >&9
+      fi
+      if [[ "$queue" =~ [Rr][Ww][Tt][Hh] ]] ; then
+        if [[ "$PWD" =~ [Hh][Pp][Cc] ]] ; then
+          echo "#SBATCH --constraint=hpcwork" >&9
+        fi
+        echo "#SBATCH --export=NONE" >&9
+      fi
+      if [[ "$user_email" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
+        debug "No email address given, notifications will be sent to system default."
+      else
+        echo "#SBATCH --mail-user=$user_email" >&9
+      fi
+      echo "jobid=\"\${SLURM_JOB_ID}\"" >&9
     else
       fatal "Unrecognised queueing system '$queue'."
     fi
@@ -316,6 +346,8 @@ write_jobscript ()
       # Only necessary in interactive mode for rwth
       # source /usr/local_host/etc/init_modules.sh
       cat >&9 <<-EOF
+			# Export current (at the time of execution) MODULEPATH (to be safe, could be set in bashrc)
+			export MODULEPATH="$MODULEPATH"
 			module load ${g16_modules[*]} 2>&1
 			# Because otherwise it would go to the error output.
 			
@@ -332,7 +364,7 @@ write_jobscript ()
 
     # NBO6 ?
 
-    # Some of the body is the same for all queues (so far)
+    # Most of the body is the same for all queues 
     cat >&9 <<-EOF
 		# Get some information o the platform
 		echo "This is \$(uname -n)"
@@ -350,18 +382,21 @@ write_jobscript ()
 		EOF
 
     # Insert additional environment variables
-    if [[ ! -z "$manual_env_var" ]]; then
+    if [[ -n "$manual_env_var" ]]; then
       echo "export $manual_env_var" >&9
       debug "export $manual_env_var"
     fi
 
+    echo 'echo "Start: $(date)"' >&9
+    if [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
+      # Executing something is different for SLURM
+      echo "srun g16 < '$inputfile_modified' > '$outputfile'" >&9
+    else
+      echo "g16 < '$inputfile_modified' > '$outputfile'" >&9 
+    fi
     cat >&9 <<-EOF
-		echo -n "Start: "
-		date
-		g16 < "$inputfile_modified" > "$outputfile"
 		joberror=\$?
-		echo -n "End  : "
-		date
+		echo "End  : $(date)"
 		exit \$joberror
 		EOF
 
@@ -379,8 +414,10 @@ submit_jobscript_hold ()
       submit_message="
         Submitted as $submit_id.
         Use 'qrls $submit_id' to release the job."
-    elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
+    elif [[ "$queue" =~ [Bb][Ss][Uu][Bb] ]] ; then
       submit_message="$(bsub -H < "$submitscript" 2>&1 )" || exit_status="$?"
+    elif [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
+      submit_message="$( sbatch --hold "$submitscript" 2>&1 )" || exit_status="$?"
     fi
     (( exit_status > 0 )) && warning "Submission went wrong."
     message "$submit_message"
@@ -393,8 +430,10 @@ submit_jobscript_keep ()
     message "Created submit script, use"
     if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
       message "  qsub $submitscript"
-    elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
+    elif [[ "$queue" =~ [Bb][Ss][Uu][Bb] ]] ; then
       message "  bsub < $submitscript"
+    elif [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
+      message "  sbatch $submitscript" 
     fi
     message "to start the job."
 }
@@ -407,6 +446,8 @@ submit_jobscript_run  ()
       submit_message="Submitted as $(qsub "$submitscript")" || exit_status="$?"
     elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
       submit_message="$(bsub < "$submitscript" 2>&1 )" || exit_status="$?"
+    elif [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
+      submit_message="$( sbatch "$submitscript" 2>&1 )" || exit_status="$?"
     else
       fatal "Unrecognised queueing system '$queue'."
     fi
@@ -522,7 +563,7 @@ process_options ()
             H) 
                requested_submit_status="hold"
                if [[ "$queue" =~ [Rr][Ww][Tt][Hh] ]] ; then
-                 warning "(RWTH) Current permissions of 'bresume' prevent releasing the job."
+                 warning "(RWTH) Current permissions prevent releasing the job."
                fi 
                ;;
 
@@ -537,18 +578,17 @@ process_options ()
             q) warning "The submission to a specific queue is not yet possible." ;;
 
           #hlp     -Q <ARG> Which type of job script should be produced.
-          #hlp              Arguments currently implemented: pbs-gen, bsub-rwth
+          #hlp              Arguments currently implemented: pbs-gen, bsub-gen, slurm-gen, 
+          #hlp              Special cases: bsub-rwth, slurm-rwth
           #hlp
             Q) request_qsys="$OPTARG" ;;
 
-          #hlp     -P <ARG> Account to project.
-          #hlp              This is a BSUB specific setting, it therefore also
-          #hlp              automatically selects '-Q bsub-rwth' and remote execution.
+          #hlp     -P <ARG> Account to project (BSUB), or account (SLURM).
+          #hlp              It has currently no effect if PBS is set as the queue.
           #hlp              If the argument is 'default', '0', or '', it reverts to system settings.
           #hlp
             P) 
-               bsub_project="$OPTARG"
-               request_qsys="bsub-rwth"  
+               qsys_project="$OPTARG"
                ;;
 
           #hlp     -M <ARG> Request a certain machine type, also selects '-Q bsub-rwth'.
@@ -561,16 +601,16 @@ process_options ()
                request_qsys="bsub-rwth"  
                ;;
 
-          #hlp     -u <ARG> Set user email address. This is also a BSUB specific setting.
+          #hlp     -u <ARG> Set user email address (BSUB/SLURM)
           #hlp              In other queueing systems it just won't be used.
           #hlp              If the argument is 'default', '0', or '', it reverts to system settings.
           #hlp
             u) 
                if [[ "$OPTARG" =~ ^(|0|[Dd][Ee][Ff][Aa][Uu][Ll][Tt])$ ]] ; then
-                 bsub_email="default"
+                 user_email="default"
                  continue
                elif validate_email "$OPTARG" "the user email address" ; then
-                 bsub_email="$OPTARG"
+                 user_email="$OPTARG"
                fi
                ;;
 

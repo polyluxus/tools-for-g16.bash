@@ -120,28 +120,33 @@
 
 # Specify a default value for the memory (does not include overhead)
 #
-  requested_memory=512
+  requested_memory="512"
 
 # Set the number of professors doing the calculation
 #
-  requested_numCPU=4
+  requested_numCPU="4"
 
 # The default which should be written to the inputfile
 # regarding disk space (in MB)
 #
-  requested_maxdisk=30000
+  requested_maxdisk="30000"
 
-# Select a queueing system (pbs-gen/bsub-rwth)
+# Select a queueing system <queue>-<special>
+# (queue: pbs, bsub, slurm; special: gen, rwth)
 #
-  request_qsys="bsub-rwth"
+  request_qsys="slurmrwth"
 
-# Account to project (only for bsub)
+# Account to project (only for bsub, slurm)
 #
-# bsub_project=default
+# qsys_project=default
+
+# Sent notifications to the following email address 
+#
+  user_email="default"
 
 # Request a certain machine type (only for bsub)
 #
 # bsub_machinetype=default
 
 # Calculations will be submitted to run (hold/keep)
-requested_submit_status="run"
+  requested_submit_status="run"
