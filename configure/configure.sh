@@ -529,28 +529,24 @@ ask_qsys_details ()
   case $test_queue in
     [Pp][Bb][Ss]* )
       use_request_qsys="pbs-gen"
+      debug "use_request_qsys=$use_request_qsys"
+      #skip the rest because it does not apply
+      return 
       ;;
     [Bb][Ss][Uu][Bb]* )
-      # This is currently not recognised by the scripts
       use_request_qsys="bsub-gen"
-      use_request_qsys="bsub-rwth" # Remove this restriction
-
-      ask "What project would you like to specify?"
-      use_qsys_project=$(read_human_input)
-      debug "use_qsys_project=$use_qsys_project"
-
-      ask "What what email address should recieve notifications?"
-      use_user_email=$(read_email)
-      debug "use_user_email=$use_user_email"
-
+      ;;&
+    [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] )
+      use_request_qsys="bsub-rwth"
       ask "What machine type would you like to specify?"
       use_bsub_machinetype=$(read_human_input)
       debug "use_bsub_machinetype=$use_bsub_machinetype"
-
-      ;;&
-    *[Rr][Ww][Tt][Hh] )
-      use_request_qsys="bsub-rwth"
       ;;
+    [Ss][Ll][Uu][Rr][Mm]* )
+      use_request_qsys="slurm-gen"
+      ;;&
+    [Ss][Ll][Uu][Rr][Mm]-[Rr][Ww][Tt][Hh] )
+      use_request_qsys="slurm-rwth"
     '' )
       : ;;
     * )
@@ -558,6 +554,14 @@ ask_qsys_details ()
       ;;
   esac
   debug "use_request_qsys=$use_request_qsys"
+
+  ask "What project would you like to specify?"
+  use_qsys_project=$(read_human_input)
+  debug "use_qsys_project=$use_qsys_project"
+
+  ask "What what email address should recieve notifications?"
+  use_user_email=$(read_email)
+  debug "use_user_email=$use_user_email"
 }
 
 ask_walltime ()
@@ -1089,7 +1093,8 @@ print_configuration ()
   fi
   echo ""
 
-  echo "# Select a queueing system (pbs-gen/bsub-rwth)"
+  echo "# Select a queueing system <queue>-<special>"
+  echo "(<queue>: pbs, slurm, bsub; <special>: gen, rwth)"
   echo "#"
   if [[ -z $use_request_qsys ]] ; then
     echo "# request_qsys=\"pbs-gen\""
