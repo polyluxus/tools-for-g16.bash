@@ -140,28 +140,6 @@ get_scriptpath_and_source_files ()
 # Specific functions for this script only
 #
 
-validate_g16_route ()
-{
-    local read_route="$1"
-    local g16_output
-    debug "Read the following route section:"
-    debug "$read_route"
-    if [[ -z $read_route ]] ; then 
-      warning "Route section appears to be empty."
-      warning "Check if there is an actual route card '#(|N|P|T)' in the input."
-    else
-      debug "Found route card and will process."
-    fi 
-    if g16_output=$($g16_testrt_cmd "$read_route" 2>&1) ; then
-      message "Route section has no syntax errors."
-      debug "$g16_output"
-    else
-      warning "There was an error in the route section"
-      message "$g16_output"
-      return 1
-    fi
-}
-
 process_inputfile ()
 {
     local testfile
