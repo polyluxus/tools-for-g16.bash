@@ -540,6 +540,7 @@ ask_qsys_details ()
       use_request_qsys="bsub-rwth"
       ask "What machine type would you like to specify?"
       use_bsub_machinetype=$(read_human_input)
+      [[ -z "$use_bsub_machinetype" ]] && use_bsub_machinetype="default"
       debug "use_bsub_machinetype=$use_bsub_machinetype"
       ;;
     [Ss][Ll][Uu][Rr][Mm]* )
@@ -558,10 +559,12 @@ ask_qsys_details ()
 
   ask "What project would you like to specify?"
   use_qsys_project=$(read_human_input)
+  [[ -z "$use_qsys_project" ]] && use_qsys_project="default"
   debug "use_qsys_project=$use_qsys_project"
 
   ask "What what email address should recieve notifications?"
   use_user_email=$(read_email)
+  [[ -z "$use_user_email" ]] && use_user_email="default"
   debug "use_user_email=$use_user_email"
 }
 
@@ -647,7 +650,7 @@ get_configuration_from_file ()
   # Load custom settings from the rc
   
   if [[ -n $g16_tools_rc_loc ]] ; then
-    message "Configuration file '${g16_tools_rc_loc/*$HOME/'<HOME>'}' found."
+    message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' found."
   else
     debug "No custom settings found."
     return 1
@@ -670,7 +673,7 @@ get_configuration_from_file ()
   fi
   #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
   . "$g16_tools_rc_loc"
-  message "Configuration file '${g16_tools_rc_loc/*$HOME/'<HOME>'}' applied."
+  message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
 }
 
 #
@@ -824,6 +827,7 @@ get_configuration_interactive ()
   else
     message "Recovered setting: 'qsys_project=$use_qsys_project'"
     ask "Would you like to change this setting?"
+    message "Choosing 'yes' will re-enter the configuration of the queueing system."
     if read_boolean ; then ask_qsys_details ; fi
   fi
   if [[ "$use_request_qsys" =~ ([Bb][Ss][Uu][Bb]|[Ss][Ll][Uu][Rr][Mm]) && -z $use_user_email ]] ; then
@@ -831,14 +835,18 @@ get_configuration_interactive ()
   else
     message "Recovered setting: 'user_email=$use_user_email'"
     ask "Would you like to change this setting?"
+    message "Choosing 'yes' will re-enter the configuration of the queueing system."
     if read_boolean ; then ask_qsys_details ; fi
   fi
-  if [[ "$use_request_qsys" =~ [Bb][Ss][Uu][Bb] && -z $use_bsub_machinetype ]] ; then
+  if [[ "$use_request_qsys" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] && -z $use_bsub_machinetype ]] ; then
     ask_qsys_details
-  else
+  elif [[ "$use_request_qsys" =~ [Bb][Ss][Uu][Bb] && -n "$use_bsub_machinetype" ]] ; then
     message "Recovered setting: 'bsub_machinetype=$use_bsub_machinetype'"
     ask "Would you like to change this setting?"
+    message "Choosing 'yes' will re-enter the configuration of the queueing system."
     if read_boolean ; then ask_qsys_details ; fi
+  else
+    debug "Chosen queueing system is not 'bsub', machine type irrelevant."
   fi
   debug "use_request_qsys=$use_request_qsys"
   debug "use_qsys_project=$use_qsys_project"
@@ -1095,7 +1103,7 @@ print_configuration ()
   echo ""
 
   echo "# Select a queueing system <queue>-<special>"
-  echo "(<queue>: pbs, slurm, bsub; <special>: gen, rwth)"
+  echo "# (<queue>: pbs, slurm, bsub; <special>: gen, rwth)"
   echo "#"
   if [[ -z $use_request_qsys ]] ; then
     echo "# request_qsys=\"pbs-gen\""
@@ -1104,18 +1112,18 @@ print_configuration ()
   fi
   echo ""
 
-  echo "# Account to project (only for bsub)"
+  echo "# Account to project (bsub) or account (slurm)"
   echo "#"
-  if [[ -z $use_qsys_project ]] ; then
+  if [[ -z $use_qsys_project ]] || [[ "$use_qsys_project" == "default" ]] ; then
     echo "# qsys_project=default"
   else
     echo "  qsys_project=\"$use_qsys_project\""
   fi
   echo ""
 
-  echo "# Sent notifications to the following email address (only for bsub)"
+  echo "# Sent notifications to the following email address (slurm, bsub)"
   echo "#"
-  if [[ -z $use_user_email ]] ; then
+  if [[ -z $use_user_email ]] || [[ "$use_user_email" == "default" ]] ; then
     echo "# user_email=default@default.com"
   else
     echo "  user_email=\"$use_user_email\""
@@ -1124,7 +1132,7 @@ print_configuration ()
 
   echo "# Use following machine type (only for bsub)"
   echo "#"
-  if [[ -z $use_bsub_machinetype ]] ; then
+  if [[ -z $use_bsub_machinetype ]] || [[ "$use_bsub_machinetype" == "default" ]] ; then
     echo "# bsub_machinetype=default"
   else
     echo "  bsub_machinetype=\"$use_bsub_machinetype\""
