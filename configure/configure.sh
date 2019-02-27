@@ -547,6 +547,7 @@ ask_qsys_details ()
       ;;&
     [Ss][Ll][Uu][Rr][Mm]-[Rr][Ww][Tt][Hh] )
       use_request_qsys="slurm-rwth"
+      ;;
     '' )
       : ;;
     * )
