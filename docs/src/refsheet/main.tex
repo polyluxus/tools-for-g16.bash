@@ -37,7 +37,7 @@
 \newcommand\mybackslash{\char`\\}
 
 % What this is about
-\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.1.4, 2019-02-27)}
+\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.2.0\_alpha, 2019-02-27)}
 \author{Martin C Schwarzer}
 \date{\today}
 
@@ -266,16 +266,17 @@ Usage: \texttt{g16.submit.sh [opt] <file>}
     %\item[-b <ARG>] Specify binary (TODO)
   \item[-e <ARG>] Specify an environment variable \texttt{ARG} in format \texttt{<VAR=value>}
   \item[-j <INT>] Wait for job with ID \texttt{INT}
-  \item[-H      ] Submit with status hold (PBS) or \texttt{PSUSP} (BSUB)
+  \item[-H      ] Submit with status hold (PBS, SLURM) or \texttt{PSUSP} (BSUB)
   \item[-k      ] Only create (keep) the jobscript, do not submit it.
-  \item[-Q <ARG>] Queue for which job script should be created 
-    (\texttt{pbs-gen}/\texttt{bsub-rwth})
+  \item[-Q <ARG>] Queue for which job script should be created \texttt{<queue>-<special>}
+    (\texttt{<queue>}: \texttt{pbs}, \texttt{slurm}, \texttt{bsub};
+     \texttt{<special>}: \texttt{gen} [generic], \texttt{rwth})
     %\item[-q <ARG>] Specify queue (TODO)
-  \item[-P <ARG>] Account to project (BSUB);
+   \item[-P <ARG>] Account to project (BSUB) or account (SLURM);
     if \texttt{ARG} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
-  \item[-M <ARG>] Specify a machine type (BSUB);
+  \item[-M <ARG>] Specify a machine type (only \texttt{bsub-rwth});
     if \texttt{ARG} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
-  \item[-u <ARG>] set user email address (BSUB);
+  \item[-u <ARG>] set user email address (SLURM, BSUB);
     if \texttt{ARG} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
   \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)

@@ -1,9 +1,5 @@
 This document is based on the Cheat-Sheet for `tools-for-g16.bash`
-<<<<<<< HEAD
-and was last updated with version 0.1.3, 2019-02-07.
-=======
-and was last updated with version 0.1.4, 2019-02-27.
->>>>>>> master
+and was last updated with version 0.2.0 alpha, 2019-02-27.
 
 Introduction
 ============
@@ -226,12 +222,12 @@ Usage: `g16.submit.sh [opt] <file>`
 | `-w <DUR>` | Walltime limit
 | `-e <ARG>` | Specify an environment variable `ARG` in format `<VAR=value>`
 | `-j <INT>` | Wait for job with ID `INT`
-| `-H`       | Submit with status hold (PBS) or `PSUSP` (BSUB)
+| `-H`       | Submit with status hold (PBS, SLURM) or `PSUSP` (BSUB)
 | `-k`       | Only create (keep) the jobscript, do not submit it.
-| `-Q <ARG>` | Queue for which job script should be created (`pbs-gen`/`bsub-rwth`)
-| `-P <ARG>` | Account to project (BSUB); if `ARG` is `default`/`0`/`''` presets are overwritten.
-| `-M <ARG>` | Specify a machine type (BSUB); if `ARG` is `default`/`0`/`''` presets are overwritten.
-| `-u <ARG>` | set user email address (BSUB); if `ARG` is `default`/`0`/`''` presets are overwritten.
+| `-Q <ARG>` | Queue for which job script should be created `<queue>-<special>` (`<queue>`: `pbs`, `slurm`, `bsub`; `<special>`: `gen` [generic], `rwth`)
+| `-P <ARG>` | Account to project (BSUB) or account (SLURM); if `ARG` is `default`/`0`/`''` presets are overwritten.
+| `-M <ARG>` | Specify a machine type (only `bsub-rwth`); if `ARG` is `default`/`0`/`''` presets are overwritten.
+| `-u <ARG>` | set user email address (SLURM, BSUB); if `ARG` is `default`/`0`/`''` presets are overwritten.
 | `--`       | Close reading options
 | `-s`       | silence script (incremental)
 | `-h`       | Help file

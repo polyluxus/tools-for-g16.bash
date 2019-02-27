@@ -13,7 +13,7 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-g16.bash"
-version="0.2.0_devel"
+version="0.2.0_alpha"
 versiondate="2019-02-27"
 
 #
