@@ -641,8 +641,8 @@ get_configuration_from_file ()
   
   # Load custom settings from the rc
   
-  if [[ ! -z $g16_tools_rc_loc ]] ; then
-    message "Configuration file '$g16_tools_rc_loc' found."
+  if [[ -n $g16_tools_rc_loc ]] ; then
+    message "Configuration file '${g16_tools_rc_loc/*$HOME/'<HOME>'}' found."
   else
     debug "No custom settings found."
     return 1
@@ -665,7 +665,7 @@ get_configuration_from_file ()
   fi
   #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
   . "$g16_tools_rc_loc"
-  message "Configuration file '$g16_tools_rc_loc' applied."
+  message "Configuration file '${g16_tools_rc_loc/*$HOME/'<HOME>'}' applied."
 }
 
 #

@@ -14,7 +14,7 @@ fi
 #
 softwarename="tools-for-g16.bash"
 version="0.2.0_devel"
-versiondate="2019-02-26"
+versiondate="2019-02-27"
 
 #
 # Standard commands for external software:

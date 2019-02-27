@@ -1,5 +1,9 @@
 This document is based on the Cheat-Sheet for `tools-for-g16.bash`
+<<<<<<< HEAD
 and was last updated with version 0.1.3, 2019-02-07.
+=======
+and was last updated with version 0.1.4, 2019-02-27.
+>>>>>>> master
 
 Introduction
 ============
@@ -34,7 +38,12 @@ Installation & Configuration
 General settings for the scripts can be found in the file
 `g16.tools.rc`. Alternatively, settings can be stored in `.g16.toolsrc`,
 which always has precedence. Every script will check four different
+<<<<<<< HEAD
 directories in the order 1. installation directory, 2. user's home, 3. `.config` in user's home, 4. parent working directory.
+=======
+directories in the order 1. installation directory, 2. user's home, 
+3. `.config` in user's home, 4. parent working directory.
+>>>>>>> master
 It will load the last configuration file it finds.
 Setting files can be generated with the `configure/configure.sh` script.
 
@@ -220,9 +229,9 @@ Usage: `g16.submit.sh [opt] <file>`
 | `-H`       | Submit with status hold (PBS) or `PSUSP` (BSUB)
 | `-k`       | Only create (keep) the jobscript, do not submit it.
 | `-Q <ARG>` | Queue for which job script should be created (`pbs-gen`/`bsub-rwth`)
-| `-P <ARG>` | Account to project (BSUB); if `ARG` is `default`/`0`/`”` presets are overwritten.
-| `-M <ARG>` | Specify a machine type (BSUB); if `ARG` is `default`/`0`/`”` presets are overwritten.
-| `-u <ARG>` | set user email address (BSUB); if `ARG` is `default`/`0`/`”` presets are overwritten.
+| `-P <ARG>` | Account to project (BSUB); if `ARG` is `default`/`0`/`''` presets are overwritten.
+| `-M <ARG>` | Specify a machine type (BSUB); if `ARG` is `default`/`0`/`''` presets are overwritten.
+| `-u <ARG>` | set user email address (BSUB); if `ARG` is `default`/`0`/`''` presets are overwritten.
 | `--`       | Close reading options
 | `-s`       | silence script (incremental)
 | `-h`       | Help file
