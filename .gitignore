@@ -5,3 +5,4 @@ examples
 .tmp*
 tmp.*
 core.*
+.nfs*
