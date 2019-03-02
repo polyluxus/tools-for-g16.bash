@@ -45,7 +45,7 @@
       <method>.gjf, <method>.<queue>.bash      & %
         <method>.log, <method>.chk, (queue error/out) \\
       %5  
-                                               & %
+      |[decision]| Stationary point found?     & %
         <method>.xyz, <method>.fchk & %
         \(E_\mathrm{el}\)           \\
       %6
@@ -75,7 +75,11 @@
   \draw
   (chart-3-1) edge node [right] {\texttt{g16.submit}} (chart-4-1);
   \draw
-  (chart-4-1) edge node [right] {\texttt{g16.freqinput}} (chart-6-1);
+  (chart-4-2) -- +(0,-1) -| (chart-5-1) ;
+  \draw
+  (chart-5-1) -- +(-4,0) node [near start, above] {\textbf{no}} |- (chart-2-1) ;
+  \draw
+  (chart-5-1) edge node [right] {\texttt{g16.freqinput}} node [left] {\textbf{yes}} (chart-6-1);
   \draw
   (chart-4-1) edge node [above] {\texttt{g16}} (chart-4-2);
   \draw
@@ -101,8 +105,8 @@
   \draw
   (chart-10-2) edge (chart-10-3);
   \draw
-  (chart-9-1) -- +(-3,0) |- (chart-2-1)
-  node [near start, sloped, above] {\(\geq2\); extract molecular structure, repeat optimisation};
+  (chart-9-1) -- +(-4,0) node [near start, above] {\(\geq2\)} |- (chart-2-1)
+  node [near start, sloped, above] {extract molecular structure, repeat optimisation};
   \draw
   (chart-9-3) -- +(+4,0) node [near start, above] {\textbf{no}}
   |- (chart-2-1) node [near start, sloped, below] {extract molecular structure, repeat optimisation};
