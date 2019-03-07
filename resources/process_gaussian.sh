@@ -688,6 +688,14 @@ read_g16_input_file ()
           # we don't need to parse that and can read the next one
           continue
         fi
+
+        # There could be another hashtag. It does not hurt, but we can safely remove it, too.
+        local route_cont_pattern="^([[:space:]]*#([[:space:]]*[nNpPtT][[:space:]])?)"
+        if [[ $line =~ $route_cont_pattern ]] ; then
+          debug "Read line contains another route start pattern: '${BASH_REMATCH[0]}'"
+          line="${line:${#BASH_REMATCH[0]}}"
+          debug "Line after removing pattern: $line"
+        fi
         # Clean line from comments, store in 'appendline' buffer
         appendline=$(remove_g16_input_comment "$line") 
         # there might be comment only lines which can be removed/ ignored
@@ -855,6 +863,8 @@ collate_route_keywords ()
     if [[ $inputstring =~ $route_start_pattern ]] ; then
       keepstring="${BASH_REMATCH[1]}"
       inputstring="${inputstring//${BASH_REMATCH[0]}/}"
+      debug "Saved to route: $keepstring"
+      debug "Remaining to parse: $inputstring"
     fi
 
     # The following formats for the input of keywords are given in the manual:
@@ -870,10 +880,11 @@ collate_route_keywords ()
     # Multiple spaces are treated as a single delimiter.
     # see http://gaussian.com/input/?tabid=1
     # The ouptput of this function should only use the keywords without any options, or
-    # the following format: keyword=(option1,option2,…) [no spaces]
+    # the following format: keyword(option1,option2,…) [no spaces]
     # Exeptions to the above: temperature=500 and pressure=2, 
     # where the equals is the only accepted form.
     # This is probably because they can also be options to 'freq'.
+    # Hashes can also appear (apparently) everywhere, but only the first is actually needed
 
     # Note: double backslash in double quotes https://github.com/koalaman/shellcheck/wiki/SC1117
     
@@ -888,20 +899,24 @@ collate_route_keywords ()
     while [[ $inputstring =~ $test_pattern ]] ; do
       # Unify input pattern and remove unnecessary spaces
       # Remove found portion from inputstring:
+      debug "Splitting up: ${BASH_REMATCH[0]}"
       inputstring="${inputstring//${BASH_REMATCH[0]}/}"
+      debug "Remaining to parse (later): $inputstring"
       # Keep keword, options, and how it was terminated
       keep_keyword="${BASH_REMATCH[1]}"
       keep_options="${BASH_REMATCH[2]}"
       keep_terminate="${BASH_REMATCH[3]}"
+      debug "keep_keyword=$keep_keyword; keep_options=$keep_options; keep_terminate=$keep_terminate"
 
       # Remove spaces from IOPs (only evil people use them there)
       if [[ $keep_keyword =~ ^[Ii][Oo][Pp]$ ]] ; then
         keep_keyword="$keep_keyword$keep_options"
         keep_keyword="${keep_keyword// /}"
         unset keep_options # unset to not run into next 'if'
+        debug "Mathed an IOP (this is an exception to the rule)."
       fi
 
-      if [[ ! -z $keep_options ]] ; then 
+      if [[ -n $keep_options ]] ; then 
         # remove spaces, equals, parens from front and end
         # substitute option separating spaces with commas
         keep_options=$(collate_route_keyword_opts "$keep_options")
@@ -936,6 +951,7 @@ collate_route_keywords ()
         returncode=1
         warning "Found extremely long keyword, folding route section might break input."
       fi
+      debug "Saved keyword to route: $keep_keyword"
       if [[ $keepstring =~ /$ ]] ; then
         keepstring="$keepstring$keep_keyword"
       elif [[ -z $keepstring ]] ; then
