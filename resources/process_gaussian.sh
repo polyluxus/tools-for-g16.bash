@@ -521,7 +521,7 @@ read_xyz_geometry_file ()
       if [[ "$line" =~ $pattern_charge ]] ; then
         molecule_charge_local="${BASH_REMATCH[1]}"
         message "Found molecule's charge: $molecule_charge_local."
-        if [[ -n $molecule_charge ]] && (( $molecule_charge != $molecule_charge_local )) ; then
+        if [[ -n $molecule_charge ]] && (( molecule_charge != molecule_charge_local )) ; then
           warning "Overwriting previously set charge ($molecule_charge)."
         fi
         molecule_charge="$molecule_charge_local"
@@ -530,7 +530,7 @@ read_xyz_geometry_file ()
       if [[ "$line" =~ $pattern_mult ]] ; then
         molecule_mult_local="${BASH_REMATCH[1]}"
         message "Found molecule's multiplicity: $molecule_mult_local."
-        if [[ -n $molecule_mult ]] && (( $molecule_mult != $molecule_mult_local )) ; then
+        if [[ -n $molecule_mult ]] && (( molecule_mult != molecule_mult_local )) ; then
           warning "Overwriting previously set multiplicity ($molecule_mult)."
         fi
         molecule_mult="$molecule_mult_local"
@@ -541,7 +541,7 @@ read_xyz_geometry_file ()
         message "Found number of unpaired electrons for the molecule: $molecule_uhf_local."
         molecule_mult_local="$(( molecule_uhf_local + 1 ))"
         debug "Converted to multiplicity: $molecule_mult_local"
-        if [[ -n $molecule_mult ]] && (( $molecule_mult != $molecule_mult_local )) ; then
+        if [[ -n $molecule_mult ]] && (( molecule_mult != molecule_mult_local )) ; then
           warning "Overwriting previously set multiplicity ($molecule_mult)."
         fi
         molecule_mult="$molecule_mult_local"
