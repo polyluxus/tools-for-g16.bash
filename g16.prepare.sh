@@ -510,7 +510,7 @@ process_options ()
 
 exit_status=0
 # Save how script was called
-script_invocation_spell="$0 $*"
+printf -v script_invocation_spell "'%s' " "${0/#$HOME/<HOME>}" "$@"
 
 # Sent logging information to stdout
 exec 3>&1

@@ -1383,8 +1383,9 @@ write_g16_input_file ()
     # The input file must be terminated by a blank line
     echo ""
     # Add some information about the creation of the script
-    echo "!Automagically created with $scriptname"
+    echo "!Automagically created with $scriptname ($softwarename, $version, $versiondate)"
     echo "!$script_invocation_spell"
+    #echo "!${script_invocation_spell/#$HOME/<HOME>}"
 }
 
 

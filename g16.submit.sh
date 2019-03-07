@@ -193,7 +193,7 @@ write_jobscript ()
     # Header is different for the queueing systems
     if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
       echo "#!/bin/bash" >&9
-      echo "# Submission script automatically created with $scriptname" >&9
+      echo "# Submission script automatically created with $scriptname." >&9
 
       cat >&9 <<-EOF
 			#PBS -l nodes=1:ppn=$requested_numCPU
@@ -366,6 +366,7 @@ write_jobscript ()
 		EOF
 
     # Close file descriptor
+    echo "# $scriptname is part of $softwarename $version ($versiondate)" >&9
     exec 9>&-
     message "Written submission script '$submitscript'."
     return 0
@@ -618,7 +619,7 @@ process_options ()
 (( ${#BASH_SOURCE[*]} > 1 )) && return 0
 
 # Save how script was called
-script_invocation_spell="$0 $*"
+printf -v script_invocation_spell "'%s' " "${0/#$HOME/<HOME>}" "$@"
 
 # Sent logging information to stdout
 exec 3>&1
