@@ -1,0 +1,26 @@
+\documentclass[   % 
+  final,          % 
+  a4paper         % 
+]{article}
+
+\usepackage[a4paper,margin=2cm]{geometry}
+\setcounter{secnumdepth}{0}
+\usepackage[inline]{enumitem}
+
+\begin{document}
+\section{Installation \& Configuration}
+
+General settings for the scripts can be found in the file \texttt{g16.tools.rc}.
+Alternatively, settings can be stored in \texttt{.g16.toolsrc}, 
+which always has precedence.
+Every script will check four different directories in the order
+\begin{enumerate*}
+\item installation directory,
+\item user's home,
+\item \texttt{.config} in user's home,
+\item parent working directory.
+\end{enumerate*}
+It will load the last configuration file it finds.
+
+Setting files can be generated with the \texttt{configure/configure.sh} script.
+\end{document}

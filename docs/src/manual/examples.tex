@@ -1,0 +1,23 @@
+\documentclass[   % 
+  final,          % 
+  a4paper         % 
+]{article}
+
+\usepackage[a4paper,margin=2cm]{geometry}
+\setcounter{secnumdepth}{0}
+
+\usepackage{tikz}
+\usetikzlibrary{matrix,calc,shapes}
+\usepackage{amssymb}
+\usepackage[image]{tikzinput}
+\usepackage{standalone}
+
+\begin{document}
+\section{Usage examples}
+
+\tikzinput[width=1\textwidth]{./graphics/tikz-optimisation-flowchart}
+
+\tikzinput[width=1\textwidth]{./graphics/tikz-transitionstate-flowchart}
+
+\end{document}
+

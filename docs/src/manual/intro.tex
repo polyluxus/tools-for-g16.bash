@@ -1,0 +1,41 @@
+\documentclass[   % 
+  final,          % 
+  a4paper         % 
+]{article}
+
+\usepackage[a4paper,margin=2cm]{geometry}
+\setcounter{secnumdepth}{0}
+\usepackage{hyperref}
+\usepackage[inline]{enumitem}
+\usepackage{calc}
+% Intermediately include a new list type to import the cheat sheet
+\newenvironment{rslisttt}[1]
+{
+  \begin{description}[labelwidth=\widthof{\texttt{#1}},font=\ttfamily]
+}{
+  \end{description}
+}
+
+\begin{document}
+\section{Introduction}
+
+This accompanies the repository \href{https://github.com/polyluxus/tools-for-g16.bash}{polyluxus/tools-for-g16.bash}.
+
+Various bash scripts to aid the use of the quantum chemistry software package Gaussian 16.
+
+\subsection{Preliminary notes}
+
+The notation in brackets \texttt{[ ]} indicate optional arguments/inputs;
+arguments in angles \texttt{< >} require human input;
+a bar \texttt{|} indicates alternatives.
+
+The following abbreviations will be used:
+\begin{rslisttt}{ARG}
+  \item[opt] Short for option(s)
+  \item[ARG] String type argument
+  \item[INT] Positive integer (including zero)
+  \item[NUM] Whole number (including zero)
+  \item[FLT] Floating point number
+  \item[DUR] Duration in format \texttt{[[HH:]MM:]SS} 
+\end{rslisttt}
+\end{document}
