@@ -457,15 +457,15 @@ remove_g16_input_comment ()
       debug "Matched: ${BASH_REMATCH[0]}"
       # Return the line without the comment part
       echo "${BASH_REMATCH[1]}"
-      [[ ! -z ${BASH_REMATCH[2]} ]] && message "Removed comment: ${BASH_REMATCH[2]}"
-      debug "Comment removed. Return 0."
+      [[ -n ${BASH_REMATCH[2]} ]] && message "Removed comment: ${BASH_REMATCH[2]}"
+      debug "Line without comment: '${BASH_REMATCH[1]}' (Return 0.)"
       return 0
     elif [[ $parseline =~ ^!(.*)$ ]] ; then
       message "Removed comment: ${BASH_REMATCH[1]}"
-      debug "Return 0."
+      debug "The whole line is a comment. (Return 0.)"
       return 0
     else
-      debug "Line is blank. Return 1."
+      debug "Line is blank. (Return 1.)"
       return 1 # Return false if blank line
     fi
 }
@@ -615,10 +615,12 @@ read_g16_input_file ()
         if [[ -z $checkpoint ]] ; then
           # If the chk directive is found, check the next line
           get_chk_file "$line" && continue
+          debug "Checkpoint file not found."
         fi
         if [[ -z $old_checkpoint ]] ; then
           # If the chk directive is found, check the next line
           get_oldchk_file "$line" && continue
+          debug "Old checkpoint file not found."
         fi
         if warn_nprocs_directive "$line" ; then
           # If the nprocs directive is found a warning will be issued,
@@ -635,14 +637,19 @@ read_g16_input_file ()
           continue
         fi
 
-        # Set the pattern to the form '%<directive>=<content>'
-        pattern="^[[:space:]]*%([^=]+)=([^[:space:]]+)([[:space:]]+|$)"
+        # Setting the pattern to the form '%<directive>=<content>'
+        # will not match link0 directives like %Save/%NoSave, ergo the following is bogus:
+        # pattern="^[[:space:]]*%([^=]+)=([^[:space:]]+)([[:space:]]+|$)"
+        # Therefore match anything tht contains a %[A-Za-z]
+        pattern="^[[:space:]]*(%[A-Za-z]+)(.*)$"
         if link0_temp=$(parse_link0 "$line" "$pattern" "0") ; then
           # If anything is found, everything (rematch index 0) must be stored
           inputfile_link0[$link0_index]="$link0_temp"
+          debug "Extra link0 directive saved: ${inputfile_link0[$link0_index]}"
           (( link0_index++ ))
           continue
         else
+          debug "Read line does not appear to be a link0 directive. Switch off reading link0."
           # If the pattern is not found, the link0 directives are completed,
           # switch reading off.
           store_link0=2
@@ -651,23 +658,25 @@ read_g16_input_file ()
 
       if (( store_route == 0 )) ; then
         if [[ $line =~ $route_start_pattern ]] ; then
-          debug "Start reading route section."
+          debug "Read line contains route start pattern. Start reading route section."
           # Start reading the route section end reading link0 directives
           store_route=1
           route_section=$(remove_g16_input_comment "$line")
           # Read next line
           continue
+        else
+          debug "Read line does not contain route start pattern."
         fi
-      fi
-      if (( store_route == 1 )) ; then
+      elif (( store_route == 1 )) ; then
+        # Cannot have start to store the route and continue to read it at the same time
         debug "Still reading route section."
         # Still reading the route section
         if [[ $line =~ ^[[:space:]]*$ ]]; then
           # End reading route when blank line is encountered
           # and start reading the title
+          debug "Blank line encountered. Route section is finished."
           store_title=1
           store_route=2
-          debug "Finished route section."
           if check_allcheck_option "$route_section" ; then
             message "Skipping reading title, charge, and multiplicity."
             store_title=2
@@ -682,11 +691,13 @@ read_g16_input_file ()
         # Clean line from comments, store in 'appendline' buffer
         appendline=$(remove_g16_input_comment "$line") 
         # there might be comment only lines which can be removed/ ignored
-        [[ ! -z $appendline ]] && route_section="$route_section $appendline"
+        [[ -n $appendline ]] && route_section="$route_section $appendline"
         # prepare for next read (just to be sure)
         unset appendline
         # Read next line
         continue
+      else
+        debug "Not storing route section. (store_route=$store_route)"
       fi
       if (( store_title == 1 )) ; then
         debug "Reading title section."
@@ -707,6 +718,8 @@ read_g16_input_file ()
         fi
         unset appendline
         continue
+      else
+        debug "Not storing title section. (store_title=$store_title)"
       fi
       if (( store_charge_mult == 1 )) ; then
         debug "Reading charge and multiplicity."
@@ -759,15 +772,18 @@ read_g16_input_file ()
         store_charge_mult=2
         # Next should be geometry and other stuff
         continue
+      else
+        debug "Not storing charge/ multiplicity. (store_charge_mult=$store_charge_mult)"
       fi
       
-      debug "Reading rest of input file."
+      debug "Reading rest of input file. All reads should be 2 now (otherwise problem)."
+      debug "store_link0=$store_link0; store_route=$store_route; store_title=$store_title; store_charge_mult=$store_charge_mult"
       if line=$(remove_g16_input_comment "$line") ; then
         # Empty lines will be kept (because above will be false)
         debug "Checking line '$line' is empty after removing comment."
         # If _after_ removing the comment the line is empty, skip to the next line
         [[ $line =~ ^[[:space:]]*$ ]] && continue
-        debug "Line will be kept."
+        debug "Read line is not empty, it will be kept."
       else
         debug "Empty line will be kept."
       fi
