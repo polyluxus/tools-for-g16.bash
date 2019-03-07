@@ -268,7 +268,7 @@ write_jobscript ()
       echo "jobid=\"\${LSB_JOBID}\"" >&9
 
     elif [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
-      warning "This is still inpreparation"
+      warning "This is still in preparation"
       cat >&9 <<-EOF
 			#SBATCH --job-name='${jobname}'
 			#SBATCH --output='$submitscript.o%j'
@@ -401,6 +401,7 @@ write_jobscript ()
 		EOF
 
     # Close file descriptor
+    echo "# $scriptname is part of $softwarename $version ($versiondate)" >&9
     exec 9>&-
     message "Written submission script '$submitscript'."
     return 0
@@ -658,7 +659,7 @@ process_options ()
 (( ${#BASH_SOURCE[*]} > 1 )) && return 0
 
 # Save how script was called
-script_invocation_spell="$0 $*"
+printf -v script_invocation_spell "'%s' " "${0/#$HOME/<HOME>}" "$@"
 
 # Sent logging information to stdout
 exec 3>&1
