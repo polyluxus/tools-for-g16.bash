@@ -457,15 +457,15 @@ remove_g16_input_comment ()
       debug "Matched: ${BASH_REMATCH[0]}"
       # Return the line without the comment part
       echo "${BASH_REMATCH[1]}"
-      [[ ! -z ${BASH_REMATCH[2]} ]] && message "Removed comment: ${BASH_REMATCH[2]}"
-      debug "Comment removed. Return 0."
+      [[ -n ${BASH_REMATCH[2]} ]] && message "Removed comment: ${BASH_REMATCH[2]}"
+      debug "Line without comment: '${BASH_REMATCH[1]}' (Return 0.)"
       return 0
     elif [[ $parseline =~ ^!(.*)$ ]] ; then
       message "Removed comment: ${BASH_REMATCH[1]}"
-      debug "Return 0."
+      debug "The whole line is a comment. (Return 0.)"
       return 0
     else
-      debug "Line is blank. Return 1."
+      debug "Line is blank. (Return 1.)"
       return 1 # Return false if blank line
     fi
 }
@@ -521,7 +521,7 @@ read_xyz_geometry_file ()
       if [[ "$line" =~ $pattern_charge ]] ; then
         molecule_charge_local="${BASH_REMATCH[1]}"
         message "Found molecule's charge: $molecule_charge_local."
-        if [[ -n $molecule_charge ]] && (( $molecule_charge != $molecule_charge_local )) ; then
+        if [[ -n $molecule_charge ]] && (( molecule_charge != molecule_charge_local )) ; then
           warning "Overwriting previously set charge ($molecule_charge)."
         fi
         molecule_charge="$molecule_charge_local"
@@ -530,7 +530,7 @@ read_xyz_geometry_file ()
       if [[ "$line" =~ $pattern_mult ]] ; then
         molecule_mult_local="${BASH_REMATCH[1]}"
         message "Found molecule's multiplicity: $molecule_mult_local."
-        if [[ -n $molecule_mult ]] && (( $molecule_mult != $molecule_mult_local )) ; then
+        if [[ -n $molecule_mult ]] && (( molecule_mult != molecule_mult_local )) ; then
           warning "Overwriting previously set multiplicity ($molecule_mult)."
         fi
         molecule_mult="$molecule_mult_local"
@@ -541,7 +541,7 @@ read_xyz_geometry_file ()
         message "Found number of unpaired electrons for the molecule: $molecule_uhf_local."
         molecule_mult_local="$(( molecule_uhf_local + 1 ))"
         debug "Converted to multiplicity: $molecule_mult_local"
-        if [[ -n $molecule_mult ]] && (( $molecule_mult != $molecule_mult_local )) ; then
+        if [[ -n $molecule_mult ]] && (( molecule_mult != molecule_mult_local )) ; then
           warning "Overwriting previously set multiplicity ($molecule_mult)."
         fi
         molecule_mult="$molecule_mult_local"
@@ -615,10 +615,12 @@ read_g16_input_file ()
         if [[ -z $checkpoint ]] ; then
           # If the chk directive is found, check the next line
           get_chk_file "$line" && continue
+          debug "Checkpoint file not found."
         fi
         if [[ -z $old_checkpoint ]] ; then
           # If the chk directive is found, check the next line
           get_oldchk_file "$line" && continue
+          debug "Old checkpoint file not found."
         fi
         if warn_nprocs_directive "$line" ; then
           # If the nprocs directive is found a warning will be issued,
@@ -635,14 +637,19 @@ read_g16_input_file ()
           continue
         fi
 
-        # Set the pattern to the form '%<directive>=<content>'
-        pattern="^[[:space:]]*%([^=]+)=([^[:space:]]+)([[:space:]]+|$)"
+        # Setting the pattern to the form '%<directive>=<content>'
+        # will not match link0 directives like %Save/%NoSave, ergo the following is bogus:
+        # pattern="^[[:space:]]*%([^=]+)=([^[:space:]]+)([[:space:]]+|$)"
+        # Therefore match anything tht contains a %[A-Za-z]
+        pattern="^[[:space:]]*(%[A-Za-z]+)(.*)$"
         if link0_temp=$(parse_link0 "$line" "$pattern" "0") ; then
           # If anything is found, everything (rematch index 0) must be stored
           inputfile_link0[$link0_index]="$link0_temp"
+          debug "Extra link0 directive saved: ${inputfile_link0[$link0_index]}"
           (( link0_index++ ))
           continue
         else
+          debug "Read line does not appear to be a link0 directive. Switch off reading link0."
           # If the pattern is not found, the link0 directives are completed,
           # switch reading off.
           store_link0=2
@@ -651,23 +658,25 @@ read_g16_input_file ()
 
       if (( store_route == 0 )) ; then
         if [[ $line =~ $route_start_pattern ]] ; then
-          debug "Start reading route section."
+          debug "Read line contains route start pattern. Start reading route section."
           # Start reading the route section end reading link0 directives
           store_route=1
           route_section=$(remove_g16_input_comment "$line")
           # Read next line
           continue
+        else
+          debug "Read line does not contain route start pattern."
         fi
-      fi
-      if (( store_route == 1 )) ; then
+      elif (( store_route == 1 )) ; then
+        # Cannot have start to store the route and continue to read it at the same time
         debug "Still reading route section."
         # Still reading the route section
         if [[ $line =~ ^[[:space:]]*$ ]]; then
           # End reading route when blank line is encountered
           # and start reading the title
+          debug "Blank line encountered. Route section is finished."
           store_title=1
           store_route=2
-          debug "Finished route section."
           if check_allcheck_option "$route_section" ; then
             message "Skipping reading title, charge, and multiplicity."
             store_title=2
@@ -679,14 +688,24 @@ read_g16_input_file ()
           # we don't need to parse that and can read the next one
           continue
         fi
+
+        # There could be another hashtag. It does not hurt, but we can safely remove it, too.
+        local route_cont_pattern="^([[:space:]]*#([[:space:]]*[nNpPtT][[:space:]])?)"
+        if [[ $line =~ $route_cont_pattern ]] ; then
+          debug "Read line contains another route start pattern: '${BASH_REMATCH[0]}'"
+          line="${line:${#BASH_REMATCH[0]}}"
+          debug "Line after removing pattern: $line"
+        fi
         # Clean line from comments, store in 'appendline' buffer
         appendline=$(remove_g16_input_comment "$line") 
         # there might be comment only lines which can be removed/ ignored
-        [[ ! -z $appendline ]] && route_section="$route_section $appendline"
+        [[ -n $appendline ]] && route_section="$route_section $appendline"
         # prepare for next read (just to be sure)
         unset appendline
         # Read next line
         continue
+      else
+        debug "Not storing route section. (store_route=$store_route)"
       fi
       if (( store_title == 1 )) ; then
         debug "Reading title section."
@@ -707,6 +726,8 @@ read_g16_input_file ()
         fi
         unset appendline
         continue
+      else
+        debug "Not storing title section. (store_title=$store_title)"
       fi
       if (( store_charge_mult == 1 )) ; then
         debug "Reading charge and multiplicity."
@@ -759,15 +780,18 @@ read_g16_input_file ()
         store_charge_mult=2
         # Next should be geometry and other stuff
         continue
+      else
+        debug "Not storing charge/ multiplicity. (store_charge_mult=$store_charge_mult)"
       fi
       
-      debug "Reading rest of input file."
+      debug "Reading rest of input file. All reads should be 2 now (otherwise problem)."
+      debug "store_link0=$store_link0; store_route=$store_route; store_title=$store_title; store_charge_mult=$store_charge_mult"
       if line=$(remove_g16_input_comment "$line") ; then
         # Empty lines will be kept (because above will be false)
         debug "Checking line '$line' is empty after removing comment."
         # If _after_ removing the comment the line is empty, skip to the next line
         [[ $line =~ ^[[:space:]]*$ ]] && continue
-        debug "Line will be kept."
+        debug "Read line is not empty, it will be kept."
       else
         debug "Empty line will be kept."
       fi
@@ -839,6 +863,8 @@ collate_route_keywords ()
     if [[ $inputstring =~ $route_start_pattern ]] ; then
       keepstring="${BASH_REMATCH[1]}"
       inputstring="${inputstring//${BASH_REMATCH[0]}/}"
+      debug "Saved to route: $keepstring"
+      debug "Remaining to parse: $inputstring"
     fi
 
     # The following formats for the input of keywords are given in the manual:
@@ -854,10 +880,11 @@ collate_route_keywords ()
     # Multiple spaces are treated as a single delimiter.
     # see http://gaussian.com/input/?tabid=1
     # The ouptput of this function should only use the keywords without any options, or
-    # the following format: keyword=(option1,option2,…) [no spaces]
+    # the following format: keyword(option1,option2,…) [no spaces]
     # Exeptions to the above: temperature=500 and pressure=2, 
     # where the equals is the only accepted form.
     # This is probably because they can also be options to 'freq'.
+    # Hashes can also appear (apparently) everywhere, but only the first is actually needed
 
     # Note: double backslash in double quotes https://github.com/koalaman/shellcheck/wiki/SC1117
     
@@ -872,20 +899,24 @@ collate_route_keywords ()
     while [[ $inputstring =~ $test_pattern ]] ; do
       # Unify input pattern and remove unnecessary spaces
       # Remove found portion from inputstring:
+      debug "Splitting up: ${BASH_REMATCH[0]}"
       inputstring="${inputstring//${BASH_REMATCH[0]}/}"
+      debug "Remaining to parse (later): $inputstring"
       # Keep keword, options, and how it was terminated
       keep_keyword="${BASH_REMATCH[1]}"
       keep_options="${BASH_REMATCH[2]}"
       keep_terminate="${BASH_REMATCH[3]}"
+      debug "keep_keyword=$keep_keyword; keep_options=$keep_options; keep_terminate=$keep_terminate"
 
       # Remove spaces from IOPs (only evil people use them there)
       if [[ $keep_keyword =~ ^[Ii][Oo][Pp]$ ]] ; then
         keep_keyword="$keep_keyword$keep_options"
         keep_keyword="${keep_keyword// /}"
         unset keep_options # unset to not run into next 'if'
+        debug "Mathed an IOP (this is an exception to the rule)."
       fi
 
-      if [[ ! -z $keep_options ]] ; then 
+      if [[ -n $keep_options ]] ; then 
         # remove spaces, equals, parens from front and end
         # substitute option separating spaces with commas
         keep_options=$(collate_route_keyword_opts "$keep_options")
@@ -920,6 +951,7 @@ collate_route_keywords ()
         returncode=1
         warning "Found extremely long keyword, folding route section might break input."
       fi
+      debug "Saved keyword to route: $keep_keyword"
       if [[ $keepstring =~ /$ ]] ; then
         keepstring="$keepstring$keep_keyword"
       elif [[ -z $keepstring ]] ; then
@@ -1351,8 +1383,9 @@ write_g16_input_file ()
     # The input file must be terminated by a blank line
     echo ""
     # Add some information about the creation of the script
-    echo "!Automagically created with $scriptname"
+    echo "!Automagically created with $scriptname ($softwarename, $version, $versiondate)"
     echo "!$script_invocation_spell"
+    #echo "!${script_invocation_spell/#$HOME/<HOME>}"
 }
 
 

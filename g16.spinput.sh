@@ -154,6 +154,10 @@ process_inputfile ()
     extract_jobname_inoutnames "$testfile"
     
     local modified_route="$route_section"
+    if [[ -n $overwrite_route_section ]] ; then 
+      message "Discarding read route section and using specified one instead."
+      modified_route="$overwrite_route_section"
+    fi
     local -a additional_keywords
     # The new input should be a single point calculation, therefore remove opt
     while ! modified_route=$(remove_opt_keyword      "$modified_route") ; do : ; done
@@ -284,12 +288,12 @@ process_options ()
           #hlp              This can be amended with other switches, like -r.
           #hlp 
           R) 
-            route_section="$OPTARG" 
-            if validate_g16_route "$route_section" ; then
+            overwrite_route_section="$OPTARG" 
+            if validate_g16_route "$overwrite_route_section" ; then
               debug "Route specified with -R is fine."
             else
               warning "Syntax error in specified route section:"
-              warning "  $route_section"
+              warning "  $overwrite_route_section"
               fatal "Emergency stop."
             fi
             ;;
@@ -395,7 +399,7 @@ process_options ()
 (( ${#BASH_SOURCE[*]} > 1 )) && return 0
 
 # Save how script was called
-script_invocation_spell="$0 $*"
+printf -v script_invocation_spell "'%s' " "${0/#$HOME/<HOME>}" "$@"
 
 # Sent logging information to stdout
 exec 3>&1

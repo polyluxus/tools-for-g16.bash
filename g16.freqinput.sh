@@ -260,9 +260,9 @@ process_inputfile ()
       use_file_suffix="${file_suffix_temp}_${file_suffix_pres}"
     fi
     if [[ -z $use_file_suffix ]] ; then
-      jobname="${jobname}.freq"
+      jobname="${jobname%.freq}.freq"
     else
-      jobname="${jobname}.freq.$use_file_suffix"
+      jobname="${jobname%.freq}.freq.$use_file_suffix"
     fi
 
     [[ -z $inputfile_new ]] && inputfile_new="${jobname}.$g16_input_suffix"
@@ -450,7 +450,7 @@ process_options ()
 (( ${#BASH_SOURCE[*]} > 1 )) && return 0
 
 # Save how script was called
-script_invocation_spell="$0 $*"
+printf -v script_invocation_spell "'%s' " "${0/#$HOME/<HOME>}" "$@"
 
 # Sent logging information to stdout
 exec 3>&1
