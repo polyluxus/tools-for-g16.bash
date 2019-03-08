@@ -6,36 +6,54 @@
 \usepackage[a4paper,margin=2cm]{geometry}
 \setcounter{secnumdepth}{0}
 \usepackage{hyperref}
-\usepackage[inline]{enumitem}
-\usepackage{calc}
-% Intermediately include a new list type to import the cheat sheet
-\newenvironment{rslisttt}[1]
-{
-  \begin{description}[labelwidth=\widthof{\texttt{#1}},font=\ttfamily]
-}{
-  \end{description}
-}
+\usepackage{listings}
 
 \begin{document}
 \section{Introduction}
 
-This accompanies the repository \href{https://github.com/polyluxus/tools-for-g16.bash}{polyluxus/tools-for-g16.bash}.
+The essence of quantum chemistry is performing calculations with a variety of different programs.
+Quite a few of these use low level input and output systems.
+In principle you are dealing with quite a few text-based files.
 
-Various bash scripts to aid the use of the quantum chemistry software package Gaussian 16.
+It is in the nature of the problem, 
+that some of the regular tasks are quite repetitive.
+In order to ease these repetitive tasks,
+but more importantly also secure a certain level of consistency,
+some steps can be automated.
+This is where this repository, 
+\href{https://github.com/polyluxus/tools-for-g16.bash}{tools-for-g16.bash},
+comes into play.
+Within it are contained a few scripts written in bash,
+which are targeted to aid the use of the quantum chemistry software package 
+\href{http://gaussian.com/}{Gaussian 16}.
+They cover automatic generation of input files,
+submissing of these to a queueing system,
+and utilities to archive and extract results.
 
-\subsection{Preliminary notes}
+Please understand that this project started out to help me with my everyday work. 
+I am happy to hear about suggestions and bugs. 
+I am also fairly certain, that it is and will be a work in progress for quite some time.
+Be aware that it could be in constant flux. 
 
-The notation in brackets \texttt{[ ]} indicate optional arguments/inputs;
-arguments in angles \texttt{< >} require human input;
-a bar \texttt{|} indicates alternatives.
+This 'software' comes with absolutely no warrenty. None. Nada.
+If you decide to use any of the scripts, it is entirely your resonsibility.
 
-The following abbreviations will be used:
-\begin{rslisttt}{ARG}
-  \item[opt] Short for option(s)
-  \item[ARG] String type argument
-  \item[INT] Positive integer (including zero)
-  \item[NUM] Whole number (including zero)
-  \item[FLT] Floating point number
-  \item[DUR] Duration in format \texttt{[[HH:]MM:]SS} 
-\end{rslisttt}
+\subsection{Preliminary notes on the usage of this manual}
+
+To make the manual easier to understand a few abreviations 
+and common notations are used:
+Anything set in brackets \lstinline{[ ]} indicates optional arguments or inputs.
+Arguments in angles \lstinline{< >} require human input, 
+and a vertical bar \lstinline{|} indicates alternatives between the inputs or options.
+
+The following abbreviations will be used throughout:
+
+\begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
+  {\lstinline!opt!} & Short for option(s) \\
+  {\lstinline!ARG!} & String type argument \\
+  {\lstinline!INT!} & Positive integer (including zero) \\
+  {\lstinline!NUM!} & Signed whole number (including zero) \\
+  {\lstinline!FLT!} & Floating point number \\
+  {\lstinline!DUR!} & Duration in format {\lstinline![[HH:]MM:]SS!}  \\
+\end{tabular}
 \end{document}

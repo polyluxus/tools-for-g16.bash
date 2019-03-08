@@ -5,6 +5,9 @@
 
 \usepackage[a4paper,margin=2cm]{geometry}
 
+\usepackage[usenames,dvipsnames]{xcolor}
+\definecolor{lightgray}{gray}{0.95}
+
 \usepackage{tikz}
 \usetikzlibrary{matrix,calc,shapes}
 \usepackage{amssymb}
@@ -12,20 +15,9 @@
 
 \usepackage{standalone}
 
-%% % Typesetting codeprettier
-%% \usepackage[dvipsnames]{xcolor}
-%% \definecolor{lightgray}{gray}{0.95}
-%% \usepackage{listings}
-%% \lstdefinestyle{mytex}{
-%%   language=[LaTeX]TeX,%
-%%   backgroundcolor=\color{lightgray},%
-%%   basicstyle=\footnotesize\ttfamily,%
-%%   keywordstyle=\bfseries,%
-%%   breaklines=true,%
-%%   morekeywords={part,chapter,subsection,subsubsection,paragraph,subparagraph}%
-%% }
-%% 
-%% \lstset{style=mytex}
+% Typesetting codeprettier
+\usepackage{listings}
+\input{lstdefs.tex}
 
 % Symbols for SE and GH
 \usepackage{fontawesome} 
@@ -37,26 +29,6 @@
 % (use a different package and Xe/LuaLaTeX if you're doing proper Japanese texts.)
 \usepackage{CJKutf8} 
 
-% Please no font errors
-% https://tex.stackexchange.com/a/9366/33413
-\newcommand\mybackslash{\char`\\}
-
-\usepackage{calc}
-\usepackage[inline]{enumitem}
-% Intermediately include a new list type to import the cheat sheet
-\newenvironment{rslisttt}[1]
-{
-  \begin{description}[labelwidth=\widthof{\texttt{#1}},font=\ttfamily]
-}{
-  \end{description}
-}
-\newenvironment{rsinline}[1][\ttfamily]
-{
-  \begin{description*}[mode=unboxed,font={#1},itemjoin={{; }},afterlabel={{\nobreakspace}},after={{.}}]
-}{
-  \end{description*}
-}
-
 % What this is about
 \title{Manual for \texttt{tools-for-g16.bash} (0.2.0\_alpha, 2019-02-27)}
 \author{Martin C Schwarzer}
@@ -65,6 +37,12 @@
 \begin{document}
 \maketitle
 
+\subsection*{Preamble}
+
+The following document is currently little more than the already existing cheat sheet.
+As documentation often goes, it takes a bit more time to do it properly.
+I apologise for the inconvenience.
+
 \input{intro.tex}
 \input{install.tex}
 \input{utilities.tex}
@@ -72,11 +50,11 @@
 
 \section{Author, Bugs, and the Rest}
 
-\begin{flushright}
-Martin C Schwarzer  
+Martin C Schwarzer  \\
 \faStackExchange~\href{https://chemistry.stackexchange.com/users/4945}{Martin-\begin{CJK*}{UTF8}{min}マーチン\end{CJK*}}
 \faGithub~\href{https://github.com/polyluxus}{polyluxus}
 
+\begin{flushright}
 This document is licensed \ccbysa.
 \end{flushright}
 
