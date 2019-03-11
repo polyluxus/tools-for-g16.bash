@@ -7,18 +7,85 @@
 \setcounter{secnumdepth}{0}
 \usepackage{hyperref}
 \usepackage{listings}
+\usepackage{longtable}
 
 \begin{document}
 \section{Utilities}
 
-This repository comes with the following scripts and files:
+There are essentially three different kinds of scripts contained in thins repository:
+input generation scripts, execution/ submission scripts, and post-processing scripts.
+
+The input generation scripts will, as the description may hint,
+parse a given file and write an input file for Gaussian 16.
+These scripts are designed to be chained, 
+so that a generated input file may act as a template for a new input file. 
+This of course makes them dependending on each other,
+more precisely the newly generated input relies on the successful creation
+of a checkpoint file of the previous job.
+The mechanism employed by the scripts was introduced in Gaussian 09 Rev. E.01,
+with the \texttt{\%OldChk} directive, which essentially copies the checkpoint file
+of a completed calculation to the new location.
+The contents of which can then be read, or accessed, with the \texttt{geom}/ \texttt{guess} keywords.
+That actually means, that the input files of a calculation chain can be
+prepared in advance without knowing the actual outcome,
+then submitted with these dependencies.
+
+In Gaussian there is a mechanism to do this with one input file,
+so called compound jobs, but I (personally) discourage everyone from using this.
+There are a few reasons for this, but the most important is that non-standard 
+route commands will not be copied to a second job,
+do depending on what was done, the level of theory may actually vary.\footnote{%
+  See the Gaussian website 
+  \href{http://gaussian.com/input/}{http://gaussian.com/input/?tabid=1}
+  for details about multistep jobs.}
+Second most important is that any of these steps may fail;
+if they do, you losse the fallback and with it results and calculation time.
+Another inconvenience is that some visualisation programs are not able to
+parse these kind of output files.
+
+Essentially the scripts emulate this process, but split it up and externalise the dependencies.
+
+The second gourp of scripts are execution or submission scripts.
+Working with a queueing system often comes with some wating time.
+Adjusting the parameters of the calculations to reasonable values
+can lead to significant reductions of these times.
+To further avoid failing in early stages, it is reasonable to check the route section
+for syntax errors before submission.
+Nothing is worse than waiting for a job to start, only to realise that a keyword is misspelt.
+
+In this category one crucial example is yet missing:
+A multipurpose wrapper (or shortcut) script, 
+to actually call the utilities without having them permanently accessible 
+in the environment.
+The whole repository was intended to be based on this, 
+however, it is still the one thing that is missing.\footnote{%
+  For comparison, the wrapper script existed in the now deprecated
+  \href{https://github.com/polyluxus/tools-for-g09.bash}{github.com/polyluxus/tools-for-g09.bash}
+  repository; and it may be implemented some time in the future.}
+
+The last category are post-processing scripts, 
+which help extract data, or transform data files into file formats,
+which are more suitable for archiving.
+
+This chapter serves as an overview for the scripts 
+and the options with which they come.
 
 \subsection{Input preparation: \texorpdfstring{{\lstinline`g16.prepare.sh`}}{g16.prepare.sh}}
 
 This tool reads in a file containing a set of cartesian coordinates and
 writes a Gaussian inputfile with predefined keywords. 
-The script interfaces to Xmol format, 
-Turbomole/ GFN-xTB \texttt{coord} format, too.
+The script interfaces to Xmol format as it is understood by most molecular editors, 
+but it understands the Turbomole (or in extension GFN-xTB) \texttt{coord} format, too,
+if Open Babel is installed on the system.
+
+The implementation actually only looks for lines containing (at most) two letters
+and four floating point numbers separated by spaces (or tabs).
+It is therefore suitable to also parse already generated input files.
+This was necessary due to the incapabilities of GaussView to produce
+actual coordinate files; it rather produces Gaussian input data files (\texttt{*.gjf}) 
+containing structural information.
+
+This tool is incapable of parsing/ producing z-matrix style input.
 
 Usage: 
 
@@ -26,15 +93,25 @@ Usage:
 
 Options:
 
-\begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
-  {\lstinline`-T <FLT>`} & Temperature (kelvin) \\
-  {\lstinline`-P <FLT>`} & Pressure (atmosphere) \\
-  {\lstinline`-r <ARG>`} & Add {\lstinline`ARG`} to route section \\
-  {\lstinline`-R <ARG>`} & Specific route section {\lstinline`ARG`} \\
-  {\lstinline`-l <INT>`} & Load predefined route section  \\
-  {\lstinline`-l list `} & Show all predefined route sections \\
-  {\lstinline`-t <ARG>`} & Adds {\lstinline`ARG`} to end of file \\
-  {\lstinline`-C <ARG>`} & Specify caption/title of job;\newline%
+\begin{longtable}{p{0.1\linewidth}p{0.8\linewidth}}
+  {\lstinline`-T <FLT>`} & Temperature (kelvin). This switch adds the \texttt{temperature} keyword to the route section. \\
+  {\lstinline`-P <FLT>`} & Pressure (atmosphere). This switch adds the \texttt{pressure} keyword to the route section. \\
+  {\lstinline`-r <ARG>`} & Add {\lstinline`ARG`} to route section. This keyword may be used to add any keyword to the route section. \\
+  {\lstinline`-R <ARG>`} & Specific route section {\lstinline`ARG`}. 
+    With this option, you can specify a complete route section. 
+    It will be checked for syntax errors, and it can further be modified with {\lstinline`-r <ARG>`}. \\
+  {\lstinline`-l <INT>`} & Load predefined route section. 
+    The basic configuration (and the default values) comes with a couple predefined route sections (as examples).
+    They can be changed in the configuration files and eith the configuration script. 
+    I still have not gotten around to write a route section building script, so this has to be done by hand. \\
+  {\lstinline`-l list `} & Show all predefined route sections. This is a special argument to the above. \\
+  {\lstinline`-t <ARG>`} & Adds {\lstinline`ARG`} to end of file. 
+    Sometimes it is necessary to add additional lines to the end of an input file.
+    This option can be used to do that. Fair warning though: this is still somewhat experimental
+    and not very convenient to use.
+    To include an empty line, the argument has to be set explicitly empty: {\lstinline`-t ''`}.\\
+  {\lstinline`-C <ARG>`} & Specify caption/title of job. 
+    Gaussian requires a title section, which must not be empty. \newline%
     Replacements: 
     {\lstinline`%F`} input filename; %
     {\lstinline`%f`} input filename without \texttt{.xyz}; %
@@ -42,27 +119,36 @@ Options:
     {\lstinline`%j`} jobname; %
     {\lstinline`%c`} charge (with indicator \texttt{chrg}); %
     {\lstinline`%M`} multiplicity (with indicator \texttt{mult}); %
-    {\lstinline`%U`} unpaired electrons (with indicator \texttt{uhf}) \\
-  {\lstinline`-j <ARG>`} & Jobname (derives filename of generated input; default: {\lstinline`<file>`}) \\
-  {\lstinline`-j %f`}    & Jobname is {\lstinline`<file>`} filtering \texttt{.xyz} \\
-  {\lstinline`-j %s`}    & Jobname is {\lstinline`<file>`} filtering \texttt{start.xyz} \\
-  {\lstinline`-f <ARG>`} & Filename of generated input \\
-  {\lstinline`-c <NUM>`} & Charge (default: 0) \\
-  {\lstinline`-M <INT>`} & Multiplicity (default: 1; \( \geq 1 \)) \\
-  {\lstinline`-U <INT>`} & Unpaired electrons (unset; \( \geq 0 \)) \\
-  {\lstinline`-m <INT>`} & Memory (megabyte) \\
-  {\lstinline`-p <INT>`} & Processors \\
-  {\lstinline`-d <INT>`} & disksize via \texttt{MaxDisk} (megabyte) \\
-  {\lstinline`--      `} & Close reading options \\
-  {\lstinline`-s      `} & Silence script (incremental) \\
-  {\lstinline`-h      `} & Help file  \\
-\end{tabular}
+    {\lstinline`%U`} unpaired electrons (with indicator \texttt{uhf}) \newline
+    The script defaults to using {\lstinline`Calculation: %j; %c; %M; %U; (date)`}. \\
+  {\lstinline`-j <ARG>`} & Jobname of the calculation.
+    The script selects this on the basis of the given molecular structure file name ({\lstinline`<file>`})
+    and derives all other file names from it. This switch can be used to explicitly ovewrite this. \\
+  {\lstinline`-j %f`}    & Jobname is {\lstinline`<file>`} filtering the extension \texttt{.xyz} \\
+  {\lstinline`-j %s`}    & Jobname is {\lstinline`<file>`} filtering the extension \texttt{start.xyz} \\
+  {\lstinline`-f <ARG>`} & Filename of generated input.
+    This is normally derived from the jobname, but ocasionally it is worthwhile to set it explicitly. \\
+  {\lstinline`-c <NUM>`} & Charge (default: 0). \\
+  {\lstinline`-M <INT>`} & Multiplicity (default: 1; \( \geq 1 \)). \\
+  {\lstinline`-U <INT>`} & Unpaired electrons (unset; \( \geq 0 \)). 
+    This option will overwrite a multipliity and vice versa.\\
+  {\lstinline`-m <INT>`} & Memory (megabyte). This will add \texttt{\%Mem={\lstinline`INT`}MB} to the input file. \\
+  {\lstinline`-p <INT>`} & Processors. This will add \texttt{\%NProcShared={\lstinline`INT`}} to the input file. \\
+  {\lstinline`-d <INT>`} & Disksize (megabyte). This will add the \texttt{MaxDisk} keyword to the input file. \\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
+  {\lstinline`-h`}       & Print a small help file. \\
+\end{longtable}
 
 \subsection{Pre-processing: \texorpdfstring{{\lstinline`g16.testroute.sh`}}{g16.testroute.sh}}
 
-This tool parses a Gaussian 16 inputfile and 
-tests the route section for syntax errors 
-with the Gaussian 16 utility \texttt{testrt}.
+This tool parses a Gaussian 16 input file and extracts the route section, 
+which it then checks for syntax errors with the Gaussian 16 utility 
+\href{http://gaussian.com/testrt/}{\texttt{testrt}}.
+Unfortunately the original Gaussian utility requires a string as input, 
+which is quite inconvenient if you want to test the inputfile itself.
+The input file is parsed by the same routine as used in the other scripts,
+and can be used to validate the created (or to be submitted) files.
 
 Usage: 
 
@@ -71,16 +157,23 @@ Usage:
 Options:
 
 \begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
-  {\lstinline`--`} & Close reading options \\
-  {\lstinline`-s`} & Silence script (incremental) \\
-  {\lstinline`-h`} & Help file  \\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
+  {\lstinline`-h`}       & Print a small help file. \\
 \end{tabular}
 
 \subsection{Input preparation: \texorpdfstring{{\lstinline`g16.dissolve.sh`}}{g16.dissolve.sh}}
 
-This tool reads in a Gaussian 16 inputfile (of a preferably completed calculation)
-and adds relevant keywords for solvent corrections.
-(Utilises the \texttt{\%OldChk} directive and the \texttt{geom}/ \texttt{guess} keywords.)
+This tool reads in a Gaussian 16 input file to extract the current route section
+and adds relevant keywords for solvent corrections and produce a new input file.
+Since this again utilises the \texttt{\%OldChk} directive in conjunction with 
+the \texttt{geom}/ \texttt{guess} keywords, the calculation it is based on should be completed.
+
+The list of options regarding the \texttt{scrf} keyword is long and for specifics
+it is referred to the \href{http://gaussian.com/scrf/}{Gaussian online manual}.
+
+If nothing but a file name is specified, the script defaults to writing
+a single point calculation input file with the \texttt{scrf(pcm,solvent=water)} keyword and options.
 
 Usage: 
 
@@ -88,26 +181,42 @@ Usage:
 
 Options:
 
-\begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
-  {\lstinline`-o <ARG>`} & Adds option {\lstinline`ARG`} to the \texttt{SCRF} keyword. \\
-  {\lstinline`-S <ARG>`} & Adds option \texttt{solvent={\lstinline`ARG`}} to the \texttt{SCRF} option list. \\
-  {\lstinline`-O`}       & Runs an optimisation (preserves or adds \texttt{OPT}) \\
-  {\lstinline`-r <ARG>`} & Add {\lstinline`ARG`} to route section \\
-  {\lstinline`-t <ARG>`} & Adds {\lstinline`ARG`} to end of file \\
-  {\lstinline`-f <ARG>`} & Filename of generated input \\
-  {\lstinline`-m <INT>`} & Memory (megabyte) \\
-  {\lstinline`-p <INT>`} & Processors \\
-  {\lstinline`-d <INT>`} & disksize via \texttt{MaxDisk} (megabyte) \\
-  {\lstinline`--`}       & Close reading options \\
-  {\lstinline`-s`}       & Silence script (incremental) \\
-  {\lstinline`-h`}       & Help file  \\
-\end{tabular}
+\begin{longtable}{p{0.1\linewidth}p{0.8\linewidth}}
+  {\lstinline`-o <ARG>`} & Adds option {\lstinline`ARG`} to the \texttt{SCRF} keyword. 
+    This may be used to specify the method (like \texttt{PCM}, \texttt{SMD}, \texttt{dipole}, etc.).
+    The default is PCM. The solevent should no be set with this switch, 
+    but with {\lstinline`-S <ARG>`} instead. 
+    This option may be specified multiple times, the input stack will be collated and written to file. \\
+  {\lstinline`-S <ARG>`} & Adds option \texttt{solvent={\lstinline`ARG`}} to the \texttt{SCRF} option list. 
+    The default solvent is water. This option will cause an error if specified more than once.\\
+  {\lstinline`-O`}       & Runs an optimisation (preserves or adds \texttt{OPT}).
+    The default of this script is to run a singlepoint calculation. 
+    Rather than adding the \texttt{opt} keyword anew (with {\lstinline`-r opt(<ARG>)`}), 
+    this switch prevents deleting it in the first place. \\
+  {\lstinline`-r <ARG>`} & Add {\lstinline`ARG`} to route section. 
+    This keyword may be used to add any keyword to the route section; 
+    it can be specified multiple times.\\
+  {\lstinline`-t <ARG>`} & Adds {\lstinline`ARG`} to end of file. 
+    This switch functions the same way as in the prepare script. \\
+  {\lstinline`-f <ARG>`} & Filename of generated input. \\
+  {\lstinline`-m <INT>`} & Memory (megabyte). This will add \texttt{\%Mem={\lstinline`INT`}MB} to the input file. \\
+  {\lstinline`-p <INT>`} & Processors. This will add \texttt{\%NProcShared={\lstinline`INT`}} to the input file. \\
+  {\lstinline`-d <INT>`} & Disksize (megabyte). This will add the \texttt{MaxDisk} keyword to the input file. \\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
+  {\lstinline`-h`}       & Print a small help file. \\
+\end{longtable}
 
 \subsection{Input preparation: \texorpdfstring{{\lstinline`g16.freqinput.sh`}}{g16.freqinput.sh}}
 
-This tool reads in a Gaussian 16 inputfile (of a preferably completed calculation)
-and adds relevant keywords for a frequency calculation.
-(Utilises the \texttt{\%OldChk} directive and the \texttt{geom}/ \texttt{guess} keywords.)
+This tool reads in a Gaussian 16 inputfile to extract the current route section
+and adds relevant keywords for a frequency calculation and produce a new input file.
+Since this again utilises the \texttt{\%OldChk} directive in conjunction with 
+the \texttt{geom}/ \texttt{guess} keywords, the calculation it is based on should be completed.
+
+There are some options regarding the \texttt{freq} keyword, some common ones are mentioned below,
+but for specifics it is referred to the \href{http://gaussian.com/freq/}{Gaussian online manual}.
+If nothing further is specified, no additional options will be activated.
 
 Usage: 
 
@@ -115,27 +224,48 @@ Usage:
 
 Options:
 
-\begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
-  {\lstinline`-o <ARG>`} & Adds option {\lstinline`ARG`} to the \texttt{freq} keyword. \\
-  {\lstinline`-R`}       & Adds option \texttt{ReadFC} to the \texttt{freq} option list. \\
-  {\lstinline`-T <FLT>`} & Temperature (kelvin) \\
-  {\lstinline`-P <FLT>`} & Pressure (atmosphere) \\
-  {\lstinline`-r <ARG>`} & Add {\lstinline`ARG`} to route section \\
-  {\lstinline`-t <ARG>`} & Adds {\lstinline`ARG`} to end of file \\
-  {\lstinline`-f <ARG>`} & Filename of generated input \\
-  {\lstinline`-m <INT>`} & Memory (megabyte) \\
-  {\lstinline`-p <INT>`} & Processors \\
-  {\lstinline`-d <INT>`} & disksize via \texttt{MaxDisk} (megabyte) \\
-  {\lstinline`--`}       & Close reading options \\
-  {\lstinline`-s`}       & Silence script (incremental) \\
-  {\lstinline`-h`}       & Help file  \\
-\end{tabular}
+\begin{longtable}{p{0.1\linewidth}p{0.8\linewidth}}
+  {\lstinline`-o <ARG>`} & Adds option {\lstinline`ARG`} to the \texttt{freq} keyword. 
+    This option may be specifie multiple times, the input stack will be collated and written to file.
+    Example options are \texttt{NoRaman}, \texttt{VCD}, \texttt{Anharmonic}, etc.. \\
+  {\lstinline`-R`}       & Writes a property run input file to redo a frequency calculation.
+    This adds the option \texttt{ReadFC} to the \texttt{freq} option list,
+    which is most comonly used to repeat the statistical thermodynamics at
+    different temperatures and pressures (see below). 
+    Note that this behaves similar to \texttt{opt(RCFC)}, but is spelt differently. \\
+  {\lstinline`-T <FLT>`} & Temperature (kelvin). This switch adds the \texttt{temperature} keyword to the route section. \\
+  {\lstinline`-P <FLT>`} & Pressure (atmosphere). This switch adds the \texttt{pressure} keyword to the route section. \\
+  {\lstinline`-r <ARG>`} & Add {\lstinline`ARG`} to route section. 
+    This keyword may be used to add any keyword to the route section; 
+    it can be specified multiple times.\\
+  {\lstinline`-t <ARG>`} & Adds {\lstinline`ARG`} to end of file. 
+    This switch functions the same way as in the prepare script. \\
+  {\lstinline`-f <ARG>`} & Filename of generated input. \\
+  {\lstinline`-m <INT>`} & Memory (megabyte). This will add \texttt{\%Mem={\lstinline`INT`}MB} to the input file. \\
+  {\lstinline`-p <INT>`} & Processors. This will add \texttt{\%NProcShared={\lstinline`INT`}} to the input file. \\
+  {\lstinline`-d <INT>`} & Disksize (megabyte). This will add the \texttt{MaxDisk} keyword to the input file. \\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
+  {\lstinline`-h`}       & Print a small help file. \\
+\end{longtable}
 
 \subsection{Input preparation: \texorpdfstring{{\lstinline`g16.ircinput.sh`}}{g16.ircinput.sh}}
 
-This tool reads in a Gaussian 16 inputfile from a (previously completed) frequency run and 
-adds relevant keywords for two separate irc calculations.
-(Utilises the \texttt{\%OldChk} directive and the \texttt{geom}/ \texttt{guess} keywords.)
+This tool parses a Gaussian 16 inputfile from a previous frequency calculation and 
+adds relevant keywords to produce two input files for separate IRC calculations, 
+i.e. the forward and the reverse direction.
+Since this again utilises the \texttt{\%OldChk} directive in conjunction with 
+the \texttt{geom}/ \texttt{guess} keywords, the calculation it is based on should be completed.
+The script will assume it is based on a successful frequency calculation, 
+and will therefore write a file that will retrieve calculated Cartesian force constants from the checkpoint file.
+This means that \texttt{RCFC} will always be included as an option to the \texttt{irc} keyword.
+If there is no \texttt{freq} keyword in the input stream, the script will issue a warning,
+and the created input files should be checked manually.
+
+Therefore the script defaults to adding \texttt{irc(RCFC,forward/reverse)} to the respective route sections.
+
+There are some more options regarding the \texttt{irc} keyword, some common ones are mentioned below,
+but for specifics it is referred to the \href{http://gaussian.com/irc/}{Gaussian online manual}.
 
 Usage: 
 
@@ -143,25 +273,45 @@ Usage:
 
 Options:
 
-\begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
-  {\lstinline`-o <ARG>`} & Adds option {\lstinline`ARG`} to the \texttt{irc} keyword. \\
-  {\lstinline`-r <ARG>`} & Add {\lstinline`ARG`} to route section \\
-  {\lstinline`-t <ARG>`} & Adds {\lstinline`ARG`} to end of file \\
+\begin{longtable}{p{0.1\linewidth}p{0.8\linewidth}}
+  {\lstinline`-o <ARG>`} & Adds option {\lstinline`ARG`} to the \texttt{irc} keyword. 
+    This option may be specifie multiple times, the input stack will be collated and written to file.
+    Example options are \texttt{MaxPoints=10}, \texttt{StepSize=10}, etc.. 
+    Please note that, as described above, the option \texttt{RCFC} will alway be written;
+    therefore specifying \texttt{CalcFC} will lead to an error in the calculations.\\
+  {\lstinline`-r <ARG>`} & Add {\lstinline`ARG`} to route section. 
+    This keyword may be used to add any keyword to the route section; 
+    it can be specified multiple times.\\
+  {\lstinline`-t <ARG>`} & Adds {\lstinline`ARG`} to end of file. 
+    This switch functions the same way as in the prepare script. \\
   {\lstinline`-f <ARG>`} & Filenametemplate of generated input files; % 
-    If {\lstinline`<ARG>`=}\texttt{jobname.suffix} then it produces \texttt{jobname.fwd.suffix} and \texttt{jobname.rev.suffix}  \\
-  {\lstinline`-m <INT>`} & Memory (megabyte) \\
-  {\lstinline`-p <INT>`} & Processors \\
-  {\lstinline`-d <INT>`} & disksize via \texttt{MaxDisk} (megabyte) \\
-  {\lstinline`--`}       & Close reading options \\
-  {\lstinline`-s`}       & Silence script (incremental) \\
-  {\lstinline`-h`}       & Help file  \\
-\end{tabular}
+    If {\lstinline`<ARG>`=}\texttt{jobname.suffix} then it produces \texttt{jobname.fwd.suffix} and \texttt{jobname.rev.suffix}. \\
+  {\lstinline`-m <INT>`} & Memory (megabyte). This will add \texttt{\%Mem={\lstinline`INT`}MB} to the input file. \\
+  {\lstinline`-p <INT>`} & Processors. This will add \texttt{\%NProcShared={\lstinline`INT`}} to the input file. \\
+  {\lstinline`-d <INT>`} & Disksize (megabyte). This will add the \texttt{MaxDisk} keyword to the input file. \\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
+  {\lstinline`-h`}       & Print a small help file. \\
+\end{longtable}
 
 \subsection{Input preparation: \texorpdfstring{{\lstinline`g16.optinput.sh`}}{g16.optinput.sh}}
 
-This tool reads in a Gaussian 16 inputfile preferably from a (previously completed) IRC run and 
-writes and inputfile for a subsequent structure optimisation.
-(Utilises the \texttt{\%OldChk} directive and the \texttt{geom}/ \texttt{guess} keywords.)
+This tool parses a Gaussian 16 inputfile and writes a new inputfile for a structure optimisation.
+Originally this was desingend to be chained onto a previously completed IRC calculation
+to converge the structure into a local minimum.
+This has since changed and the utility of this script is apparently wider.
+It can also, for example, used to write an input file to remove imaginary modes that were 
+discovered during a frequency calculation.
+Another use would be chaining it onto a successful single point calculation,
+e.g. after applying solvent corrections.
+Since this again utilises the \texttt{\%OldChk} directive in conjunction with 
+the \texttt{geom}/ \texttt{guess} keywords, the calculation it is based on should be completed.
+Another usage is performing scans, or unfreezing scans, etc..
+
+There are many options for the \texttt{opt} keyword, some common ones are mentioned below,
+but for specifics it is referred to the \href{http://gaussian.com/opt/}{Gaussian online manual}.
+
+If no options are specified, this just defaults to adding the \texttt{opt} keyword.
 
 Usage: 
 
@@ -169,26 +319,35 @@ Usage:
 
 Options:
 
-\begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
-  {\lstinline`-o <ARG>`} & Adds option {\lstinline`ARG`} to the \texttt{opt} keyword. \\
-  {\lstinline`-r <ARG>`} & Add {\lstinline`ARG`} to route section \\
-  {\lstinline`-t <ARG>`} & Adds {\lstinline`ARG`} to end of file \\
-  {\lstinline`-f <ARG>`} & Filename of generated input \\
-  {\lstinline`-m <INT>`} & Memory (megabyte) \\
-  {\lstinline`-p <INT>`} & Processors \\
-  {\lstinline`-d <INT>`} & disksize via \texttt{MaxDisk} (megabyte) \\
-  {\lstinline`--`}       & Close reading options \\
-  {\lstinline`-s`}       & Silence script (incremental) \\
-  {\lstinline`-h`}       & Help file  \\
-\end{tabular}
+\begin{longtable}{p{0.1\linewidth}p{0.8\linewidth}}
+  {\lstinline`-o <ARG>`} & Adds option {\lstinline`ARG`} to the \texttt{opt} keyword. 
+    This option may be specifie multiple times, the input stack will be collated and written to file.
+    Example options are \texttt{TS}, \texttt{AddGIC}/\texttt{ModRedundant}, \texttt{MaxStep=10}, \texttt{MaxCycles=300}, etc.. \\
+  {\lstinline`-r <ARG>`} & Add {\lstinline`ARG`} to route section. 
+    This keyword may be used to add any keyword to the route section; 
+    it can be specified multiple times.\\
+  {\lstinline`-t <ARG>`} & Adds {\lstinline`ARG`} to end of file. 
+    This switch functions the same way as in the prepare script. \\
+  {\lstinline`-f <ARG>`} & Filename of generated input. \\
+  {\lstinline`-m <INT>`} & Memory (megabyte). This will add \texttt{\%Mem={\lstinline`INT`}MB} to the input file. \\
+  {\lstinline`-p <INT>`} & Processors. This will add \texttt{\%NProcShared={\lstinline`INT`}} to the input file. \\
+  {\lstinline`-d <INT>`} & Disksize (megabyte). This will add the \texttt{MaxDisk} keyword to the input file. \\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
+  {\lstinline`-h`}       & Print a small help file. \\
+\end{longtable}
 
 \subsection{Input preparation: \texorpdfstring{{\lstinline`g16.spinput.sh`}}{g16.spinput.sh}}
 
-This tool reads in a Gaussian 16 inputfile and 
-writes and inputfile for a subsequent calculation.
-It is possible to overwrite the existing route section, but still
-add the \texttt{geom}/\texttt{guess} directives to base it on.
-(Utilises the \texttt{\%OldChk} directive.)
+This tool is the counterpart to {\lstinline`g16.optinput.sh`}, 
+and it creates a new inputfile for a subsequent single point calculation
+from a specified Gaussian 16 inputfile.
+If nothing is specified as options, i.e. a new route section or additional keywords,
+it will simply remove the \texttt{opt} keyword along with its options.
+
+It is possible to overwrite the existing route section to e.g. use a different level of theory.
+It is still based on the \texttt{\%OldChk} directive add the \texttt{geom}/\texttt{guess} keywords.
+This means that data from a previous calculation will be retrieved.
 
 Usage: 
 
@@ -196,22 +355,41 @@ Usage:
 
 Options:
 
-\begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
-  {\lstinline`-r <ARG>`} & Add {\lstinline`ARG`} to route section \\
-  {\lstinline`-R <ARG>`} & Overwites route section with {\lstinline`ARG`} \\
-  {\lstinline`-t <ARG>`} & Adds {\lstinline`ARG`} to end of file \\
-  {\lstinline`-f <ARG>`} & Filename of generated input \\
-  {\lstinline`-m <INT>`} & Memory (megabyte) \\
-  {\lstinline`-p <INT>`} & Processors \\
-  {\lstinline`-d <INT>`} & disksize via \texttt{MaxDisk} (megabyte) \\
-  {\lstinline`--`}       & Close reading options \\
-  {\lstinline`-s`}       & Silence script (incremental) \\
-  {\lstinline`-h`}       & Help file  \\
-\end{tabular}
+\begin{longtable}{p{0.1\linewidth}p{0.8\linewidth}}
+  {\lstinline`-r <ARG>`} & Add {\lstinline`ARG`} to route section. 
+    This keyword may be used to add any keyword to the route section; 
+    it can be specified multiple times.\\
+  {\lstinline`-R <ARG>`} & Specific route section {\lstinline`ARG`}. 
+    With this option, you can specify a complete route section. 
+    It will be checked for syntax errors, and it can further be modified with {\lstinline`-r <ARG>`}. \\
+  {\lstinline`-t <ARG>`} & Adds {\lstinline`ARG`} to end of file. 
+    This switch functions the same way as in the prepare script. \\
+  {\lstinline`-f <ARG>`} & Filename of generated input. \\
+  {\lstinline`-m <INT>`} & Memory (megabyte). This will add \texttt{\%Mem={\lstinline`INT`}MB} to the input file. \\
+  {\lstinline`-p <INT>`} & Processors. This will add \texttt{\%NProcShared={\lstinline`INT`}} to the input file. \\
+  {\lstinline`-d <INT>`} & Disksize (megabyte). This will add the \texttt{MaxDisk} keyword to the input file. \\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
+  {\lstinline`-h`}       & Print a small help file. \\
+\end{longtable}
 
 \subsection{Input submission: \texorpdfstring{{\lstinline`g16.submit.sh`}}{g16.submit.sh}}
 
 This tool parses and then submits a Gaussian 16 inputfile to a queueing system.
+
+More specifically it will modify the supplied input file 
+to match the requested resources for the queueing system.
+It will create a bash script to be executed as a batch job, 
+i.e. setting up the correct environment and executing Gaussian 16.
+
+Currently there are three queueing systems supported: PBS, SLURM, LSF (or BSUB).
+Each come with a generic set-up, and the latter two with some RWTH specific settings.
+(Note that the RWTH cluster running the LSF queueing system will be decommissioned in April 2019,
+therefore the developement of this feature will probably be halted at an as-is status.)
+
+If the input files to be submitted are prepared with the tools of this repository,
+a few warnings are to be expected (specifically the memory and priocessors settings).
+These basically only serve as a reminder.
 
 Usage: 
 
@@ -219,55 +397,90 @@ Usage:
 
 Options:
 
-\begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
-  {\lstinline`-m <INT>`} & Memory (megabyte) \\
-  {\lstinline`-p <INT>`} & Processors \\
-  {\lstinline`-d <INT>`} & disksize via \texttt{MaxDisk} (megabyte) \\
-  {\lstinline`-w <DUR>`} & Walltime limit \\
+\begin{longtable}{p{0.1\linewidth}p{0.8\linewidth}}
+  {\lstinline`-m <INT>`} & Memory (megabyte).\newline 
+    This will add \texttt{\%Mem={\lstinline`INT`}MB} to the Gaussian input file,
+    it will also set the memory flag for the queuing system. 
+    The both settings will not be equal, because some overhead for Gaussian is included. \\
+  {\lstinline`-p <INT>`} & Processors.\newline 
+    This will add \texttt{\%NProcShared={\lstinline`INT`}} to the input file,
+    it will also set the appropriate flags for the numbere of threads/CPUs for the queueing system. \\
+  {\lstinline`-d <INT>`} & Disksize (megabyte).\newline 
+    This will add the \texttt{MaxDisk} keyword to the input file, but it has no effect in the submitted script. \\
+  {\lstinline`-w <DUR>`} & Walltime limit. 
+    This sets the appropriate flag for the maximum wall time the job will be allowed to run. \\
  %{\lstinline`-b <ARG>`} & Specify binary (TODO) \\
-  {\lstinline`-e <ARG>`} & Specify an environment variable {\lstinline`ARG`} in format {\lstinline`<VAR=value>`} \\
-  {\lstinline`-j <INT>`} & Wait for job with ID {\lstinline`INT`} \\
-  {\lstinline`-H`}       & Submit with status hold (PBS, SLURM) or \texttt{PSUSP} (BSUB) \\
-  {\lstinline`-k`}       & Only create (keep) the jobscript, do not submit it. \\
+  {\lstinline`-e <ARG>`} & Specify an environment variable {\lstinline`ARG`} in format {\lstinline`<VAR=value>`}.
+    Occasionally it is necessary to set specific environment variables for Gaussian 16 (see manual),
+    this flag causes them to be written to the submitted script before Gaussian is loaded. \\
+  {\lstinline`-j <INT>`} & Wait for job with ID {\lstinline`INT`}.
+    Only numeric arguments are supported (even though some of the available queueing systems would allow names, too.)
+    This option is useful to chain calculations that depend on each other. 
+    Dependencies may stretch over multiple jobs, so this option can also be specified multiple times.\\
+  {\lstinline`-H`}       & Submit with status hold (PBS, SLURM) or \texttt{PSUSP} (BSUB).
+    Jobs submitted with this status have to be released later, this could be useful to test submisson.
+    However, RWTH users should be aware that the tools to release a job are not available for ordinary users. \\
+  {\lstinline`-k`}       & Only create (keep) the jobscript, do not submit it. 
+    This option is useful to see what the script looks like before commiting it to the queuing system,
+    and possibly ammend /modify it. 
+    (This was initially born by the idea to delete the script after successful submission, hence the name of the option.)  \\
   {\lstinline`-Q <ARG>`} & Queue for which job script should be created {\lstinline`<queue>-<special>`} %
     ({\lstinline`<queue>`}: {\lstinline`pbs`}, {\lstinline`slurm`}, {\lstinline`bsub`}; %
-     {\lstinline`<special>`}: {\lstinline`gen`} [generic], {\lstinline`rwth`}) \\
+     {\lstinline`<special>`}: {\lstinline`gen`} [generic], {\lstinline`rwth`}; see above for more details). \\
  %{\lstinline`-q <ARG>`} & Specify queue (TODO) \\
   {\lstinline`-P <ARG>`} & Account to project (BSUB) or account (SLURM); %
-    if {\lstinline`ARG`} is {\lstinline`default|0|''`} presets are overwritten. \\
-  {\lstinline`-M <ARG>`} & Specify a machine type (only \texttt{bsub-rwth}); %
-    if {\lstinline`ARG`} is {\lstinline`default|0|''`} presets are overwritten. \\
+    if {\lstinline`ARG`} is {\lstinline`default|0|''`} presets are overwritten. 
+    If accounting is activated for BSUB or SLURM, this option will cause the appropriate flag to be set in the submission script.
+    (I have no experience for the PBS queueing system with that, so this is not implemented right now.)\\
+  {\lstinline`-M <ARG>`} & Specify a machine type (only {\lstinline`bsub-rwth`}); %
+    if {\lstinline`ARG`} is {\lstinline`default|0|''`} presets are overwritten. 
+    This is a very specific setting, and is probably soon be deprecated.
+    Specifically, this will cause \texttt{\#BSUB -m {\lstinline`ARG`}} to be added to the submit script. \\
   {\lstinline`-u <ARG>`} & set user email address (SLURM, BSUB); %
-    if {\lstinline`ARG`} is {\lstinline`default|0|''`} presets are overwritten. \\
-  {\lstinline`--`}       & Close reading options \\
-  {\lstinline`-s`}       & Silence script (incremental) \\
-  {\lstinline`-h`}       & Help file  \\
-\end{tabular}
+    if {\lstinline`ARG`} is {\lstinline`default|0|''`} presets are overwritten. 
+    (I have no experience for the PBS queueing system with that, so this is not implemented right now.)\\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
+  {\lstinline`-h`}       & Print a small help file. \\
+\end{longtable}
 
 \subsection{Post-processing: \texorpdfstring{{\lstinline`g16.getenergy.sh`}}{g16.getenergy.sh}}
 
-This tool finds energy statements from Gaussian 16 calculations.
+This tool finds energy statements from the output files of Gaussian 16 calculations.
+It is basically an elaborate interface to the grep command, 
+which can be used to create summaries of the output files.
+
+If no files are given as argument, the script will operate on all output files in the current directory.
+The default operating mode of the script will look for input files with the configured suffix (default \texttt{*.com}),
+then match the appropriate output suffix (default: \texttt{*.log}),
+and extract energies from these files.
+
+As such, it does not matter where \lstinline`<file>` is an input or output file.
 
 Usage: 
 
 \lstinline`g16.getenergy.sh [opt] [<file(s)>]`
 
-If no files given, it finds energy statements from all log files in the current directory.
-
 Options: 
 
 \begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
-  {\lstinline`-i <ARG>`} & Specify input suffix if processing directory \\
-  {\lstinline`-o <ARG>`} & Specify output suffix if processing directory \\
-  {\lstinline`-L`}       & Print the full file and path name (seperated by newline) \\
-  {\lstinline`--`}       & Close reading options \\
-  {\lstinline`-s`}       & Silence script (incremental) \\
-  {\lstinline`-h`}       & Help file  \\
+  {\lstinline`-i <ARG>`} & Specify the input suffix to be used for finding matching output files when processing a directory. \\
+  {\lstinline`-o <ARG>`} & Specify the output suffix to be used for finding the files when processing a directory. \\
+  {\lstinline`-L`}       & Print the full file and path name of the parsed output file (seperated by newline). 
+    The default behaviour is printing only the filename without the suffix. \\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
+  {\lstinline`-h`}       & Print a small help file. \\
 \end{tabular}
 
 \subsection{Post-processing: \texorpdfstring{{\lstinline`g16.getfreq.sh`}}{g16.getfreq.sh}}
 
-This tool summarises a frequency calculation and extracts the thermochemistry data.
+This tool summarises the output of a Gaussian 16 frequency calculation 
+and extracts and reformats the thermochemistry data.
+This is similarly to \lstinline`g16.getenergy.sh` an elaborate interface to the grep command,
+but it (depending on the level of verbosity) extracts all corrections necessary 
+to compute thermochemistry, see also 
+\href{http://gaussian.com/thermo/}{the Gaussian White Paper on thermochemistry}.
 
 Usage: 
 
@@ -276,19 +489,39 @@ Usage:
 Options:
 
 \begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
-  {\lstinline`-v`}       & Incrementally increase verbosity \\
-  {\lstinline`-V <INT>`} & Set level of verbosity directly, ({\lstinline`0|1|2|3|4`}) \\
-  {\lstinline`-c`}       & Separate values by comma ({\lstinline`-V0|-V1`}) \\
-  {\lstinline`-f <ARG>`} & Write summary to file instead of screen \\
-  {\lstinline`--`}       & Close reading options \\
-  {\lstinline`-s`}       & Silence script (incremental) \\
-  {\lstinline`-h`}       & Help file  \\
+  {\lstinline`-v`}       & Incrementally increase verbosity of the script. \\
+  {\lstinline`-V <INT>`} & Set level of verbosity directly, ({\lstinline`0|1|2|3|4`}).
+    The different levels are as follows: %
+    (0; default) display a single line with only the filename {\lstinline`file`}, 
+        electronic energy \(E_\mathrm{el}\), zero-point correction \(E_\mathrm{ZPE}\),
+        enthalpy correction \(H_\mathrm{corr}\), 
+        and correction to the Gibbs energy \(G_\mathrm{corr}\);
+    (1) display a single line of most values (equal to {\lstinline`-v`}), 
+        which also prints the method, temperature \(T\), pressure \(p\), 
+        internal energy correction \(U_\mathrm{corr}\),
+        entropy  \(S_\mathrm{tot}\), constant volume heat capacity \(C_{V,\mathrm{corr}}\);
+    (2) display a short table of most values (like above, equal to {\lstinline`-vv`});
+    (3) like 2, also repeats the route section (equal to {\lstinline`-vvv`});
+    (4) like 3, also includes the decomposition of the entropy, 
+        thermal energy \(E_\mathrm{tot}\) and heat capacity into electronic, translational,
+        rotational, and vibrational contributions (equal to {\lstinline`-vvvv`}).
+    If this option is found, {\lstinline`-v`} will be ignored. \\
+  {\lstinline`-c`}       & Separate values by comma ({\lstinline`-V0|-V1`}). \\
+  {\lstinline`-f <ARG>`} & Write the summary to file {\lstinline`file`} instead of screen. \\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
+  {\lstinline`-h`}       & Print a small help file. \\
 \end{tabular}
 
 \subsection{Post-processing: \texorpdfstring{{\lstinline`g16.chk2xyz.sh`}}{g16.chk2xyz.sh}}
 
-A tool to convert a checkpoint file to an \texttt{xyz} file. 
-This formats the \texttt{chk} first to a \texttt{fchk}.
+This tool is intended to create files for archiving a Gaussian 16 calculation.
+Since normal Gaussian checkpoint files are binary files, and hence platform dependent,
+it interfaces to the \texttt{formchk} utility to produce a formatted checkpoint file (a text file).
+It further uses Open Babel to write a molecular structure file in Xmol format (\texttt{*.xyz}).
+
+It can either be applied to checkpoint files or the current directory.
+In the latter case it assumes \texttt{chk} as the suffix of the checkpoint files.
 
 Usage: 
 
@@ -297,10 +530,10 @@ Usage:
 Options:
 
 \begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
-  {\lstinline`-a`} & Formats all checkpointfiles that are found in the current directory \\
-  {\lstinline`--`} & Close reading options \\
-  {\lstinline`-s`} & Silence script (incremental) \\
-  {\lstinline`-h`} & Help file  \\
+  {\lstinline`-a`}       & Formats all checkpointfiles that are found in the current directory. \\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
+  {\lstinline`-h`}       & Print a small help file. \\
 \end{tabular}
 
 \end{document}
