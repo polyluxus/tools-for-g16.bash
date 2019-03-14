@@ -12,20 +12,24 @@
 \begin{document}
 \section{Utilities}
 
-There are essentially three different kinds of scripts contained in thins repository:
-input generation scripts, execution/ submission scripts, and post-processing scripts.
+There are essentially three different kinds of scripts contained in this repository:
+input generation scripts, execution/submission scripts, and post-processing scripts.
 
 The input generation scripts will, as the description may hint,
 parse a given file and write an input file for Gaussian 16.
 These scripts are designed to be chained, 
 so that a generated input file may act as a template for a new input file. 
-This of course makes them dependending on each other,
+For example, an input file created with \lstinline`g16.prepare` (\ref{sec:g16.prepare})
+can be used with \lstinline`g16.freqinput` (\ref{sec:g16.freqinput}), or
+with \lstinline`g16.dissolve` (\ref{sec:g16.dissolve}).
+In the next chapter the interplay of the utilities is further explained with example usages.
+This of course makes these files dependending on each other,
 more precisely the newly generated input relies on the successful creation
 of a checkpoint file of the previous job.
 The mechanism employed by the scripts was introduced in Gaussian 09 Rev. E.01,
 with the \texttt{\%OldChk} directive, which essentially copies the checkpoint file
 of a completed calculation to the new location.
-The contents of which can then be read, or accessed, with the \texttt{geom}/ \texttt{guess} keywords.
+The contents of which can then be read, or accessed, with the \texttt{geom}/\texttt{guess} keywords.
 That actually means, that the input files of a calculation chain can be
 prepared in advance without knowing the actual outcome,
 then submitted with these dependencies.
@@ -34,23 +38,24 @@ In Gaussian there is a mechanism to do this with one input file,
 so called compound jobs, but I (personally) discourage everyone from using this.
 There are a few reasons for this, but the most important is that non-standard 
 route commands will not be copied to a second job,
-do depending on what was done, the level of theory may actually vary.\footnote{%
+depending on what was done, the level of theory may actually vary.\footnote{%
   See the Gaussian website 
-  \href{http://gaussian.com/input/}{http://gaussian.com/input/?tabid=1}
+  \href{http://gaussian.com/input/?tabid=1}{http://gaussian.com/input/}
   for details about multistep jobs.}
 Second most important is that any of these steps may fail;
-if they do, you losse the fallback and with it results and calculation time.
+if they do, you loose the fallback and with it results and calculation time.
 Another inconvenience is that some visualisation programs are not able to
 parse these kind of output files.
 
 Essentially the scripts emulate this process, but split it up and externalise the dependencies.
 
-The second gourp of scripts are execution or submission scripts.
-Working with a queueing system often comes with some wating time.
+The second group of scripts are execution or submission scripts.
+Working with a queueing system often comes with some waiting time.
 Adjusting the parameters of the calculations to reasonable values
-can lead to significant reductions of these times.
+can lead to significant reductions of these times 
+(see \lstinline`g16.submit`, \ref{sec:g16.submit}).
 To further avoid failing in early stages, it is reasonable to check the route section
-for syntax errors before submission.
+for syntax errors before submission (see \lstinline`g16.testroute`, \ref{sec:g16.testroute}).
 Nothing is worse than waiting for a job to start, only to realise that a keyword is misspelt.
 
 In this category one crucial example is yet missing:
@@ -67,16 +72,16 @@ The last category are post-processing scripts,
 which help extract data, or transform data files into file formats,
 which are more suitable for archiving.
 
-This chapter serves as an overview for the scripts 
-and the options with which they come.
-
 \subsection{Input preparation: \texorpdfstring{{\lstinline`g16.prepare.sh`}}{g16.prepare.sh}}
+\label{sec:g16.prepare}
 
 This tool reads in a file containing a set of cartesian coordinates and
 writes a Gaussian inputfile with predefined keywords. 
 The script interfaces to Xmol format as it is understood by most molecular editors, 
 but it understands the Turbomole (or in extension GFN-xTB) \texttt{coord} format, too,
-if Open Babel is installed on the system.
+if Open Babel\footnote{%
+  For more information see \href{http://openbabel.org/}{http://openbabel.org/}.}
+is installed on the system.
 
 The implementation actually only looks for lines containing (at most) two letters
 and four floating point numbers separated by spaces (or tabs).
@@ -85,7 +90,7 @@ This was necessary due to the incapabilities of GaussView to produce
 actual coordinate files; it rather produces Gaussian input data files (\texttt{*.gjf}) 
 containing structural information.
 
-This tool is incapable of parsing/ producing z-matrix style input.
+This tool is incapable of parsing/producing z-matrix style input.
 
 Usage: 
 
@@ -140,34 +145,13 @@ Options:
   {\lstinline`-h`}       & Print a small help file. \\
 \end{longtable}
 
-\subsection{Pre-processing: \texorpdfstring{{\lstinline`g16.testroute.sh`}}{g16.testroute.sh}}
-
-This tool parses a Gaussian 16 input file and extracts the route section, 
-which it then checks for syntax errors with the Gaussian 16 utility 
-\href{http://gaussian.com/testrt/}{\texttt{testrt}}.
-Unfortunately the original Gaussian utility requires a string as input, 
-which is quite inconvenient if you want to test the inputfile itself.
-The input file is parsed by the same routine as used in the other scripts,
-and can be used to validate the created (or to be submitted) files.
-
-Usage: 
-
-\lstinline`g16.testroute.sh [opt] <file>`
-
-Options:
-
-\begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
-  {\lstinline`--`}       & Explicitly close reading script options. \\
-  {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
-  {\lstinline`-h`}       & Print a small help file. \\
-\end{tabular}
-
 \subsection{Input preparation: \texorpdfstring{{\lstinline`g16.dissolve.sh`}}{g16.dissolve.sh}}
+\label{sec:g16.dissolve}
 
 This tool reads in a Gaussian 16 input file to extract the current route section
 and adds relevant keywords for solvent corrections and produce a new input file.
 Since this again utilises the \texttt{\%OldChk} directive in conjunction with 
-the \texttt{geom}/ \texttt{guess} keywords, the calculation it is based on should be completed.
+the \texttt{geom}/\texttt{guess} keywords, the calculation it is based on should be completed.
 
 The list of options regarding the \texttt{scrf} keyword is long and for specifics
 it is referred to the \href{http://gaussian.com/scrf/}{Gaussian online manual}.
@@ -208,11 +192,12 @@ Options:
 \end{longtable}
 
 \subsection{Input preparation: \texorpdfstring{{\lstinline`g16.freqinput.sh`}}{g16.freqinput.sh}}
+\label{sec:g16.freqinput}
 
 This tool reads in a Gaussian 16 inputfile to extract the current route section
 and adds relevant keywords for a frequency calculation and produce a new input file.
 Since this again utilises the \texttt{\%OldChk} directive in conjunction with 
-the \texttt{geom}/ \texttt{guess} keywords, the calculation it is based on should be completed.
+the \texttt{geom}/\texttt{guess} keywords, the calculation it is based on should be completed.
 
 There are some options regarding the \texttt{freq} keyword, some common ones are mentioned below,
 but for specifics it is referred to the \href{http://gaussian.com/freq/}{Gaussian online manual}.
@@ -250,12 +235,13 @@ Options:
 \end{longtable}
 
 \subsection{Input preparation: \texorpdfstring{{\lstinline`g16.ircinput.sh`}}{g16.ircinput.sh}}
+\label{sec:g16.ircinput}
 
 This tool parses a Gaussian 16 inputfile from a previous frequency calculation and 
 adds relevant keywords to produce two input files for separate IRC calculations, 
 i.e. the forward and the reverse direction.
 Since this again utilises the \texttt{\%OldChk} directive in conjunction with 
-the \texttt{geom}/ \texttt{guess} keywords, the calculation it is based on should be completed.
+the \texttt{geom}/\texttt{guess} keywords, the calculation it is based on should be completed.
 The script will assume it is based on a successful frequency calculation, 
 and will therefore write a file that will retrieve calculated Cartesian force constants from the checkpoint file.
 This means that \texttt{RCFC} will always be included as an option to the \texttt{irc} keyword.
@@ -295,6 +281,7 @@ Options:
 \end{longtable}
 
 \subsection{Input preparation: \texorpdfstring{{\lstinline`g16.optinput.sh`}}{g16.optinput.sh}}
+\label{sec:g16.optinput}
 
 This tool parses a Gaussian 16 inputfile and writes a new inputfile for a structure optimisation.
 Originally this was desingend to be chained onto a previously completed IRC calculation
@@ -305,7 +292,7 @@ discovered during a frequency calculation.
 Another use would be chaining it onto a successful single point calculation,
 e.g. after applying solvent corrections.
 Since this again utilises the \texttt{\%OldChk} directive in conjunction with 
-the \texttt{geom}/ \texttt{guess} keywords, the calculation it is based on should be completed.
+the \texttt{geom}/\texttt{guess} keywords, the calculation it is based on should be completed.
 Another usage is performing scans, or unfreezing scans, etc..
 
 There are many options for the \texttt{opt} keyword, some common ones are mentioned below,
@@ -338,6 +325,7 @@ Options:
 \end{longtable}
 
 \subsection{Input preparation: \texorpdfstring{{\lstinline`g16.spinput.sh`}}{g16.spinput.sh}}
+\label{sec:g16.spinput}
 
 This tool is the counterpart to {\lstinline`g16.optinput.sh`}, 
 and it creates a new inputfile for a subsequent single point calculation
@@ -373,7 +361,31 @@ Options:
   {\lstinline`-h`}       & Print a small help file. \\
 \end{longtable}
 
+\subsection{Pre-processing: \texorpdfstring{{\lstinline`g16.testroute.sh`}}{g16.testroute.sh}}
+\label{sec:g16.testroute}
+
+This tool parses a Gaussian 16 input file and extracts the route section, 
+which it then checks for syntax errors with the Gaussian 16 utility 
+\href{http://gaussian.com/testrt/}{\texttt{testrt}}.
+Unfortunately the original Gaussian utility requires a string as input, 
+which is quite inconvenient if you want to test the input file itself.
+The input file is parsed by the same routine as used in the other scripts,
+and can be used to validate the created (or to be submitted) files.
+
+Usage: 
+
+\lstinline`g16.testroute.sh [opt] <file>`
+
+Options:
+
+\begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
+  {\lstinline`-h`}       & Print a small help file. \\
+\end{tabular}
+
 \subsection{Input submission: \texorpdfstring{{\lstinline`g16.submit.sh`}}{g16.submit.sh}}
+\label{sec:g16.submit}
 
 This tool parses and then submits a Gaussian 16 inputfile to a queueing system.
 
@@ -445,6 +457,7 @@ Options:
 \end{longtable}
 
 \subsection{Post-processing: \texorpdfstring{{\lstinline`g16.getenergy.sh`}}{g16.getenergy.sh}}
+\label{sec:g16.getenergy}
 
 This tool finds energy statements from the output files of Gaussian 16 calculations.
 It is basically an elaborate interface to the grep command, 
@@ -474,6 +487,7 @@ Options:
 \end{tabular}
 
 \subsection{Post-processing: \texorpdfstring{{\lstinline`g16.getfreq.sh`}}{g16.getfreq.sh}}
+\label{sec:g16.getfreq}
 
 This tool summarises the output of a Gaussian 16 frequency calculation 
 and extracts and reformats the thermochemistry data.
@@ -514,6 +528,7 @@ Options:
 \end{tabular}
 
 \subsection{Post-processing: \texorpdfstring{{\lstinline`g16.chk2xyz.sh`}}{g16.chk2xyz.sh}}
+\label{sec:g16.chk2xyz}
 
 This tool is intended to create files for archiving a Gaussian 16 calculation.
 Since normal Gaussian checkpoint files are binary files, and hence platform dependent,

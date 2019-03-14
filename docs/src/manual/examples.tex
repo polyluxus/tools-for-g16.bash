@@ -84,7 +84,7 @@ Here is a short checklist, flowchart, or list how to get from an initial
   guessed structure. For example, the SMILES for ethanol is
   \texttt{CCO}, see
   \href{https://pubchem.ncbi.nlm.nih.gov/compound/ethanol\#section=Canonical-SMILES}{PubChem
-  CID 702}, then the command for Open Babel is:
+  CID 702}, then the command for Open Babel is:\newline
   \texttt{obabel -:'CCO' -oxyz --gen3d -Oopt.start.xyz}
 
   The option \texttt{-:} takes a SMILES as an input, the \texttt{-o}
@@ -94,8 +94,8 @@ Here is a short checklist, flowchart, or list how to get from an initial
   on; see also the \href{http://openbabel.org/wiki/Main_Page}{Open Babel
   Wiki}.
 
-  That sometimes even works for more complex molecules; unfortunately
-  not for organometallics (and similar), because it doesn't describe
+  This process sometimes even works for more complex molecules; unfortunately
+  not for organometallic (and similar) compounds, because SMILES does not describe
   ionic interactions.\footnote{%
     Some may work okay-ish, e.g. sodium ethanolate
     (\texttt{CC{[}O-{]}.{[}Na+{]}}), others not. You can try building the
@@ -203,7 +203,7 @@ Here is a short checklist, flowchart, or list how to get from an initial
 
   Check the main output file for errors. Everything should be fine when
   you find \emph{Normal termination} at the end (\texttt{tail bp86svp.opt.log}).
-  You can (and should) also search for \emph{stationary point found}:
+  You can (and should) also search for \emph{stationary point found}:\newline
   \texttt{grep 'Stationary point found' -B7 -A3  bp86svp.opt.log}.
 
   Don't forget to open it with a molecular viewer to make sure the
@@ -248,7 +248,7 @@ Here is a short checklist, flowchart, or list how to get from an initial
 
   You can do these two steps together with the following command:
 
-  \lstinline`g16k2xyz  bp86svp.opt.freq.chk`
+  \lstinline`g16.chk2xyz  bp86svp.opt.freq.chk`
 
   The above command produces the formatted checkpoint file
   \texttt{bp86svp.opt.freq.fchk} and the coordinate file
