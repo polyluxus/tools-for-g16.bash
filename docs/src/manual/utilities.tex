@@ -9,6 +9,13 @@
 \usepackage{listings}
 \usepackage{longtable}
 
+\lstset{
+  language           = bash,%
+  basicstyle         = \ttfamily,%
+  breaklines         = true,%
+  breakatwhitespace  = true, %
+}
+
 \begin{document}
 \section{Utilities}
 
@@ -77,15 +84,29 @@ which are more suitable for archiving.
 
 This tool reads in a file containing a set of cartesian coordinates and
 writes a Gaussian inputfile with predefined keywords. 
-The script interfaces to Xmol format as it is understood by most molecular editors, 
+The script interfaces to simple Xmol\footnote{%
+  The prepare script is currently limited to a very simple version of the Xmol file format,
+  and currently only supports the four-field format.
+  Each file therefore should contain a two line ``header'', 
+  with the number (integer) of atoms in the first, 
+  and a free form comment in the second.
+  This header, however, will be discarded by {\lstinline`g16.prepare.sh`}.
+  The ``body'' of the file contains the positions of the atoms, one line each,
+  in Cartesian coordinates: \texttt{Element-Symbol xx.xxx yy.yyy zz.zzz},
+  where the element symbol is a string and the other fields are floating point numbers.
+  The five-field format, which includes an optional charge for the element,
+  or the eight-field format, which assigns an optional vector associated with the element,
+  as well as the seven-field format, which is the same as before, but without the charge,
+  are not yet recognised.
+  (If there were implemented, everything except the first four fields would be discarded.)
+}
+format as it is understood by most molecular editors, 
 but it understands the Turbomole (or in extension GFN-xTB) \texttt{coord} format, too,
-if Open Babel\footnote{%
-  For more information see \href{http://openbabel.org/}{http://openbabel.org/}.}
-is installed on the system.
+if Open Babel is installed on the system.
 
-The implementation actually only looks for lines containing (at most) two letters
-and four floating point numbers separated by spaces (or tabs).
-It is therefore suitable to also parse already generated input files.
+Since the implementation actually only looks for lines containing a string (at least one letter)
+and four floating point numbers separated by spaces (or tabs),
+it is therefore also suitable to also parse already generated input files.
 This was necessary due to the incapabilities of GaussView to produce
 actual coordinate files; it rather produces Gaussian input data files (\texttt{*.gjf}) 
 containing structural information.
