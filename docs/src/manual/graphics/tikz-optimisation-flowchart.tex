@@ -1,0 +1,123 @@
+\documentclass{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{matrix,calc,shapes}
+\usepackage{amssymb}
+
+\begin{document}
+%define styles for nodes (from http://latex-cookbook.net/articles/flowchart/)
+\input{./tikz-definitions.tex}
+%\tikzset{
+%  treenode/.style = {shape=rectangle, rounded corners,
+%                     draw, anchor=center,
+%                     text width=5cm, align=center, font=\rmfamily\normalsize,
+%                     top color=white, bottom color=blue!20,
+%                     inner sep=1ex},
+%  root/.style     = {treenode, font=\Large,
+%                     bottom color=red!30},
+%  decision/.style = {treenode, diamond, inner sep=0pt, aspect=2},
+%  env/.style      = {treenode, font=\ttfamily},
+%  archive/.style  = {env, bottom color=orange!40},
+%  result/.style   = {treenode, bottom color=green!40},
+%  finish/.style   = {root, bottom color=green!40},
+%  dummy/.style    = {circle,draw}
+%}
+
+
+\begin{tikzpicture}[-latex]
+  \matrix (chart)
+    [
+      matrix of nodes,
+      column sep      = 1cm,
+      row sep         = 1cm,
+      column 1/.style = {nodes={env}},
+      column 2/.style = {nodes={archive}},
+      column 3/.style = {nodes={result}}
+    ]
+    {
+      %1
+      |[root]| Start                           & \\
+      %2
+      <mol>.start.xyz                          & \\
+      %3
+      <method>.com                             & \\
+      %4
+      <method>.gjf, <method>.<queue>.bash      & %
+        <method>.log, <method>.chk, (queue error/out) \\
+      %5  
+      |[decision]| Stationary point found?     & %
+        <method>.xyz, <method>.fchk & %
+        \(E_\mathrm{el}\)           \\
+      %6
+      <method>.freq.com                        & \\
+      %7
+      <method>.freq.gjf, <method>.freq.<queue>.bash & % 
+        <method>.freq.log, <method>.freq.chk, (queue error/out) \\
+      %8
+                                               & %
+        <method>.freq.xyz, <method>.freq.fchk  & 
+        \(E_\mathrm{ZPE}, \dots , H_\mathrm{corr}, G_\mathrm{corr}, \dots \)\linebreak
+        \(\leadsto E_\mathrm{o}, \dots , H, G, \dots \) \\
+      %9
+      |[decision]| NImag \linebreak \( i \in \{0,1,...,\mathbb{N}\} \) & %
+        |[result]| local minimum               & %
+        |[decision]| target met?               \\
+      %10
+                                               & % 
+        |[result]| transition state            & %
+        |[decision]| target met?               \\
+        %11
+        &&&|[finish]| Done!\\
+    };
+  \draw
+  (chart-1-1) edge node [right] {Chemcraft, Molden, Open Babel, \dots} (chart-2-1);
+  \draw
+  (chart-2-1) edge node [right] {\texttt{g16.prepare}} (chart-3-1);
+  \draw
+  (chart-3-1) edge node [right] {\texttt{g16.submit}} (chart-4-1);
+  \draw
+  (chart-4-2) -- +(0,-1) -| (chart-5-1) ;
+  \draw
+  (chart-5-1) -- +(-4,0) node [near start, above] {\textbf{no}} |- (chart-2-1) ;
+  \draw
+  (chart-5-1) edge node [right] {\texttt{g16.freqinput}} node [left] {\textbf{yes}} (chart-6-1);
+  \draw
+  (chart-4-1) edge node [above] {\texttt{g16}} (chart-4-2);
+  \draw
+  (chart-4-2) edge node [right] {\texttt{g16.chk2xyz}} (chart-5-2);
+  \draw
+  (chart-4-2) -| (chart-5-3) node [near end, right] {\texttt{g16.getenergy}} ;
+  \draw
+  (chart-6-1) edge node [right] {\texttt{g16.submit}} (chart-7-1);
+  \draw
+  (chart-7-1) edge node [right] {inspect \texttt{*.log}} (chart-9-1);
+  \draw
+  (chart-7-1) edge node [above] {\texttt{g16}} (chart-7-2);
+  \draw
+  (chart-7-2) edge node [right] {\texttt{g16.chk2xyz}} (chart-8-2);
+  \draw
+  (chart-7-2) -| (chart-8-3) node [near end, right] {\texttt{g16.getfreq}} ;
+  \draw
+  (chart-9-1) edge node [above] {\(0\)} (chart-9-2);
+  \draw
+  (chart-9-2) edge (chart-9-3);
+  \draw
+  (chart-9-1) |- (chart-10-2) node [near start, right] {\(1\)} ;
+  \draw
+  (chart-10-2) edge (chart-10-3);
+  \draw
+  (chart-9-1) -- +(-4,0) node [near start, above] {\(\geq2\)} |- (chart-2-1)
+  node [near start, sloped, above] {extract molecular structure, repeat optimisation};
+  \draw
+  (chart-9-3) -- +(+4,0) node [near start, above] {\textbf{no}}
+  |- (chart-2-1) node [near start, sloped, below] {extract molecular structure, repeat optimisation};
+  \draw
+  (chart-10-3) -- +(0,-2) node [near start, right] {\textbf{no}}
+  -| ($(chart-2-1)+(-4,0)$) node [near start, sloped, above] {extract molecular structure, modify/scan, repeat optimisation} -- (chart-2-1);
+  \draw
+  (chart-9-3) -- +(0,-2) node [near start, right] {\textbf{yes}} -| (chart-11-4);
+  \draw
+  (chart-10-3) -| (chart-11-4) node [near start, sloped, above] {\textbf{yes}}; 
+\end{tikzpicture}
+
+\end{document}

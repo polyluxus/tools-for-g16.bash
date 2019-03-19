@@ -1,0 +1,79 @@
+\documentclass[   % 
+  final,          % 
+  a4paper         % 
+]{article}
+
+\usepackage[a4paper,margin=2cm]{geometry}
+
+\usepackage[usenames,dvipsnames]{xcolor}
+\definecolor{lightgray}{gray}{0.95}
+
+\usepackage{tikz}
+\usetikzlibrary{matrix,calc,shapes}
+\usepackage{amssymb}
+\usepackage[image]{tikzinput}
+
+\usepackage{standalone}
+
+% Typesetting codeprettier
+\usepackage{listings}
+\input{lstdefs.tex}
+
+% Break tables
+\usepackage{longtable}
+
+% a little better spacing
+\usepackage{setspace}
+\onehalfspacing
+% Symbols for SE and GH
+\usepackage{fontawesome} 
+% Symbols for creative commons
+\usepackage{ccicons}
+% linking to the outside world
+\usepackage{hyperref}
+% Martin's weird SE handle
+% (use a different package and Xe/LuaLaTeX if you're doing proper Japanese texts.)
+\usepackage{CJKutf8} 
+
+% What this is about
+\title{Manual for \texttt{tools-for-g16.bash} (0.2.0, 2019-03-19)}
+\author{Martin C Schwarzer}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\tableofcontents
+\clearpage
+
+\subsection*{Preamble}
+
+The following document is currently little more than the already existing reference sheet.
+As documentation often goes, it takes a bit more time to do it properly.
+I apologise for the inconvenience.
+
+\input{intro.tex}
+\input{install.tex}
+\input{utilities.tex}
+\input{examples.tex}
+
+\section{Author, Bugs, and the Rest}
+
+This repository was created and is maintained by Martin C Schwarzer 
+(\faStackExchange~\href{https://chemistry.stackexchange.com/users/4945}{Martin-\begin{CJK*}{UTF8}{min}マーチン\end{CJK*}}
+  \faGithub~\href{https://github.com/polyluxus}{polyluxus}).
+
+If you find any bugs, have questions, want features implemented,
+please do it via the \href{https://github.com/polyluxus/tools-for-g16.bash/issues}{GitHub Issue tracker},
+or fork it and send a pull request.
+
+The help of my colleagues for testing, finding bugs, extending the documentation is greatly appreciated.
+
+\begin{flushright}
+This document is licensed \ccbysa.
+\end{flushright}
+
+\end{document}
+
+
+

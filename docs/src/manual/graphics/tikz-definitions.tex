@@ -1,0 +1,15 @@
+\tikzset{
+  treenode/.style = {shape=rectangle, rounded corners,
+                     draw, anchor=center,
+                     text width=5cm, align=center, font=\rmfamily\normalsize,
+                     top color=white, bottom color=blue!20,
+                     inner sep=1ex},
+  root/.style     = {treenode, font=\Large,
+                     bottom color=red!30},
+  decision/.style = {treenode, diamond, inner sep=0pt, aspect=2},
+  env/.style      = {treenode, font=\ttfamily},
+  archive/.style  = {env, bottom color=orange!40},
+  result/.style   = {treenode, bottom color=green!40},
+  finish/.style   = {root, bottom color=green!40},
+  dummy/.style    = {circle,draw}
+}

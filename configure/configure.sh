@@ -522,34 +522,32 @@ ask_values_separator ()
 ask_qsys_details ()
 {
   ask "For which queueing system are you configuring?"
-  message "Currently supported: pbs-gen, (bsub-gen,) bsub-rwth"
+  message "Currently supported: pbs-gen, slurm-gen, bsub-gen, slurm-rwth, bsub-rwth"
   local test_queue
   test_queue=$(read_human_input)
   debug "test_queue=$test_queue"
   case $test_queue in
     [Pp][Bb][Ss]* )
       use_request_qsys="pbs-gen"
+      debug "use_request_qsys=$use_request_qsys"
+      #skip the rest because it does not apply
+      return 
       ;;
     [Bb][Ss][Uu][Bb]* )
-      # This is currently not recognised by the scripts
       use_request_qsys="bsub-gen"
-      use_request_qsys="bsub-rwth" # Remove this restriction
-
-      ask "What project would you like to specify?"
-      use_bsub_project=$(read_human_input)
-      debug "use_bsub_project=$use_bsub_project"
-
-      ask "What what email address should recieve notifications?"
-      use_bsub_email=$(read_email)
-      debug "use_bsub_email=$use_bsub_email"
-
+      ;;&
+    [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] )
+      use_request_qsys="bsub-rwth"
       ask "What machine type would you like to specify?"
       use_bsub_machinetype=$(read_human_input)
+      [[ -z "$use_bsub_machinetype" ]] && use_bsub_machinetype="default"
       debug "use_bsub_machinetype=$use_bsub_machinetype"
-
+      ;;
+    [Ss][Ll][Uu][Rr][Mm]* )
+      use_request_qsys="slurm-gen"
       ;;&
-    *[Rr][Ww][Tt][Hh] )
-      use_request_qsys="bsub-rwth"
+    [Ss][Ll][Uu][Rr][Mm]-[Rr][Ww][Tt][Hh] )
+      use_request_qsys="slurm-rwth"
       ;;
     '' )
       : ;;
@@ -558,6 +556,16 @@ ask_qsys_details ()
       ;;
   esac
   debug "use_request_qsys=$use_request_qsys"
+
+  ask "What project would you like to specify?"
+  use_qsys_project=$(read_human_input)
+  [[ -z "$use_qsys_project" ]] && use_qsys_project="default"
+  debug "use_qsys_project=$use_qsys_project"
+
+  ask "What what email address should recieve notifications?"
+  use_user_email=$(read_email)
+  [[ -z "$use_user_email" ]] && use_user_email="default"
+  debug "use_user_email=$use_user_email"
 }
 
 ask_walltime ()
@@ -642,7 +650,7 @@ get_configuration_from_file ()
   # Load custom settings from the rc
   
   if [[ -n $g16_tools_rc_loc ]] ; then
-    message "Configuration file '${g16_tools_rc_loc/*$HOME/'<HOME>'}' found."
+    message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' found."
   else
     debug "No custom settings found."
     return 1
@@ -665,7 +673,7 @@ get_configuration_from_file ()
   fi
   #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
   . "$g16_tools_rc_loc"
-  message "Configuration file '${g16_tools_rc_loc/*$HOME/'<HOME>'}' applied."
+  message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
 }
 
 #
@@ -802,8 +810,10 @@ get_configuration_interactive ()
   debug "use_values_separator=$use_values_separator"
 
   use_request_qsys="$request_qsys"
-  use_bsub_project="$bsub_project"
-  use_bsub_email="$bsub_email"
+  # backwards compatibility
+  use_qsys_project="${qsys_project:-$bsub_project}"
+  use_user_email="${user_email:-$bsub_email}"
+  # Very specific constraint:
   use_bsub_machinetype="$bsub_machinetype"
   if [[ -z $use_request_qsys ]] ; then
     ask_qsys_details
@@ -812,30 +822,35 @@ get_configuration_interactive ()
     ask "Would you like to change this setting?"
     if read_boolean ; then ask_qsys_details ; fi
   fi
-  if [[ "$use_request_qsys" =~ [Bb][Ss][Uu][Bb] && -z $use_bsub_project ]] ; then
+  if [[ "$use_request_qsys" =~ ([Bb][Ss][Uu][Bb]|[Ss][Ll][Uu][Rr][Mm]) && -z $use_qsys_project ]] ; then
     ask_qsys_details
   else
-    message "Recovered setting: 'bsub_project=$use_bsub_project'"
+    message "Recovered setting: 'qsys_project=$use_qsys_project'"
     ask "Would you like to change this setting?"
+    message "Choosing 'yes' will re-enter the configuration of the queueing system."
     if read_boolean ; then ask_qsys_details ; fi
   fi
-  if [[ "$use_request_qsys" =~ [Bb][Ss][Uu][Bb] && -z $use_bsub_email ]] ; then
+  if [[ "$use_request_qsys" =~ ([Bb][Ss][Uu][Bb]|[Ss][Ll][Uu][Rr][Mm]) && -z $use_user_email ]] ; then
     ask_qsys_details
   else
-    message "Recovered setting: 'bsub_email=$use_bsub_email'"
+    message "Recovered setting: 'user_email=$use_user_email'"
     ask "Would you like to change this setting?"
+    message "Choosing 'yes' will re-enter the configuration of the queueing system."
     if read_boolean ; then ask_qsys_details ; fi
   fi
-  if [[ "$use_request_qsys" =~ [Bb][Ss][Uu][Bb] && -z $use_bsub_machinetype ]] ; then
+  if [[ "$use_request_qsys" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] && -z $use_bsub_machinetype ]] ; then
     ask_qsys_details
-  else
+  elif [[ "$use_request_qsys" =~ [Bb][Ss][Uu][Bb] && -n "$use_bsub_machinetype" ]] ; then
     message "Recovered setting: 'bsub_machinetype=$use_bsub_machinetype'"
     ask "Would you like to change this setting?"
+    message "Choosing 'yes' will re-enter the configuration of the queueing system."
     if read_boolean ; then ask_qsys_details ; fi
+  else
+    debug "Chosen queueing system is not 'bsub', machine type irrelevant."
   fi
   debug "use_request_qsys=$use_request_qsys"
-  debug "use_bsub_project=$use_bsub_project"
-  debug "use_bsub_email=$use_bsub_email"
+  debug "use_qsys_project=$use_qsys_project"
+  debug "use_user_email=$use_user_email"
   debug "use_bsub_machinetype=$use_bsub_machinetype"
 
   use_requested_walltime="$requested_walltime"
@@ -1087,7 +1102,8 @@ print_configuration ()
   fi
   echo ""
 
-  echo "# Select a queueing system (pbs-gen/bsub-rwth)"
+  echo "# Select a queueing system <queue>-<special>"
+  echo "# (<queue>: pbs, slurm, bsub; <special>: gen, rwth)"
   echo "#"
   if [[ -z $use_request_qsys ]] ; then
     echo "# request_qsys=\"pbs-gen\""
@@ -1096,27 +1112,27 @@ print_configuration ()
   fi
   echo ""
 
-  echo "# Account to project (only for bsub)"
+  echo "# Account to project (bsub) or account (slurm)"
   echo "#"
-  if [[ -z $use_bsub_project ]] ; then
-    echo "# bsub_project=default"
+  if [[ -z $use_qsys_project ]] || [[ "$use_qsys_project" == "default" ]] ; then
+    echo "# qsys_project=default"
   else
-    echo "  bsub_project=\"$use_bsub_project\""
+    echo "  qsys_project=\"$use_qsys_project\""
   fi
   echo ""
 
-  echo "# Sent notifications to the following email address (only for bsub)"
+  echo "# Sent notifications to the following email address (slurm, bsub)"
   echo "#"
-  if [[ -z $use_bsub_email ]] ; then
-    echo "# bsub_email=default@default.com"
+  if [[ -z $use_user_email ]] || [[ "$use_user_email" == "default" ]] ; then
+    echo "# user_email=default@default.com"
   else
-    echo "  bsub_email=\"$use_bsub_email\""
+    echo "  user_email=\"$use_user_email\""
   fi
   echo ""
 
   echo "# Use following machine type (only for bsub)"
   echo "#"
-  if [[ -z $use_bsub_machinetype ]] ; then
+  if [[ -z $use_bsub_machinetype ]] || [[ "$use_bsub_machinetype" == "default" ]] ; then
     echo "# bsub_machinetype=default"
   else
     echo "  bsub_machinetype=\"$use_bsub_machinetype\""

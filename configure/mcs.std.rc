@@ -113,11 +113,11 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
 
 # Account to project (only for bsub)
 #
-  bsub_project="default"
+  qsys_project="default"
 
 # Sent notifications to the following email address (only for bsub)
 #
-  bsub_email="default"
+  user_email="default"
 
 # Use following machine type (only for bsub)
 #
@@ -127,4 +127,4 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
   requested_submit_status="run"
 
 #
-# End of automatic configuration, Thu Feb  7 19:39:27 CET 2019.
+# End of automatic configuration, Tue Feb 26 21:58:11 CET 2019.

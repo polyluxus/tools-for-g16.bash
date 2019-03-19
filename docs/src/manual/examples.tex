@@ -1,0 +1,279 @@
+\documentclass[   % 
+  final,          % 
+  a4paper         % 
+]{article}
+
+\usepackage[a4paper,margin=2cm]{geometry}
+\setcounter{secnumdepth}{0}
+
+\usepackage{tikz}
+\usetikzlibrary{matrix,calc,shapes}
+\usepackage{amssymb}
+\usepackage[image]{tikzinput}
+\usepackage{standalone}
+
+\begin{document}
+\section{Usage examples}
+
+This chapter is still in heavy developement.
+
+\subsection{Basic molecular structure optimisations}
+
+The molecular structure is often also referred to as \emph{geometry},
+and hence the optimisation of the molecular structure is often referred
+to as \emph{geometry optimisation}.
+
+Here is a short checklist, flowchart, or list how to get from an initial
+(guessed) structure to a final structure.
+
+\begin{enumerate}
+\item
+  Create a molecular structure file in cartesian coordinates
+  (\texttt{*.xyz}) with your preferred molecular editor, command line
+  tool, or even text editor.\footnote{% 
+  %If you (intend to) use Gaussview, please see some more \href{notes_gv_en.md}{notes on Gaussview}.
+    Gaussview is unfortunately unable to write Xmol files, for whatever
+    reason, this is not supported. Instead it can write a standard Gaussian
+    input file, which you could set up ready-for-submission-complete with
+    Gaussview. A lot of people do that, it is the GUI to Gaussian after all,
+    the downside of this approach is that you tend to forget what you are
+    doing.
+    
+    Not everything in those input files is necessary, and some of it is a
+    terrible choice. For example, it usually includes the absolute paths to
+    checkpoint files. If you decide to change anything (and this is quite
+    likely) and then rerun a calculation, it will very likely fail, or
+    overwrite existing things. If you are using Gaussview locally, but
+    submit a calculation to the cluster, it is also likely, that the
+    specified location does not exist.
+    
+    There are easy and not quite as easy workarounds:
+    
+    \begin{itemize}
+    \item
+      Use a different program.
+    \item
+      Edit the files on the cluster by hand, remove everything superflous
+      with a text editor.
+    \item
+      Convert them with, e.g.~Molden. (Unfortunately Open Babel cannot do
+      that.)
+    \item
+      Use my prepare script. It will search the inputfile for lines of the
+      pattern \texttt{XX  +000.0000  -000.0000  +000.0000}
+      (two letters followed by three signed real numbers).
+    \item
+      Alternatively, you can use a different program. (Seriously, it is
+      worth mentioning it twice.)
+    \item
+      You can use Gaussian's \href{http://gaussian.com/newzmat/}{\texttt{newzmat}}
+      utility to convert it.
+    \end{itemize}
+  }
+
+  It needs a bit training to click together a reasonable guess,
+  Chemcraft has a reasonably large fragments database, Molden has a few
+  standards, but is (technically) able to read in fragments, too. For
+  simple molecules you can sometimes find structures online, maybe even
+  crystal structures. Another easy way is to search for it on
+  \href{http://www.chemspider.com/}{ChemSpider},
+  \href{https://pubchem.ncbi.nlm.nih.gov/search/}{PubChem}, or draw it
+  with Chemdraw (etc.) and generate a
+  \href{https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system}{SMILES}
+  code. You can use \href{http://openbabel.org}{Open Babel} to create a
+  guessed structure. For example, the SMILES for ethanol is
+  \texttt{CCO}, see
+  \href{https://pubchem.ncbi.nlm.nih.gov/compound/ethanol\#section=Canonical-SMILES}{PubChem
+  CID 702}, then the command for Open Babel is:\newline
+  \texttt{obabel -:'CCO' -oxyz --gen3d -Oopt.start.xyz}
+
+  The option \texttt{-:} takes a SMILES as an input, the \texttt{-o}
+  selects the output format (here chosen as Xmol, Cartesian
+  coordinates), \texttt{-\/-gen3d} tells the program to generate 3D
+  coordinates, and \texttt{-O} selects the output file to write
+  on; see also the \href{http://openbabel.org/wiki/Main_Page}{Open Babel
+  Wiki}.
+
+  This process sometimes even works for more complex molecules; unfortunately
+  not for organometallic (and similar) compounds, because SMILES does not describe
+  ionic interactions.\footnote{%
+    Some may work okay-ish, e.g. sodium ethanolate
+    (\texttt{CC{[}O-{]}.{[}Na+{]}}), others not. You can try building the
+    structure for the cation of
+    \href{https://pubchem.ncbi.nlm.nih.gov/compound/407049}{tris(ethylenediamine)cobalt(III)
+    chloride}:
+    \texttt{C(C{[}NH-{]}){[}NH-{]}.C(C{[}NH-{]}){[}NH-{]}.C(C{[}NH-{]}){[}NH-{]}.{[}Co{]}.{[}Cl-{]}.{[}Cl-{]}.{[}Cl-{]}}.}
+  Assume we did this, and we will call it \texttt{bp86svp.start.xyz}.
+\item
+  Create an input file. 
+  A \emph{very simple} optimisation would probably use
+  BP86/def2-SVP with mostly default parameters, or similar,\footnote{% 
+  Choosing an appropriate level of theory is not often trivial, one has
+  to consider a couple of things, like accuracy, performance, and speed.
+  I have previously written quite a long article about that:
+  \href{https://chemistry.stackexchange.com/a/27418/4945}{DFT Functional
+  Selection Criteria}.
+
+  The example command uses the DF-BP86/def2-SVP level of theory, but
+  with something extra. Remember:
+
+  \lstinline`g16.prepare -R'#P BP86/def2SVP/W06' -r'OPT(MaxCycles=100)' -j'bp86svp.opt' bp86svp.start.xyz`
+
+  The \lstinline`-R` switch to \lstinline`g16.prepare` sets the basic route section to
+  \texttt{\#P\ BP86/def2SVP/W06}, the different parts mean the following:
+
+  \begin{itemize}
+  \item
+    The \texttt{\#P} selects verbose printing
+    (\href{http://gaussian.com/route/?tabid=1}{G16 manual}), other
+    options are \texttt{\#N} (normal) and \texttt{\#T} (terse).
+  \item
+    The method is selected as \texttt{BP86}, which selects the exchange
+    functional \texttt{B} and the correlation functional \texttt{P86}.
+    There are plenty of \href{http://gaussian.com/dft/}{Functionals
+    implemented}.
+  \item
+    For the example I have chosen the def2-SVP basis set; please note
+    that the keyword is without the dash. There are again many available
+    in \href{http://gaussian.com/basissets/}{Gaussian}, and additional
+    ones can be defined; that is something for more advanced users (and
+    a topic for another day).
+  \item
+    Additionally, this route section requests density fitting (sometimes
+    also referred to as \emph{resolution-of-the-identity}, or short RI,
+    approximation) with the auxiliar basis set \texttt{W06} (see the
+    \href{http://gaussian.com/basissets/?tabid=2}{Manual} for more),
+    which should speed up the calculation. This is also available via
+    the \href{http://gaussian.com/densityfit/}{\texttt{DensityFit}/\texttt{DenFit}}
+    keyword, and therefore commonly abbreviated with DF in the level of
+    theory.
+  \end{itemize}
+
+  The \lstinline`-r` switch to the script adds more keywords to the route
+  section. In this specific case we'll request an optimisation
+  (\href{http://gaussian.com/opt/}{\texttt{OPT}}) with 100 cycles at the
+  most.
+
+  The \lstinline`-j` switch selects a jobname for the calculation, and it
+  will further be used to derive filenames for it.
+
+  The last argument is the molecular structure file, here in the Xmol
+  format. There are some other formats recognised, but that is also
+  something for another day.}
+  so you can just run the prepare script:
+
+  \lstinline`g16.prepare -R'#P BP86/def2SVP/W06' -r'OPT(MaxCycles=100)' \`\par
+  \lstinline`  -j'bp86svp.opt' bp86svp.start.xyz`
+
+  This will create the file \texttt{bp86svp.opt.com}.
+
+\item
+  Submit the input file to the queue. 
+  The following command will handle this:
+
+  \lstinline`g16.submit -p12 -m4000  bp86svp.opt.com`
+
+  This will create a modified inputfile \texttt{bp86svp.opt.gjf}, with
+  the correct settings for Gaussian according to what you requested in
+  the submit routine. It will also create (assuming it is set to
+  \texttt{slurm-gen}) a script for the queueing system,
+  \texttt{bp86svp.opt.slurm.bash}, which will be executed remotely.
+
+  What sensible parameters (processors, memory, walltime) are comes 
+  with experience. Obviously don't ask for more than you have 
+  (\lstinline`-p12`, \lstinline`-m4000` is reasonable for medium sized molecule optimisations).
+\item
+  Once the calculation is done (you'll probably get an email), you will
+  have a few output files.
+
+  \begin{itemize}
+  \item
+    \texttt{bp86svp.opt.log}: the main output
+  \item
+    \texttt{bp86svp.opt.chk}: the checkpoint file (useful for later)
+  \item
+    \texttt{bp86svp.opt.slurm.bash.e012345}: the
+    error file from the queueing system\footnote{%
+      The number, here used as example \texttt{012345}, is the JobID
+      assigned by the queueing system.}
+  \item
+    \texttt{bp86svp.opt.slurm.bash.o012345}: the
+    standard output file from the queueing system
+  \end{itemize}
+
+  Check the main output file for errors. Everything should be fine when
+  you find \emph{Normal termination} at the end (\texttt{tail bp86svp.opt.log}).
+  You can (and should) also search for \emph{stationary point found}:\newline
+  \texttt{grep 'Stationary point found' -B7 -A3  bp86svp.opt.log}.
+
+  Don't forget to open it with a molecular viewer to make sure the
+  structure is actually sensible.
+\item
+  Create a frequency calculation \textbf{in the same} directory:
+
+  \lstinline`g16.freqinput bp86svp.opt.gjf`
+
+  This creates \texttt{bp86svp.opt.freq.com} which you can submit:
+
+  \lstinline`g16.submit -p12 -m24000  bp86svp.opt.freq.com`
+
+  Frequency calculations are memory demanding, they will slow down if
+  they do not have enough, about 2 GB per core should be okay.
+\item
+  You'll get similar output files like above. Open the \texttt{*.log}
+  file with a molecular viewer, and look at the frequencies (or modes).
+  If there are no imaginary modes, you have found a \emph{local}
+  minimum, if there is exactly one mode, you found a transition state.
+  Repeat the above steps as necessary if you didn't meet your target.
+\item
+  Look for the energy values and put them in tables to calculate
+  barriers and stuff. You can use the post-processing script for that,
+  or look through the manual by yourself:
+
+  \lstinline`g16.getfreq -V3  bp86svp.opt.freq.log`
+\item
+  Finalise the calculation with creating a formatted checkpoint file and
+  a coordinate file. The Gaussian checkpoint files are binary files and
+  they are machine dependent (and fairly large). 
+  That usually doesn't pose any problem, but
+  it is good practice to create a pure text file anyway. The formatted
+  checkpointfile can be used as an input for further analysis by many
+  programs, therefore it is good to have in any case. 
+  It can also be reverted to a binary checkpoint file, which means you
+  can actually omit the checkpoint file while archiving.
+  
+  Writing an coordinate file with the optimised structure helps cutting 
+  down loading times; it also gives you an indicator that the calculation 
+  is done.
+
+  You can do these two steps together with the following command:
+
+  \lstinline`g16.chk2xyz  bp86svp.opt.freq.chk`
+
+  The above command produces the formatted checkpoint file
+  \texttt{bp86svp.opt.freq.fchk} and the coordinate file
+  \texttt{bp86svp.opt.freq.xyz}. Alternatively you can use the script
+  with the \lstinline`-a` switch to do that for every \texttt{*.chk} file
+  in the current directory.
+\end{enumerate}
+
+Once you have done all the steps you can move on to interpreting the
+results, which is where often the real work lies.
+
+The following chart presents a basic diagramme of the above description,
+it shows how the tools may interact with each other,
+or can be chained after one another, respectively.
+
+\tikzinput[width=0.99\linewidth]{./graphics/tikz-optimisation-flowchart}
+
+\subsection{Transition state search}
+
+The following chart attempts to do the same for the steps after a successful 
+transition state optimisation.
+
+(This part of the documentation is still \emph{very} much a work in progress.)
+
+\tikzinput[width=0.99\linewidth]{./graphics/tikz-transitionstate-flowchart}
+
+\end{document}
+

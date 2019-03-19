@@ -1,0 +1,31 @@
+\lstdefinelanguage{g16tools}{
+  keywords  = [1]{
+    g16.chk2xyz.sh,     g16.chk2xyz,
+    g16.dissolve.sh,    g16.dissolve,  
+    g16.freqinput.sh,   g16.freqinput,  
+    g16.getenergy.sh,   g16.getenergy,  
+    g16.getfreq.sh,     g16.getfreq,
+    g16.ircinput.sh,    g16.ircinput,  
+    g16.optinput.sh,    g16.optinput,  
+    g16.prepare.sh,     g16.prepare,
+    g16.spinput.sh,     g16.spinput,
+    g16.submit.sh,      g16.submit,
+    g16.testroute.sh,   g16.testroute,  
+    g16.tools.rc,       .g16.toolsrc,    g16.tools, 
+  },%
+  keywords  = [2]{
+    opt,ARG,INT,NUM,FLT,DUR
+  },
+  alsoletter= {.},
+}
+\lstdefinestyle{g16tools}{
+  language           = g16tools,%
+  backgroundcolor    = \color{lightgray},%
+  basicstyle         = \color{NavyBlue}\ttfamily,%
+  keywordstyle       = [1]{\color{Violet}\bfseries},%
+  keywordstyle       = [2]{\color{OliveGreen}\bfseries},%
+  breaklines         = true,%
+  breakatwhitespace  = true, %
+}
+
+\lstset{style=g16tools}

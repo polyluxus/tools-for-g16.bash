@@ -13,8 +13,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-g16.bash"
-version="0.1.5"
-versiondate="2019-03-07"
+version="0.2.0"
+versiondate="2019-03-19"
 
 #
 # Standard commands for external software:
@@ -69,7 +69,7 @@ output_verbosity=0
 #
 # Default values for queueing system submission
 #
-# Select a queueing system (pbs-gen/bsub-rwth) # TODO: bsub-gen
+# Select a queueing system (pbs-gen, slurm-gen, slurm-rwth, bsub-rwth, bsub-gen
 request_qsys="pbs-gen"
 # Walltime for remote execution, header line for the queueing system
 requested_walltime="24:00:00"
@@ -81,9 +81,9 @@ requested_numCPU=4
 # (limits disk space)
 requested_maxdisk=10000
 # Account to project (currently only for bsub-rwth)
-bsub_project=default
+qsys_project=default
 # E-Mail address to send notifications to
-bsub_email=default
+user_email=default
 # Request a certain machine type
 bsub_machinetype=default
 # Calculations will be submitted to run (hold/keep)
