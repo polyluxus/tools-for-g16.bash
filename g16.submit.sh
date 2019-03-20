@@ -396,7 +396,7 @@ write_jobscript ()
     fi
     cat >&9 <<-EOF
 		joberror=\$?
-		echo "End  : $(date)"
+		echo "End  : \$(date)"
 		exit \$joberror
 		EOF
 
