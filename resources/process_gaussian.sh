@@ -1214,12 +1214,16 @@ check_opt_keyword ()
 validate_g16_route ()
 {
     local read_route="$1"
+    local pattern="^[[:space:]]*#"
     local g16_output
     debug "Read the following route section:"
     debug "$read_route"
     if [[ -z $read_route ]] ; then 
       warning "Route section appears to be empty."
       warning "Check if there is an actual route card '#(|N|P|T)' in the input."
+    elif [[ ! "$read_route" =~ $pattern ]] ; then
+      warning "Route section appears to be missing the route card '#(|N|P|T)'."
+      warning "This will cause Gaussian to crash. Performing check of keywords anyway."
     else
       debug "Found route card and will process."
     fi 
