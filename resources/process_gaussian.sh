@@ -796,6 +796,14 @@ read_g16_input_file ()
         debug "Empty line will be kept."
       fi
 
+      # Test if route section is empty
+      if [[ -z $route_section && -z $suppress_this_warning ]] ; then
+        warning "Route section is empty, but already attempting to store body."
+        warning "Current buffer: '$line'"
+        warning "Something is wrong. Please check the template file. (Future warnings of this kind will be ignored.)"
+        local suppress_this_warning=true
+      fi
+
       inputfile_body[$body_index]="$line" 
       debug "Read and stored: '${inputfile_body[$body_index]}'"
       (( body_index++ ))
