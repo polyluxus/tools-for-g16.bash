@@ -151,9 +151,18 @@ process_inputfile ()
     local testfile="$1"
     debug "Processing Input: $testfile"
     read_g16_input_file "$testfile"
+    if [[ -z "$route_section" ]] ; then
+      warning "It appears that '$testfile' does not contain a valid (or recognised) route section."
+      warning "Make sure this template file contains '#/#P/#N/#T' followed by a space."
+      [[ -z $overwrite_route_section ]] && return 1
+    else
+      debug "Route (unmodified): $route_section"
+    fi
+    local modified_route="$route_section"
+    local -a additional_keywords
+
     extract_jobname_inoutnames "$testfile"
     
-    local modified_route="$route_section"
     if [[ -n $overwrite_route_section ]] ; then 
       message "Discarding read route section and using specified one instead."
       modified_route="$overwrite_route_section"
@@ -448,9 +457,10 @@ declare -a use_custom_route_keywords
 
 # Evaluate Options
 
-process_options "$@"
-process_inputfile "$requested_inputfile"
+process_options "$@" || exit_status=$?
+process_inputfile "$requested_inputfile" || exit_status=$?
 
 #hlp   $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"
+exit $exit_status
