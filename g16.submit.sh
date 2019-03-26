@@ -151,6 +151,13 @@ process_inputfile ()
     debug "Jobname: $jobname; Input: $inputfile; Output: $outputfile."
 
     read_g16_input_file "$inputfile"
+    if [[ -z "$route_section" ]] ; then
+      warning "It appears that '$testfile' does not contain a valid (or recognised) route section."
+      warning "Make sure this template file contains '#/#P/#N/#T' followed by a space."
+      return 1
+    else
+      debug "Route (unmodified): $route_section"
+    fi
     inputfile_modified="$jobname.gjf"
     backup_if_exists "$inputfile_modified"
     debug "Writing new input: $inputfile_modified"
@@ -387,6 +394,7 @@ write_jobscript ()
       debug "export $manual_env_var"
     fi
 
+    #shellcheck disable=SC2016
     echo 'echo "Start: $(date)"' >&9
     if [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
       # Executing something is different for SLURM
@@ -396,7 +404,7 @@ write_jobscript ()
     fi
     cat >&9 <<-EOF
 		joberror=\$?
-		echo "End  : $(date)"
+		echo "End  : \$(date)"
 		exit \$joberror
 		EOF
 
@@ -703,10 +711,10 @@ fi
 
 # Evaluate Options
 
-process_options "$@"
-process_inputfile "$requested_inputfile"
-write_jobscript "$request_qsys"
-submit_jobscript "$request_qsys" "$requested_submit_status" 
+process_options "$@" || fatal "Unrecoverable error processing script options. Abort."
+process_inputfile "$requested_inputfile" || fatal "Unrecoverable error processing the input file. Abort."
+write_jobscript "$request_qsys" || fatal "Unrecoverable error writing the job script. Abort."
+submit_jobscript "$request_qsys" "$requested_submit_status" || fatal "Unrecoverable error during job submission. Abort."
 
 #hlp   $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"

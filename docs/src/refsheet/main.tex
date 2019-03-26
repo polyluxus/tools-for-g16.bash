@@ -37,7 +37,7 @@
 \newcommand\mybackslash{\char`\\}
 
 % What this is about
-\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.2.0, 2019-03-19)}
+\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.2.1, 2019-03-26)}
 \author{Martin C Schwarzer}
 \date{\today}
 
@@ -50,7 +50,7 @@ This accompanies the repository \href{https://github.com/polyluxus/tools-for-g16
 
 Various bash scripts to aid the use of the quantum chemistry software package Gaussian 16.
 
-\subsection{Preliminary notes}
+\subsection{Preliminary notes for this cheat-sheet}
 
 The notation in brackets \texttt{[ ]} indicate optional arguments/inputs;
 arguments in angles \texttt{< >} require human input;
@@ -65,6 +65,13 @@ The following abbreviations will be used:
   \item[FLT] Floating point number
   \item[DUR] Duration in format \texttt{[[HH:]MM:]SS} 
 \end{rslisttt}
+
+\subsection{General notes on the processed files}
+
+The scripts in this repository use \emph{input} files as templates to write new input files.
+Route sections of these input files will only be recognised, 
+if they contain a start pattern \texttt{\#}/\texttt{\#N}/\texttt{\#P}/\texttt{\#T}
+\emph{followed by a space}, even though a valid Gaussian input does not necessitate this.
 
 \subsection{Installation \& Configuration}
 
@@ -120,18 +127,6 @@ Usage: \texttt{g16.prepare.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
-  \item[--      ] Close reading options
-  \item[-s      ] Silence script (incremental)
-  \item[-h      ] Help file 
-\end{rslisttt}
-
-\section{\texttt{g16.testroute.sh}}
-
-This tool parses a Gaussian 16 inputfile and 
-tests the route section for syntax errors 
-with the Gaussian 16 utility \texttt{testrt}.
-
-\begin{rslisttt}{-m <ARG>}
   \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
@@ -278,6 +273,18 @@ Usage: \texttt{g16.submit.sh [opt] <file>}
     if \texttt{ARG} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
   \item[-u <ARG>] set user email address (SLURM, BSUB);
     if \texttt{ARG} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
+  \item[--      ] Close reading options
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
+\section{\texttt{g16.testroute.sh}}
+
+This tool parses a Gaussian 16 inputfile and 
+tests the route section for syntax errors 
+with the Gaussian 16 utility \texttt{testrt}.
+
+\begin{rslisttt}{-m <ARG>}
   \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 

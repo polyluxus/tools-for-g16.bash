@@ -796,6 +796,14 @@ read_g16_input_file ()
         debug "Empty line will be kept."
       fi
 
+      # Test if route section is empty
+      if [[ -z $route_section && -z $suppress_this_warning ]] ; then
+        warning "Route section is empty, but already attempting to store body."
+        warning "Current buffer: '$line'"
+        warning "Something is wrong. Please check the template file. (Future warnings of this kind will be ignored.)"
+        local suppress_this_warning=true
+      fi
+
       inputfile_body[$body_index]="$line" 
       debug "Read and stored: '${inputfile_body[$body_index]}'"
       (( body_index++ ))
@@ -1214,12 +1222,16 @@ check_opt_keyword ()
 validate_g16_route ()
 {
     local read_route="$1"
+    local pattern="^[[:space:]]*#"
     local g16_output
     debug "Read the following route section:"
     debug "$read_route"
     if [[ -z $read_route ]] ; then 
       warning "Route section appears to be empty."
       warning "Check if there is an actual route card '#(|N|P|T)' in the input."
+    elif [[ ! "$read_route" =~ $pattern ]] ; then
+      warning "Route section appears to be missing the route card '#(|N|P|T)'."
+      warning "This will cause Gaussian to crash. Performing check of keywords anyway."
     else
       debug "Found route card and will process."
     fi 

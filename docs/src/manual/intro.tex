@@ -10,6 +10,7 @@
 
 \begin{document}
 \section{Introduction}
+\label{sec:introduction}
 
 The essence of quantum chemistry is performing calculations with a variety of different methods and programs.
 Quite a few of these programs use low level input and output systems.
@@ -56,4 +57,13 @@ The following abbreviations will be used throughout:
   {\lstinline`FLT`} & Signed floating point number (the plus sign can be omitted) \\
   {\lstinline`DUR`} & Duration in format {\lstinline![[HH:]MM:]SS!}  \\
 \end{tabular}
+
+\subsection{General notes on the processed files}
+
+The scripts in this repository use \emph{input} files as templates to write new input files.
+This will be further explaines in section~\ref{sec:utilities}.
+Route sections of these input files will only be recognised, 
+if they contain a start pattern of the form \texttt{\#}/\texttt{\#N}/\texttt{\#P}/\texttt{\#T}
+\emph{followed by a space}, even though a valid Gaussian input does not necessitate this.
+
 \end{document}

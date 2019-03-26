@@ -146,10 +146,18 @@ process_inputfile ()
     local testfile="$1"
     debug "Processing Input: $testfile"
     read_g16_input_file "$testfile"
-    extract_jobname_inoutnames "$testfile"
-    
+    if [[ -z "$route_section" ]] ; then
+      warning "It appears that '$testfile' does not contain a valid (or recognised) route section."
+      warning "Make sure this template file contains '#/#P/#N/#T' followed by a space."
+      return 1
+    else
+      debug "Route (unmodified): $route_section"
+    fi
     local modified_route="$route_section"
     local -a additional_keywords
+
+    extract_jobname_inoutnames "$testfile"
+    
     # The opt is going to be added, so we make sure it is not part of the route and remove it
     while ! modified_route=$(remove_opt_keyword      "$modified_route") ; do : ; done
     # To avoid compound jobs, the freq keyword is also removed
@@ -431,9 +439,10 @@ declare -a use_custom_route_keywords
 
 # Evaluate Options
 
-process_options "$@"
-process_inputfile "$requested_inputfile"
+process_options "$@" || exit_status=$?
+process_inputfile "$requested_inputfile" || exit_status=$?
 
 #hlp   $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"
+exit $exit_status
