@@ -198,6 +198,8 @@ write_jobscript ()
     overhead_memory=$(( requested_memory * scale_memory_percent / 100 + g16_overhead ))
     debug "requested_memory=$requested_memory; g16_overhead=$g16_overhead"
     message "Request a total memory of $overhead_memory MB, including overhead for Gaussian."
+    message "Request a walltime of $requested_walltime."
+    message "Request $requested_numCPU to run this job on."
 
     # Add a shebang and a comment
     echo "#!/bin/bash" >&9
