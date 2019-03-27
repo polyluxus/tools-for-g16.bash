@@ -1397,7 +1397,6 @@ write_g16_input_file ()
     # Add some information about the creation of the script
     echo "!Automagically created with $scriptname ($softwarename, $version, $versiondate)"
     echo "!$script_invocation_spell"
-    #echo "!${script_invocation_spell/#$HOME/<HOME>}"
 }
 
 

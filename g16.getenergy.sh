@@ -320,6 +320,6 @@ else
   done
 fi
 
-message "Created with '$script_invocation_spell'."
+message "Created with $script_invocation_spell."
 message "$scriptname is part of $softwarename $version ($versiondate)"
 #hlp   $scriptname is part of $softwarename $version ($versiondate) 

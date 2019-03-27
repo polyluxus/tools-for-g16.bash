@@ -544,7 +544,7 @@ exec 5>&-
 
 (( exit_status > 0 )) && warning "There have been one or more errors handling the files."
 
+message "Created with $script_invocation_spell."
 #hlp   $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"
-debug "$script_invocation_spell"
 exit $exit_status
