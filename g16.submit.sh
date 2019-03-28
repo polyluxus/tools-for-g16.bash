@@ -277,7 +277,6 @@ write_jobscript ()
       echo "jobid=\"\${LSB_JOBID}\"" >&9
 
     elif [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
-      warning "This is still in preparation"
       cat >&9 <<-EOF
 			#SBATCH --job-name='${jobname}'
 			#SBATCH --output='$submitscript.o%j'
