@@ -1,5 +1,5 @@
 This document is based on the Cheat-Sheet for `tools-for-g16.bash`
-and was last updated with version 0.2.0 alpha, 2019-02-27.
+and was last updated with version 0.2.2, 2019-04-04.
 
 Introduction
 ============
@@ -26,7 +26,7 @@ The following abbreviations will be used:
 | `INT`        | Positive integer (including zero)
 | `NUM`        | Whole number (including zero)
 | `FLT`        | Floating point number
-| `DUR`        | Duration in format `[[HH:]MM:]SS`
+| `DUR`        | Duration in format `[[HH:]MM:]SS` or `INT[D|H|M]`
 
 Installation & Configuration
 ----------------------------
@@ -34,12 +34,8 @@ Installation & Configuration
 General settings for the scripts can be found in the file
 `g16.tools.rc`. Alternatively, settings can be stored in `.g16.toolsrc`,
 which always has precedence. Every script will check four different
-<<<<<<< HEAD
-directories in the order 1. installation directory, 2. user's home, 3. `.config` in user's home, 4. parent working directory.
-=======
-directories in the order 1. installation directory, 2. user's home, 
-3. `.config` in user's home, 4. parent working directory.
->>>>>>> master
+directories in the order (1.) installation directory, (2.) user's home, 
+(3.) `.config` in user's home, (4.) parent working directory.
 It will load the last configuration file it finds.
 Setting files can be generated with the `configure/configure.sh` script.
 
@@ -75,20 +71,6 @@ Usage: `g16.prepare.sh [opt] <file>`
 | `--`       | Close reading options
 | `-s`       | Silence script (incremental)
 | `-h`       | Help file
-
-`g16.testroute.sh`
-==================
-
-This tool parses a Gaussian 16 inputfile and tests the route section for
-syntax errors with the Gaussian 16 utility `testrt`.
-
-Usage: `g16.testroute.sh [opt] <file>`
-
-| option | description 
-| ------ | ---
-| `--`   | Close reading options
-| `-s`   | Silence script (incremental)
-| `-h`   | Help file
 
 `g16.dissolve.sh`
 =================
@@ -231,6 +213,20 @@ Usage: `g16.submit.sh [opt] <file>`
 | `--`       | Close reading options
 | `-s`       | silence script (incremental)
 | `-h`       | Help file
+
+`g16.testroute.sh`
+==================
+
+This tool parses a Gaussian 16 inputfile and tests the route section for
+syntax errors with the Gaussian 16 utility `testrt`.
+
+Usage: `g16.testroute.sh [opt] <file>`
+
+| option | description 
+| ------ | ---
+| `--`   | Close reading options
+| `-s`   | Silence script (incremental)
+| `-h`   | Help file
 
 `g16.getenergy.sh`
 ==================
