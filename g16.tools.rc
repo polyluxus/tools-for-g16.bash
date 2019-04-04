@@ -134,7 +134,7 @@
 # Select a queueing system <queue>-<special>
 # (queue: pbs, bsub, slurm; special: gen, rwth)
 #
-  request_qsys="slurmrwth"
+  request_qsys="slurm-rwth"
 
 # Account to project (only for bsub, slurm)
 #

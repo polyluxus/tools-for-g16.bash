@@ -17,7 +17,7 @@
 #hlp
 #hlp   This software comes with absolutely no warrenty. None. Nada.
 #hlp
-#hlp   Usage: $scriptname [options] [--] <IPUT_FILE>
+#hlp   Usage: $scriptname [options] [--] <INPUT_FILE>
 #hlp
 
 #
@@ -198,6 +198,8 @@ write_jobscript ()
     overhead_memory=$(( requested_memory * scale_memory_percent / 100 + g16_overhead ))
     debug "requested_memory=$requested_memory; g16_overhead=$g16_overhead"
     message "Request a total memory of $overhead_memory MB, including overhead for Gaussian."
+    message "Request a walltime of $requested_walltime."
+    message "Request $requested_numCPU to run this job on."
 
     # Add a shebang and a comment
     echo "#!/bin/bash" >&9
@@ -275,7 +277,6 @@ write_jobscript ()
       echo "jobid=\"\${LSB_JOBID}\"" >&9
 
     elif [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
-      warning "This is still in preparation"
       cat >&9 <<-EOF
 			#SBATCH --job-name='${jobname}'
 			#SBATCH --output='$submitscript.o%j'
@@ -507,7 +508,7 @@ process_options ()
 
           #hlp     -m <ARG> Define the total memory to be used in megabyte.
           #hlp              The total request will be larger to account for 
-          #hlp              overhead which Gaussian may need. (Default: 512)
+          #hlp              overhead which Gaussian may need. (Default: $requested_memory)
           #hlp
             m) 
                validate_integer "$OPTARG" "the memory"
@@ -517,7 +518,7 @@ process_options ()
                requested_memory="$OPTARG" 
                ;;
 
-          #hlp     -p <ARG> Define number of professors to be used. (Default: 4)
+          #hlp     -p <ARG> Define number of professors to be used. (Default: $requested_numCPU)
           #hlp
             p) 
                validate_integer "$OPTARG" "the number of threads"
@@ -527,7 +528,7 @@ process_options ()
                requested_numCPU="$OPTARG" 
                ;;
 
-          #hlp     -d <ARG> Define disksize via the MaxDisk keyword (MB).
+          #hlp     -d <ARG> Define disksize via the MaxDisk keyword (MB; default: $requested_maxdisk).
           #hlp              This option does not set a parameter for the queueing system,
           #hlp              but will only modify the input file with the size specification.
           #hlp              
@@ -539,10 +540,18 @@ process_options ()
                requested_maxdisk="$OPTARG"
                ;;
 
-          #hlp     -w <ARG> Define maximum walltime.
-          #hlp                Format: [[HH:]MM:]SS (Default: $requested_walltime)
+          #hlp     -w <ARG> Define maximum walltime. (Default: $requested_walltime)
+          #hlp              The colon separated format [[HH:]MM:]SS is supported, 
+          #hlp              as well as suffixing an integer value with d/h/m (days/hours/minutes).
+          #hlp              These two input formats cannot be combined; 
+          #hlp              a purely numeric value will be taken as seconds (the suffix 's' is illegal).
           #hlp
-            w) requested_walltime=$(format_duration_or_exit "$OPTARG")
+            w) 
+               if requested_walltime="$(format_duration "$OPTARG")" ; then 
+                 debug "Reformatted walltime duration to '$requested_walltime'."
+               else
+                 fatal "Encountered error setting the walltime. Abort."
+               fi
                ;;
 
           #hlp     -b <ARG> Specify binary --TODO--
@@ -586,13 +595,13 @@ process_options ()
           #hlp              
             q) warning "The submission to a specific queue is not yet possible." ;;
 
-          #hlp     -Q <ARG> Which type of job script should be produced.
+          #hlp     -Q <ARG> Which type of job script should be produced. (Default: $request_qsys).
           #hlp              Arguments currently implemented: pbs-gen, bsub-gen, slurm-gen, 
           #hlp              Special cases: bsub-rwth, slurm-rwth
           #hlp
             Q) request_qsys="$OPTARG" ;;
 
-          #hlp     -P <ARG> Account to project (BSUB), or account (SLURM).
+          #hlp     -P <ARG> Account to project (BSUB), or account (SLURM). (Default: $qsys_project)
           #hlp              It has currently no effect if PBS is set as the queue.
           #hlp              If the argument is 'default', '0', or '', it reverts to system settings.
           #hlp
@@ -610,7 +619,7 @@ process_options ()
                request_qsys="bsub-rwth"  
                ;;
 
-          #hlp     -u <ARG> Set user email address (BSUB/SLURM)
+          #hlp     -u <ARG> Set user email address (BSUB/SLURM; default: $user_email)
           #hlp              In other queueing systems it just won't be used.
           #hlp              If the argument is 'default', '0', or '', it reverts to system settings.
           #hlp

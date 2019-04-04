@@ -15,7 +15,7 @@
 #hlp
 #hlp   This software comes with absolutely no warrenty. None. Nada.
 #hlp
-#hlp   Usage: $scriptname [options] [--] <IPUT_FILE>
+#hlp   Usage: $scriptname [options] [--] <INPUT_FILE>
 #hlp
 
 #

@@ -139,6 +139,10 @@ process_one_file ()
   local testfile="$1" logfile logname print_format_logname
   local readline returned_array
   local functional energy cycles
+  debug "Tested file: ${testfile}."
+  # set default format for logfile format
+  print_format_logname="%-25s"
+
   if logfile="$(match_output_file "$testfile")" ; then
     logname=${logfile%.*}
     logname=${logname/\.\//}
@@ -152,10 +156,9 @@ process_one_file ()
     energy="${returned_array[1]}"
     cycles="${returned_array[2]}"
     if [[ "$print_full_logname" == "true" ]] ; then
+      # Overwrite format for logfile
       print_format_logname="%s:\\n  "
       logname="$logfile"
-    else
-      print_format_logname="%-25s"
     fi
 
     if (( ${#returned_array[@]} > 0 )) ; then
@@ -167,8 +170,10 @@ process_one_file ()
       return 1
     fi
   else
+    logname=${testfile/\.\//}
+    logname="${logname} (input)"
     # shellcheck disable=SC2059
-    printf "$print_format_logname No output file found.\\n" "${testfile%.*}"
+    printf "$print_format_logname No output file found.\\n" "$logname"
     return 1
   fi
 }
@@ -183,9 +188,9 @@ process_directory ()
   printf '%-25s %s\n\n' "Created " "$(date +"%Y/%m/%d %k:%M:%S")"
   # Print a header
   if [[ "$print_full_logname" == "true" ]] ; then
-    printf '%s\n   %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
+    printf '%s\n   %-15s   %20s ( %6s )\n' "Command/output file" "Functional" "Energy / Hartree" "cycles"
   else
-    printf '%-25s %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
+    printf '%-25s %-15s   %20s ( %6s )\n' "Command/output file" "Functional" "Energy / Hartree" "cycles"
   fi
   for testfile in ./*."$suffix" ; do
     [[ -e $testfile ]] || continue
@@ -315,6 +320,6 @@ else
   done
 fi
 
-message "Created with '$script_invocation_spell'."
+message "Created with $script_invocation_spell."
 message "$scriptname is part of $softwarename $version ($versiondate)"
 #hlp   $scriptname is part of $softwarename $version ($versiondate) 

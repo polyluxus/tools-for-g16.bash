@@ -323,8 +323,8 @@ else
   format_list "${checkpoint_list[@]}" || exit_status=$?
 fi
 
+#hlp   $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"
 
 (( exit_status == 0 )) || fatal "There have been one or more errors."
-#hlp   $scriptname is part of $softwarename $version ($versiondate) 
