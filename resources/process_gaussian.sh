@@ -1222,6 +1222,8 @@ check_opt_keyword ()
 validate_g16_route ()
 {
     local read_route="$1"
+    # Do not remove a possible comment at the end (if it is there, it is completely deliberate)
+    # This routine only checks, nothing more
     local pattern="^[[:space:]]*#"
     local g16_output
     debug "Read the following route section:"

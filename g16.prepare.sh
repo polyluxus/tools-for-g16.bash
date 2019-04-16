@@ -309,9 +309,14 @@ process_options ()
           #hlp              This can be amended with other switches, like -r, -T, -P.
           #hlp 
           R) 
-            route_section="$OPTARG" 
+            # Remove possible comment
+            # (just to be sure as other scripts would do that anyway, might be redundant)
+            # route_section="$OPTARG" 
+            route_section=$( remove_g16_input_comment "$OPTARG" )
             if validate_g16_route "$route_section" ; then
               debug "Route specified with -R is fine."
+              message "Applied route section:"
+              message "$(fold -w80 -c -s <<< "$route_section")"
             else
               warning "Syntax error in specified route section:"
               warning "  $route_section"
@@ -341,7 +346,11 @@ process_options ()
               exit 0
             elif is_integer "$OPTARG" ; then
               [[ -z ${g16_route_section_predefined[$OPTARG]} ]] && fatal "Out of range: $OPTARG"
-              route_section="${g16_route_section_predefined[$OPTARG]}"
+              # Remove possible comment
+              # (just to be sure as other scripts would do that anyway, might be redundant)
+              # route_section="$OPTARG" 
+              # route_section="${g16_route_section_predefined[$OPTARG]}"
+              route_section=$( remove_g16_input_comment "${g16_route_section_predefined[$OPTARG]}" )
               message "Applied route section:"
               message "$(fold -w80 -c -s <<< "$route_section")"
             else
