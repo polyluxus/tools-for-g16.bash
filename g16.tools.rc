@@ -93,15 +93,33 @@
 # Predefined Route sections
 #
   g16_route_section_default="# B97D3/def2SVP"
+#
   g16_route_section_predefined[0]="# PM6"
+  g16_route_section_predefined_comment[0]="semi-empirical method (default route)"
+#
   g16_route_section_predefined[1]="#P B97D3/def2SVP/W06                            DenFit"
+  g16_route_section_predefined_comment[1]="pure DFT method with density-fitting, double zeta BS (default route)"
+#
   g16_route_section_predefined[2]="#P B97D3/def2TZVPP/W06                          DenFit"
+  g16_route_section_predefined_comment[2]="pure DFT method with density-fitting, triple zeta BS (default route)"
+#
   g16_route_section_predefined[3]="#P BP86/def2SVP/W06   EmpiricalDispersion=GD3BJ DenFit"
+  g16_route_section_predefined_comment[3]="pure DFT method with density-fitting and DFT-D3 with Becke-Johnson damping, double zeta BS (default route)"
+#
   g16_route_section_predefined[4]="#P BP86/def2TZVPP/W06 EmpiricalDispersion=GD3BJ DenFit"
+  g16_route_section_predefined_comment[4]="pure DFT method with density-fitting and DFT-D3 with Becke-Johnson damping, triple zeta BS (default route)"
+#
   g16_route_section_predefined[5]="#P PBE1PBE/def2SVP    EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined_comment[5]="hybrid DFT method with DFT-D3 with Becke-Johnson damping, double zeta BS (default route)"
+#
   g16_route_section_predefined[6]="#P PBE1PBE/def2TZVPP  EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined_comment[6]="hybrid DFT method with DFT-D3 with Becke-Johnson damping, triple zeta BS (default route)"
+#
   g16_route_section_predefined[7]="#P B3LYP/def2SVP      EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined_comment[7]="hybrid DFT method with DFT-D3 with Becke-Johnson damping, double zeta BS (default route)"
+#
   g16_route_section_predefined[8]="#P B3LYP/def2TZVPP    EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined_comment[8]="hybrid DFT method with DFT-D3 with Becke-Johnson damping, triple zeta BS (default route)"
 #
 
 # Default options for printing and verbosity

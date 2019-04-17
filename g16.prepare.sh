@@ -332,16 +332,21 @@ process_options ()
               local array_index=0
               for array_index in "${!g16_route_section_predefined[@]}" ; do
                 (( array_index > 0 )) && printf '\n'
-                printf '%5d : ' "$array_index" 
+                printf '%3d       : ' "$array_index" 
                 local printvar printline=0
                 while read -r printvar || [[ -n "$printvar" ]] ; do
                   if (( printline == 0 )) ; then
                     printf '%-80s\n' "$printvar"
                   else
-                    printf '        %-80s\n' "$printvar"
+                    printf '            %-80s\n' "$printvar"
                   fi
                   (( printline++ ))
                 done <<< "$( fold -w80 -c -s <<< "${g16_route_section_predefined[$array_index]}" )"
+                unset printvar 
+                while read -r printvar || [[ -n "$printvar" ]] ; do
+                  [[ -z "$printvar" ]] && printvar="no comment"
+                  printf '%3d(cmt.) : %-80s\n' "$array_index" "$printvar"
+                done <<< "$( fold -w80 -c -s <<< "${g16_route_section_predefined_comment[$array_index]}" )"
               done
               exit 0
             elif is_integer "$OPTARG" ; then
