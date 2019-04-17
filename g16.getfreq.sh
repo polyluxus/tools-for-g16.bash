@@ -460,7 +460,7 @@ process_options ()
     shift $((OPTIND-1))
     
     file_list=( "$@" )
-    output_verbosity="$printlevel"
+    [[ -n "$printlevel" ]] && output_verbosity="$printlevel"
 }
 
 #
