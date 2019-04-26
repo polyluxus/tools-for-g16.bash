@@ -55,9 +55,12 @@ obabel_cmd="obabel"
 #
 g16_input_suffix="com"
 g16_output_suffix="log"
-g16_route_section_predefined[00]="# PM6"
-g16_route_section_predefined[01]="#P BP86/def2SVP   EmpiricalDispersion=GD3BJ"
-g16_route_section_predefined[02]="#P B97D3/def2SVP"
+g16_route_section_predefined[0]="# PM6"
+g16_route_section_predefined_comment[0]="semi-empirical method (default route)"
+g16_route_section_predefined[1]="#P BP86/def2SVP   EmpiricalDispersion=GD3BJ"
+g16_route_section_predefined_comment[1]="pure DFT method with DFT-D3 with Becke-Johnson damping, double zeta BS (default route)"
+g16_route_section_predefined[2]="#P B97D3/def2SVP"
+g16_route_section_predefined_comment[2]="pure DFT method with double zeta BS (default route)"
 g16_route_section_default="# B97D3/def2SVP"
 
 #
