@@ -1,9 +1,9 @@
 #!/bin/bash
 #
-#hlp   A very quick script to transform a checkpointfile
-#hlp   to a formatted checkpointfile and then to xyz 
-#hlp   coordinates using Open Babel.
-#hlp   Usage: $scriptname [option] [--] <checkpointfile(s)>
+#hlp A very quick script to transform a checkpointfile
+#hlp to a formatted checkpointfile and then to xyz 
+#hlp coordinates using Open Babel.
+#hlp Usage: $scriptname [option] [--] <checkpointfile(s)>
 #hlp
 # 
 
@@ -150,8 +150,19 @@ format_one_checkpoint ()
     local g16_output g16_formchk_args obabel_output
     debug "global variables used: 'g16_formchk_cmd=\"$g16_formchk_cmd\"' 'g16_formchk_opts=\"$g16_formchk_opts\"'"
 
-    backup_if_exists "$output_fchk"
-    backup_if_exists "$output_xyz"
+    if [[ "${operation_write_mode}" =~ [Bb][Aa][Cc][Kk][Uu][Pp] ]] ; then
+      debug "Backup mode will test files and prevent overwriting."
+      backup_if_exists "$output_fchk"
+      backup_if_exists "$output_xyz"
+    elif [[ "${operation_write_mode}" =~ [Ss][Kk][Ii][Pp] ]] ; then
+      debug "Skipping mode."
+      [[ -e "$output_fchk" ]] && message "File '$output_fchk' exists, skipping." && return 0
+      [[ -e "$output_xyz"  ]] && message "File '$output_xyz' exists, skipping." && return 0
+    elif [[ "${operation_write_mode}" =~ [Ff][Oo][Rr][Cc][Ee] ]] ; then
+      debug "Forced mode."
+      [[ -e "$output_fchk" ]] && message "Forced mode. $( rm -v -- "$output_fchk" )"
+      [[ -e "$output_xyz"  ]] && message "Forced mode. $( rm -v -- "$output_xyz" )"
+    fi
     
     # Run the programs
     [[ -z "$g16_formchk_opts" ]] || g16_formchk_args+=( "$g16_formchk_opts" )
@@ -190,25 +201,6 @@ format_only ()
     tested_file=$(is_readable_file_and_warn "$1") || return $?
     format_one_checkpoint "$tested_file" || return $?
 }
-
-###   get_all_checkpoint ()
-###   {
-###       # See [How to return an array in bash without using globals?](https://stackoverflow.com/a/49971213/3180795)
-###       # Works only in Bash 4.3 :(
-###       local -n arrayname="$1"
-###       # run over all checkpoint files
-###       local test_chk returncode=0
-###       # truncate first two directories 
-###       message "Finding all checkpoint files in ${PWD#\/*\/*\/}." 
-###       for test_chk in *.chk; do
-###         if [[ "$test_chk" == "*.chk" ]] ; then
-###           warning "There are no checkpointfiles in this directory."
-###           returncode=1
-###         fi
-###         arrayname+=("$test_chk")
-###       done
-###       return $returncode
-###   }
 
 format_list ()
 {
@@ -250,6 +242,11 @@ else
   exec 4> /dev/null
 fi
 
+# Set default operation modus to single file
+
+operation_file_mode=single
+operation_write_mode=backup
+
 get_scriptpath_and_source_files || exit 1
 
 # Check whether we have the right numeric format (set it if not)
@@ -266,7 +263,7 @@ debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 
 # Load custom settings from the rc
 
-if [[ ! -z $g16_tools_rc_loc ]] ; then
+if [[ -n $g16_tools_rc_loc ]] ; then
   #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
   . "$g16_tools_rc_loc"
   message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
@@ -278,33 +275,72 @@ fi
 debug "Initialising option index."
 OPTIND="1"
 
-while getopts :ash options ; do
+while getopts :aABFSsh options ; do
   #hlp   Options:
   #hlp
   case $options in
-    #hlp     -a      Formats all checkpointfiles that are found in the current directory
+    #hlp     -a         Selects all checkpointfiles that are found in the current directory.
+    #hlp                Create backup files in cases where it would overwrite the files.
     #hlp
     a) 
-       ### get_all_checkpoint checkpoint_list # Needs Bash > 4.3
-       debug "Executing for directory; looking for all checkpoint files."
-       mapfile -t checkpoint_list < <( ls ./*.chk 2> /dev/null ) 
-       debug "Found: ${checkpoint_list[*]}"
-       (( ${#checkpoint_list[*]} == 0 )) &&  warning "No checkpoint files found in this directory."
-       ;;
+      debug "Executing for directory."
+      operation_file_mode="all"
+      # operation_write_mode="backup"
+      debug "Setting modus to '${operation_file_mode}'."
+      ;;
+    #hlp     -A         Formats almost all checkpointfiles that are found in the current directory.
+    #hlp                Skips files in cases where it would overwrite them.
+    #hlp                This is synonymous with -aS.
+    #hlp
+    A)
+      debug "Executing for directory. Skipping already formatted files."
+      operation_file_mode="all"
+      operation_write_mode="skip"
+      debug "Setting modus to '${operation_file_mode}' and '${operation_write_mode}'."
+      ;;
+    #hlp     -B         Create backup files in cases where it would overwrite them. [Default]
+    #hlp                Only the last option amongst -B/-F/-S will take affect.
+    #hlp
+    B) 
+      operation_write_mode="backup"
+      debug "Setting modus to '${operation_write_mode}'."
+      ;;
+    #hlp     -F         Forces files to be overwritten (actually they are removed before writing).
+    #hlp                Only the last option amongst -B/-F/-S will take affect.
+    #hlp
+    F) 
+      operation_write_mode="force"
+      debug "Setting modus to '${operation_write_mode}'."
+      ;;
+    #hlp     -S         Skips files in cases where it would overwrite them.
+    #hlp                Only the last option amongst -B/-F/-S will take affect.
+    #hlp
+    S) 
+      operation_write_mode="skip"
+      debug "Setting modus to '${operation_write_mode}'."
+      ;;
     #hlp     -s         Suppress messages, warnings, and errors of this script
     #hlp                (May be specified multiple times.)
     #hlp
-    s) (( stay_quiet++ )) ;; 
+    s) 
+      (( stay_quiet++ )) 
+      ;; 
     #hlp     -h         Prints this help text
     #hlp
-    h) helpme ;; 
+    h) 
+      helpme 
+      ;; 
 
     #hlp     --         Close reading options.
     # This is the standard closing argument for getopts, it needs no implemenation.
 
-   \?) fatal "Invalid option: -$OPTARG." ;;
+    \?) 
+     fatal "Invalid option: -$OPTARG." 
+     ;;
 
-    :) fatal "Option -$OPTARG requires an argument." ;;
+    :) 
+     fatal "Option -$OPTARG requires an argument." 
+     ;;
 
   esac
 done
@@ -313,8 +349,28 @@ debug "Reading options completed."
 
 shift $(( OPTIND - 1 ))
 
-# Assume all other arguments are filenames
-checkpoint_list+=("$@")
+# needs work: vars etc
+case "$operation_file_mode" in
+  single)
+    debug "Explicitly adding checkpoint files to process (file mode: $operation_file_mode)"
+    # Assume all other arguments are filenames
+    checkpoint_list+=("$@")
+    debug "Processing: ${checkpoint_list[*]}"
+    ;;
+  all)
+    debug "Executing for directory; looking for all checkpoint files."
+    # Set the nullglob option to allow for empty globbing parameter
+    shopt -s nullglob
+    (( ${#checkpoint_list[*]} == 0 )) || warning "File list already contains ${#checkpoint_list[*]} elements, they will be unset."
+    checkpoint_list=( ./*.chk )
+    debug "Found: ${checkpoint_list[*]}"
+    (( ${#checkpoint_list[*]} == 0 )) &&  warning "No checkpoint files found in this directory."
+    warn_additional_args "$@"
+    ;;
+  *)
+    fatal "Unrecognised operation mode: '$operation_file_mode'."
+    ;;
+esac
 
 if (( ${#checkpoint_list[*]} == 0 )) ; then
   warning "No checkpoint files to operate on."
