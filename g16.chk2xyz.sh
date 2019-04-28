@@ -218,7 +218,11 @@ format_list ()
 #
 
 # If this script is sourced, return before executing anything
-(( ${#BASH_SOURCE[*]} > 1 )) && return 0
+if ( return 0 2>/dev/null ) ; then
+  # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
+  debug "Script is sourced. Return now."
+  return 0
+fi
 
 # Save how script was called
 printf -v script_invocation_spell "'%s' " "${0/#$HOME/<HOME>}" "$@"

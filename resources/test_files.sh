@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # If this script is not sourced, return before executing anything
-if (( ${#BASH_SOURCE[*]} == 1 )) ; then
+if (return 0 2>/dev/null) ; then
+  # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
+  : #Everything is fine
+else
   echo "This script is only meant to be sourced."
   exit 0
 fi
