@@ -121,8 +121,8 @@ get_scriptpath_and_source_files ()
 
 get_configuration_from_file ()
 {
-  # Check for settings in three default locations (increasing priority):
-  #   install path of the script, user's home directory, current directory
+  # Check for settings in four default locations (increasing priority):
+  #   install path of the script, user's home directory, 'config' in user's home directory, current directory
   g16_tools_path=$(get_absolute_dirname "$scriptpath/../g16.tools.rc")
   local g16_tools_rc_searchlocations
   g16_tools_rc_searchlocations=( "$g16_tools_path" "$HOME" "$HOME/.config" "$PWD" )

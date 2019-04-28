@@ -201,11 +201,11 @@ process_inputfile ()
     else
       additional_keywords+=("${use_custom_route_keywords[@]}")
       debug "Added the following custom keywords to route section:"
-      debug "$(fold -w80 -c -s <<< "${use_custom_route_keywords[*]}")"
+      debug "$(fold -w80 -s <<< "${use_custom_route_keywords[*]}")"
     fi
 
     debug "Added the following keywords to route section:"
-    debug "$(fold -w80 -c -s <<< "${additional_keywords[*]}")"
+    debug "$(fold -w80 -s <<< "${additional_keywords[*]}")"
 
     # add the custom keywords
     modified_route="$modified_route ${additional_keywords[*]}"

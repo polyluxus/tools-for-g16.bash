@@ -159,7 +159,7 @@ process_one_file ()
 
     if (( printlevel > 2 )) ; then
       echo "The following route was extracted (first one encountered):"
-      fold -w80 -c -s <<< "$extracted_route"
+      fold -w80 -s <<< "$extracted_route"
       echo "----------"
     fi
 

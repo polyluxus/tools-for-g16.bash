@@ -174,7 +174,7 @@ process_inputfile ()
     if [[ -z $route_section ]] ; then 
       route_section="$g16_route_section_default"
       warning "No route section was specified, using default:"
-      warning "$(fold -w80 -c -s <<< "$route_section")"
+      warning "$(fold -w80 -s <<< "$route_section")"
     fi
     if [[ -z $use_temp_keyword ]] ; then
       debug "No temperature set."      
@@ -316,7 +316,7 @@ process_options ()
             if validate_g16_route "$route_section" ; then
               debug "Route specified with -R is fine."
               message "Applied route section:"
-              message "$(fold -w80 -c -s <<< "$route_section")"
+              message "$(fold -w80 -s <<< "$route_section")"
             else
               warning "Syntax error in specified route section:"
               warning "  $route_section"
@@ -341,12 +341,12 @@ process_options ()
                     printf '            %-80s\n' "$printvar"
                   fi
                   (( printline++ ))
-                done <<< "$( fold -w80 -c -s <<< "${g16_route_section_predefined[$array_index]}" )"
+                done <<< "$( fold -w80 -s <<< "${g16_route_section_predefined[$array_index]}" )"
                 unset printvar 
                 while read -r printvar || [[ -n "$printvar" ]] ; do
                   [[ -z "$printvar" ]] && printvar="no comment"
                   printf '%3d(cmt.) : %-80s\n' "$array_index" "$printvar"
-                done <<< "$( fold -w80 -c -s <<< "${g16_route_section_predefined_comment[$array_index]}" )"
+                done <<< "$( fold -w80 -s <<< "${g16_route_section_predefined_comment[$array_index]}" )"
               done
               exit 0
             elif is_integer "$OPTARG" ; then
@@ -357,7 +357,7 @@ process_options ()
               # route_section="${g16_route_section_predefined[$OPTARG]}"
               route_section=$( remove_g16_input_comment "${g16_route_section_predefined[$OPTARG]}" )
               message "Applied route section:"
-              message "$(fold -w80 -c -s <<< "$route_section")"
+              message "$(fold -w80 -s <<< "$route_section")"
             else
               fatal "No valid argument '$OPTARG'."
             fi

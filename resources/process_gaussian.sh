@@ -1368,13 +1368,13 @@ write_g16_input_file ()
     use_route_section=$(collate_route_keywords "$route_section MaxDisk=${requested_maxdisk}MB")
     message "Added 'MaxDisk=${requested_maxdisk}MB' to the route section."
     # Fold the route section to 80 characters for better readability
-    fold -w80 -c -s <<< "$use_route_section"
+    fold -w80 -s <<< "$use_route_section"
     # A blank line terminates the route section
     echo ""
 
     if [[ ! -z $title_section ]] ; then
       # Fold the title section to 80 characters for better readability
-      fold -w80 -c -s <<< "$title_section"
+      fold -w80 -s <<< "$title_section"
       # A blank line terminates the title section
       echo ""
       [[ -z $molecule_charge ]] && fatal "Charge unset; somewhere, something went wrong."

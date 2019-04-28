@@ -128,7 +128,7 @@ check_locale ()
   local -a locale_settings
   mapfile -t locale_settings < <(locale)
   debug "Current locale settings:"
-  debug "$( fold -w80 -c -s <<< "$( printf '%s; ' "${locale_settings[@]}"; printf '\n' )" )"
+  debug "$( fold -w80 -s <<< "$( printf '%s; ' "${locale_settings[@]}"; printf '\n' )" )"
 
   local exit_status=0
   debug "Testing LANG='$LANG' and LC_NUMERIC='$LC_NUMERIC'."
@@ -147,7 +147,7 @@ warn_and_set_locale ()
     local -a locale_settings
     mapfile -t locale_settings < <(locale)
     debug "New locale settings:"
-    debug "$( fold -w80 -c -s <<< "$( printf '%s; ' "${locale_settings[@]}"; printf '\n' )" )"
+    debug "$( fold -w80 -s <<< "$( printf '%s; ' "${locale_settings[@]}"; printf '\n' )" )"
   fi
 }
 
