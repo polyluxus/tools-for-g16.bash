@@ -434,17 +434,20 @@ ask_g16_store_route_section ()
     } > "$tmpfile_routes_tomodify"
     local tmpfile_routes_edited
     tmpfile_routes_edited="$( mktemp --tmpdir )"
-    debug "Created temporary file: $tmpfile_route_edited"
-    if [[ "$debugging" == "true" ]] ; then
-      "$scriptpath/routebuilder.sh" "debug" -r "$tmpfile_routes_tomodify" -o "$tmpfile_routes_edited" --
-    else
-      "$scriptpath/routebuilder.sh" -r "$tmpfile_routes_tomodify" -o "$tmpfile_routes_edited" -- 
-    fi
+    debug "Created temporary file: $tmpfile_routes_edited"
+    local pass_on_a_message
+    pass_on_a_message="Route builder was called from $scriptname, don't forget to save your edits."
+    local -a routebuilder_opts
+    [[ "$debugging" == "true" ]] && routebuilder_opts+=( "debug" )
+    routebuilder_opts+=( '-r' "$tmpfile_routes_tomodify" '-o' "$tmpfile_routes_edited" '-m' "$pass_on_a_message" )
+    debug "Calling: $scriptpath/routebuilder.sh ${routebuilder_opts[*]}"
+    "$scriptpath/routebuilder.sh" "${routebuilder_opts[@]}"
     debug "Received: $( cat "$tmpfile_routes_edited" )"
     debug "Resetting routevariables."
     unset use_g16_route_section_predefined use_g16_route_section_predefined_comment
     unset     g16_route_section_predefined     g16_route_section_predefined_comment
     debug "Sourceing '$tmpfile_routes_edited'."
+    #shellcheck disable=SC1090
     . "$tmpfile_routes_edited"
     debug "$( rm -v -- "$tmpfile_routes_edited" )"
     use_g16_route_section_predefined=( "${g16_route_section_predefined[@]}" )
@@ -470,6 +473,7 @@ ask_g16_store_route_section ()
         printf '%3d(cmt.) : %-80s\n' "$array_index" "$printvar"
       done <<< "$( fold -w80 -s <<< "${use_g16_route_section_predefined_comment[$array_index]}" )"
     done
+    (( ${#use_g16_route_section_predefined[@]} == 0 )) && return 0
     ask "Which entry would you like to set as the default?"
     local user_input
     user_input=$(read_integer)
@@ -657,27 +661,90 @@ get_configuration_from_file ()
     message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' found."
   else
     debug "No custom settings found."
-    return 1
   fi
     
-  ask "Would you like to specify a file to read settings from?"
-  if read_boolean ; then
-    ask "What file would you like to load?"
-    local test_g16_tools_rc_loc
-    test_g16_tools_rc_loc=$(read_human_input)
-    if test_g16_tools_rc_loc=$(test_rc_file "$test_g16_tools_rc_loc") ; then
-      g16_tools_rc_loc="$test_g16_tools_rc_loc"
-    else
-      warning "Loading configuration file '$test_g16_tools_rc_loc' failed."
-      message "Continue with defaults."
-      return 1
-    fi
+  if [[ "$route_mode" == true ]] ; then
+    debug "Route mode active, skipping alternative file."
   else
-    debug "g16_tools_rc_loc=$g16_tools_rc_loc"
+    ask "Would you like to specify a file to read settings from?"
+    if read_boolean ; then
+      ask "What file would you like to load?"
+      local test_g16_tools_rc_loc
+      test_g16_tools_rc_loc=$(read_human_input)
+      if test_g16_tools_rc_loc=$(test_rc_file "$test_g16_tools_rc_loc") ; then
+        g16_tools_rc_loc="$test_g16_tools_rc_loc"
+      else
+        warning "Loading configuration file '$test_g16_tools_rc_loc' failed."
+        message "Continue with defaults."
+      fi
+    else
+      debug "g16_tools_rc_loc=$g16_tools_rc_loc"
+    fi
   fi
+
+  [[ -z $g16_tools_rc_loc ]] && return 1
   #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
   . "$g16_tools_rc_loc"
   message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
+}
+
+translate_conf_settings_to_internal ()
+{
+  use_g16_installpath="$g16_installpath"
+  debug "use_g16_installpath=$use_g16_installpath"
+  use_g16_scratch="$g16_scratch"
+  debug "use_g16_scratch=$use_g16_scratch"
+  use_g16_overhead="$g16_overhead"
+  debug "use_g16_overhead=$use_g16_overhead"
+  use_g16_checkpoint_save="$g16_checkpoint_save"
+  debug "use_g16_checkpoint_save=$use_g16_checkpoint_save"
+  use_load_modules="$load_modules"
+  use_g16_modules=( "${g16_modules[@]}" )
+  debug "use_load_modules=$use_load_modules"
+  use_g16_formchk_cmd="$g16_formchk_cmd"
+  use_g16_formchk_opts="$g16_formchk_opts"
+  use_g16_testrt_cmd="$g16_testrt_cmd"
+  debug "use_g16_testrt_cmd=$use_g16_testrt_cmd"
+  debug "use_g16_formchk_cmd=$use_g16_formchk_cmd"
+  debug "use_g16_formchk_opts=$use_g16_formchk_opts"
+  use_obabel_cmd="$obabel_cmd"
+  debug "use_obabel_cmd=$use_obabel_cmd"
+  use_g16_input_suffix="$g16_input_suffix"
+  use_g16_output_suffix="$g16_output_suffix"
+  debug "use_g16_input_suffix=$use_g16_input_suffix"
+  debug "use_g16_output_suffix=$use_g16_output_suffix"
+  use_g16_route_section_default="$g16_route_section_default"
+  debug "g16_route_section_default=$use_g16_route_section_default"
+  use_g16_route_section_predefined=( "${g16_route_section_predefined[@]}" )
+  use_g16_route_section_predefined_comment=( "${g16_route_section_predefined_comment[@]}" )
+  debug "$(declare -p use_g16_route_section_predefined)"
+  debug "$(declare -p use_g16_route_section_predefined_comment)"
+  use_stay_quiet="$stay_quiet"
+  debug "use_stay_quiet=$use_stay_quiet"
+  use_output_verbosity="$output_verbosity"
+  debug "use_output_verbosity=$use_output_verbosity"
+  use_values_separator="$values_separator"
+  debug "use_values_separator=$use_values_separator"
+  use_request_qsys="$request_qsys"
+  # backwards compatibility
+  use_qsys_project="${qsys_project:-$bsub_project}"
+  use_user_email="${user_email:-$bsub_email}"
+  # Very specific constraint:
+  use_bsub_machinetype="$bsub_machinetype"
+  debug "use_request_qsys=$use_request_qsys"
+  debug "use_qsys_project=$use_qsys_project"
+  debug "use_user_email=$use_user_email"
+  debug "use_bsub_machinetype=$use_bsub_machinetype"
+  use_requested_walltime="$requested_walltime"
+  debug "use_requested_walltime=$use_requested_walltime"
+  use_requested_memory="$requested_memory"
+  debug "use_requested_memory=$use_requested_memory"
+  use_requested_numCPU="$requested_numCPU"
+  debug "use_requested_numCPU=$use_requested_numCPU"
+  use_requested_maxdisk="$requested_maxdisk"
+  debug "use_requested_maxdisk=$use_requested_maxdisk"
+  use_requested_submit_status="$requested_submit_status"
+  debug "use_requested_submit_status=$use_requested_submit_status"
 }
 
 #
@@ -764,7 +831,6 @@ get_configuration_interactive ()
     if read_boolean ; then ask_other_utilities ; fi
   fi
   debug "use_obabel_cmd=$use_obabel_cmd"
-
 
   use_g16_input_suffix="$g16_input_suffix"
   use_g16_output_suffix="$g16_output_suffix"
@@ -1162,18 +1228,22 @@ print_configuration ()
 write_configuration_to_file ()
 {
   local settings_filename
-  ask "Where do you want to store these settings?"
-  message "Predefined location: $PWD/g16.tools.rc"
-  message "Recommended location: $g16_tools_path/.g16.toolsrc"
-  settings_filename=$(read_human_input)
-  settings_filename=$(expand_tilde "$settings_filename")
-  debug "settings_filename=$settings_filename"
+  [[ "$route_mode" == true ]] && settings_filename="${g16_tools_rc_loc:-$scriptpath/../.g16.toolsrc}"
   if [[ -z $settings_filename ]] ; then
-    settings_filename="$PWD/g16.tools.rc"
-  elif [[ -d "$settings_filename" ]] ; then
-    settings_filename="$settings_filename/g16.tools.rc"
-    warning "No valid filename specified, will use '$settings_filename' instead."
+    ask "Where do you want to store these settings?"
+    message "Predefined location: $PWD/g16.tools.rc"
+    message "Recommended location: $g16_tools_path/.g16.toolsrc"
+    settings_filename=$(read_human_input)
+    settings_filename=$(expand_tilde "$settings_filename")
+    debug "settings_filename=$settings_filename"
+    if [[ -z $settings_filename ]] ; then
+      settings_filename="$PWD/g16.tools.rc"
+    elif [[ -d "$settings_filename" ]] ; then
+      settings_filename="$settings_filename/g16.tools.rc"
+      warning "No valid filename specified, will use '$settings_filename' instead."
+    fi
   fi
+
   backup_if_exists "$settings_filename"
 
   print_configuration > "$settings_filename"
@@ -1265,15 +1335,58 @@ else
 fi
 
 get_scriptpath_and_source_files || exit 1
+
+# Get options
+# Initialise options
+OPTIND="1"
+
+while getopts :hR options ; do
+  #hlp   Usage: $scriptname [options]
+  #hlp
+  #hlp   Options:
+  #hlp
+  case $options in
+    #hlp     -h        Prints this help text
+    #hlp
+    h) helpme ;; 
+
+    #hlp     -R        Route mode. 
+    #hlp               Load default configuration file, skip immediately to the route section editor,
+    #hlp               replace read file with updated file.
+    #hlp
+    R) 
+      warning "This is highly experimental currently."
+      route_mode="true"
+      ;;
+
+    #hlp     --       Close reading options.
+    #hlp
+    # This is the standard closing argument for getopts, it needs no implemenation.
+
+    \?) fatal "Invalid option: -$OPTARG." ;;
+
+    :) fatal "Option -$OPTARG requires an argument." ;;
+
+  esac
+done
+
 get_configuration_from_file
-get_configuration_interactive
+if [[ "$route_mode" == true ]] ; then
+  translate_conf_settings_to_internal
+  ask_g16_store_route_section
+else
+  get_configuration_interactive
+fi
 
 write_configuration_to_file
 
-ask "Would you like to create a symbolic links for the scripts in '~/bin'?"
-if read_boolean ; then
-  create_softlinks_in_bin
+if [[ "$route_mode" == true ]] ; then
+  debug "Route mode, skipping question about symbolic links."
+else
+  ask "Would you like to create a symbolic links for the scripts in '~/bin'?"
+  if read_boolean ; then create_softlinks_in_bin ; fi
 fi
 
+#hlp $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"

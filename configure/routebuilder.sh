@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# This script is only meant to configure tools-for-g16.bash
+#hlp This script is a utility meant to configure the 
+#hlp predefined route sections for the scripts of tools-for-g16.bash
+#hlp
 
 #
 # Generic functions to find the scripts 
@@ -156,6 +158,7 @@ read_index ()
     message "To delete a route section suffix/append 'd' to its index number."
     message "Enter 's' save the manipulated data to '$output_file'."
     message "Please enter an integer value or 'q' to quit."
+    [[ -n $custom_message ]] && message "$custom_message"
     echo -n "ANSWER  : " >&3
     read -r readvar
   done
@@ -229,10 +232,11 @@ edit_single_route ()
     [[ "$line" =~ ^[[:space:]]*![[:space:]]*(.*)$ ]] && { return_route_comment+="${BASH_REMATCH[1]} " ; debug "Comment line." ; continue ; }
     if [[ -z $return_route_content ]] ; then
       debug "No content in route yet."
-      pattern="^[[:space:]]*(#|#[nNpPtT]?)[[:space:]]*(.*)$"
+      pattern="^[[:space:]]*(#[nNpPtT]?)"
       if [[ "$line" =~ $pattern ]] ; then 
         return_route_startpattern="${BASH_REMATCH[1]}" 
-        return_route_content="${BASH_REMATCH[2]} " 
+        return_route_content="${line##*$return_route_startpattern} " 
+        return_route_content="${return_route_content##[[:space:]]} " 
         debug "Found start pattern: $return_route_startpattern"
         debug "Found route content: $return_route_content"
         continue 
@@ -299,7 +303,7 @@ get_scriptpath_and_source_files || exit 1
 # Initialise options
 OPTIND="1"
 
-while getopts :hr:o: options ; do
+while getopts :hr:o:m: options ; do
   #hlp   Usage: $scriptname [options]
   #hlp
   #hlp   Options:
@@ -307,21 +311,27 @@ while getopts :hr:o: options ; do
   case $options in
     #hlp     -h        Prints this help text
     #hlp
-    h) echo "helpme" ;; 
+    h) helpme ;; 
 
     #hlp     -r <ARG>  Raw mode. Do not load configuration files, use <ARG> as input. 
     #hlp
     r) raw_mode="true" ; raw_routes="$OPTARG" ;;
 
-    #hlp     -o <ARG>  Specify output file for created route sections
+    #hlp     -o <ARG>  Specify output file for created route sections.
     #hlp
     o) output_file="$OPTARG" 
        ;;
 
+    #hlp     -m <ARG>  Specify a custom message to include in the menu build.
+    #hlp
+    m) custom_message="$OPTARG" 
+       ;;
+
     #hlp     --       Close reading options.
+    #hlp
     # This is the standard closing argument for getopts, it needs no implemenation.
 
-   \?) fatal "Invalid option: -$OPTARG." ;;
+    \?) fatal "Invalid option: -$OPTARG." ;;
 
     :) fatal "Option -$OPTARG requires an argument." ;;
 
@@ -330,6 +340,7 @@ done
 
 if [[ $raw_mode == "true" ]] ; then
   unset g16_route_section_predefined g16_route_section_predefined_comment
+  #shellcheck disable=SC1090
   . "$raw_routes"
 else
   get_configuration_from_file 
@@ -343,9 +354,14 @@ while index=$( read_index ) ; do
   [[ "$index" == "q" || "$index" == "Q" ]] && exit 0
   if [[ "$index" == "s" || "$index" == "S" ]] ; then
     {
+      array_index=0
       echo "# Following route sections created:"
-      declare -p g16_route_section_predefined
-      declare -p g16_route_section_predefined_comment
+      for array_index in "${!g16_route_section_predefined[@]}" ; do
+        printf '  g16_route_section_predefined[%d]="%s"\n' "$array_index" "${g16_route_section_predefined[$array_index]}"
+        printf '  g16_route_section_predefined_comment[%d]="%s"\n' "$array_index" "${g16_route_section_predefined_comment[$array_index]}"
+      done
+      debug "$( declare -p g16_route_section_predefined )"
+      debug "$( declare -p g16_route_section_predefined_comment )"
       echo "# done"
     } > "$output_file"
     exit 0
@@ -362,6 +378,7 @@ while index=$( read_index ) ; do
   list_route_sections
 done
 
+#hlp $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"
 
