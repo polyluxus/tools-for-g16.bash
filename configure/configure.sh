@@ -663,8 +663,8 @@ get_configuration_from_file ()
     debug "No custom settings found."
   fi
     
-  if [[ "$route_mode" == true ]] ; then
-    debug "Route mode active, skipping alternative file."
+  if [[ "$route_mode" == "true" || "$translate_mode" == "true" ]] ; then
+    debug "Route (${route_mode:-false}) / translate (${translate_mode:-false}) mode active, skipping alternative file."
   else
     ask "Would you like to specify a file to read settings from?"
     if read_boolean ; then
@@ -1228,7 +1228,9 @@ print_configuration ()
 write_configuration_to_file ()
 {
   local settings_filename
-  [[ "$route_mode" == true ]] && settings_filename="${g16_tools_rc_loc:-$scriptpath/../.g16.toolsrc}"
+  if [[ "$route_mode" == "true" || "$translate_mode" == "true" ]] ; then 
+    settings_filename="${g16_tools_rc_loc:-$scriptpath/../.g16.toolsrc}"
+  fi
   if [[ -z $settings_filename ]] ; then
     ask "Where do you want to store these settings?"
     message "Predefined location: $PWD/g16.tools.rc"
@@ -1340,7 +1342,7 @@ get_scriptpath_and_source_files || exit 1
 # Initialise options
 OPTIND="1"
 
-while getopts :hR options ; do
+while getopts :hRT options ; do
   #hlp   Usage: $scriptname [options]
   #hlp
   #hlp   Options:
@@ -1359,6 +1361,15 @@ while getopts :hR options ; do
       route_mode="true"
       ;;
 
+    #hlp     -T        Translate mode. 
+    #hlp               Load default configuration file, translate it to a newer version,
+    #hlp               replace read file with updated file.
+    #hlp
+    T) 
+      warning "This is highly experimental currently."
+      translate_mode="true"
+      ;;
+
     #hlp     --       Close reading options.
     #hlp
     # This is the standard closing argument for getopts, it needs no implemenation.
@@ -1374,14 +1385,16 @@ get_configuration_from_file
 if [[ "$route_mode" == true ]] ; then
   translate_conf_settings_to_internal
   ask_g16_store_route_section
+elif [[ "$translate_mode" == true ]] ; then
+  translate_conf_settings_to_internal
 else
   get_configuration_interactive
 fi
 
 write_configuration_to_file
 
-if [[ "$route_mode" == true ]] ; then
-  debug "Route mode, skipping question about symbolic links."
+if [[ "$route_mode" == "true" || "$translate_mode" == "true" ]] ; then
+  debug "Route (${route_mode:-false}) / translate (${translate_mode:-false}) mode active, skipping question about symbolic links."
 else
   ask "Would you like to create a symbolic links for the scripts in '~/bin'?"
   if read_boolean ; then create_softlinks_in_bin ; fi
