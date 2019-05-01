@@ -315,6 +315,30 @@ write_jobscript ()
     fi
 
     echo "" >&9
+  
+    # Extra mail interface
+    local xmail_pattern='^(1|[Yy][Ee][Ss]|[Aa][Cc][Tt][Ii][Vv][Ee])$'
+    debug "xmail_interface='$xmail_interface'; xmail_cmd='$xmail_cmd'; pattern: $xmail_pattern"
+    if [[ "$xmail_interface" =~ $xmail_pattern ]] ; then
+      warning "The extra mail interface is still experimental."
+      debug "Pattern was found (${BASH_REMATCH[0]})."
+      cat >&9 <<-EOF
+				# Add the User's bin directory to PATH to be sure not to miss local commands
+				PATH="\$HOME/bin:\$PATH"
+				local mail_subject='\\(^o^)/ COMPLETED, '
+				(( \$joberror > 0 ))  && mail_subject='( ; __ ; ) FAILED, '
+				
+				sendmail () {
+				  mail_subject+="Job_id=\$jobid Name=$jobname ended"
+				  echo "Sending mail with: $xmail_cmd -s \"\$mail_subject\""
+				  ${xmail_cmd:-mail} -s "\$mail_subject"
+				  sleep 10
+				}
+				
+				EOF
+    else
+      debug "Pattern was not found, extra mail interface inactive."
+    fi
 
     # Initialise variables, insert cleanup procedure, trap cleanup
     local tempdir_pattern='^(|[Tt][Ee]?[Mm][Pp]([Dd][Ii][Rr])?|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$'
@@ -343,8 +367,20 @@ write_jobscript ()
 			  find "\$g16_basescratch" -maxdepth 0 -empty -exec rmdir -v {} \\;
 			}
 			
-			trap cleanup EXIT SIGTERM
 			EOF
+
+    if [[ "$xmail_interface" =~ $xmail_pattern ]] ; then
+      cat >&9 <<-EOF
+				cleanup_and_sendmail () {
+				  sendmail
+				  cleanup
+				}
+				
+				trap cleanup_and_sendmail EXIT SIGTERM
+				EOF
+    else
+      echo "trap cleanup EXIT SIGTERM" >&9
+    fi
 
     echo "" >&9
 

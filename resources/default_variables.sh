@@ -75,7 +75,7 @@ output_verbosity=0
 #
 # Default values for queueing system submission
 #
-# Select a queueing system (pbs-gen, slurm-gen, slurm-rwth, bsub-rwth, bsub-gen
+# Select a queueing system (pbs-gen, slurm-gen, slurm-rwth, bsub-rwth, bsub-gen)
 request_qsys="pbs-gen"
 # Walltime for remote execution, header line for the queueing system
 requested_walltime="24:00:00"
@@ -90,6 +90,11 @@ requested_maxdisk=10000
 qsys_project=default
 # E-Mail address to send notifications to
 user_email=default
+# Activate/deactivate sending extra mail (this is a configuration file only option)
+# ("1/yes/active" or "0/no/disabled")
+xmail_interface="disabled"
+# Provide the interface command (this can be any script/binary)
+xmail_cmd="mail"
 # Request a certain machine type
 bsub_machinetype=default
 # Calculations will be submitted to run (hold/keep)

@@ -162,6 +162,18 @@
 #
   user_email="default"
 
+# Activate/deactivate sending extra mail (this is a configuration file only option)
+# Values are for using this "1/yes/active" or not using it (default) "0/no/disabled"
+#
+  xmail_interface="disabled"
+#
+# Provide the interface command (this can be any script/binary)
+# The routine uses 'mail' as a template and sends
+# > mail -s 'a subject line' 
+# This defaults to mail if empty and therefore would send an empty email.
+#
+# xmail_cmd="mail"
+
 # Request a certain machine type (only for bsub)
 #
 # bsub_machinetype=default

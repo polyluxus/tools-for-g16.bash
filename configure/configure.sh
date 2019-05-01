@@ -237,6 +237,7 @@ read_true_false ()
     echo "true"
   else
     echo "false"
+    return 1
   fi
 }
 
@@ -246,6 +247,7 @@ read_yes_no ()
     echo "yes"
   else
     echo "no"
+    return 1
   fi
 }
 
@@ -570,10 +572,28 @@ ask_qsys_details ()
   [[ -z "$use_qsys_project" ]] && use_qsys_project="default"
   debug "use_qsys_project=$use_qsys_project"
 
-  ask "What what email address should recieve notifications?"
+  ask "What email address should recieve notifications?"
   use_user_email=$(read_email)
   [[ -z "$use_user_email" ]] && use_user_email="default"
   debug "use_user_email=$use_user_email"
+}
+
+ask_xmail_details ()
+{
+  ask "Would you like to use the extra mail interface (experimental)?"
+  use_xmail_interface=$(read_yes_no) || return 0
+  debug "use_xmail_interface=$use_xmail_interface"
+  ask "Please specify a command to use as an interface."
+  if mymail_found=$( command -v mymail_slurm.sh ) ; then
+    message "Suggestion: $mymail_found"
+  fi
+  use_xmail_cmd=$(read_human_input)
+  if [[ -z $use_xmail_cmd ]] ; then
+    warning "No interface specified, turning option off."
+    use_xmail_interface="disabled"
+  fi
+  debug "use_xmail_interface=$use_xmail_interface"
+  debug "use_xmail_cmd=$use_xmail_cmd"
 }
 
 ask_walltime ()
@@ -735,6 +755,10 @@ translate_conf_settings_to_internal ()
   debug "use_qsys_project=$use_qsys_project"
   debug "use_user_email=$use_user_email"
   debug "use_bsub_machinetype=$use_bsub_machinetype"
+  use_xmail_interface="$xmail_interface"
+  use_xmail_cmd="$xmail_cmd"
+  debug "use_xmail_interface=$use_xmail_interface"
+  debug "use_xmail_cmd=$use_xmail_cmd"
   use_requested_walltime="$requested_walltime"
   debug "use_requested_walltime=$use_requested_walltime"
   use_requested_memory="$requested_memory"
@@ -924,6 +948,19 @@ get_configuration_interactive ()
   debug "use_qsys_project=$use_qsys_project"
   debug "use_user_email=$use_user_email"
   debug "use_bsub_machinetype=$use_bsub_machinetype"
+
+  use_xmail_interface="$xmail_interface"
+  use_xmail_cmd="$xmail_cmd"
+  if [[ -z $use_xmail_interface ]] ; then
+    ask_xmail_details
+  else
+    message "Recovered setting: 'xmail_interface=$use_xmail_interface"
+    message "Recovered setting: 'xmail_cmd=$use_xmail_cmd"
+    ask "Would you like to change this setting?"
+    if read_boolean ; then ask_walltime ; fi
+  fi
+  debug "use_xmail_interface=$use_xmail_interface"
+  debug "use_xmail_cmd=$use_xmail_cmd"
 
   use_requested_walltime="$requested_walltime"
   if [[ -z $use_requested_walltime ]] ; then
@@ -1202,6 +1239,23 @@ print_configuration ()
     echo "# user_email=default@default.com"
   else
     echo "  user_email=\"$use_user_email\""
+  fi
+  echo ""
+
+  echo "# Activate/deactivate sending extra mail (this is a configuration file only option)"
+  echo "# Values are for using this '1/yes/active' or not using it (default) '0/no/disabled'"
+  echo "#"
+  echo "  xmail_interface=\"${use_xmail_interface:-disabled}\""
+  echo "#"
+  echo "# Provide the interface command (this can be any script/binary)"
+  echo "# The routine uses 'mail' as a template and sends"
+  echo "# > mail -s 'a subject line' "
+  echo "# This defaults to mail if empty and therefore would send an empty email."
+  echo "#"
+  if [[ -z $use_xmail_cmd ]] ; then 
+    echo "# xmail_cmd=mail"
+  else
+    echo "  xmail_cmd=\"$use_xmail_cmd\""
   fi
   echo ""
 
