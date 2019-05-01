@@ -714,7 +714,7 @@ debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 
 # Load custom settings from the rc
 
-if [[ ! -z $g16_tools_rc_loc ]] ; then
+if [[ -n $g16_tools_rc_loc ]] ; then
   #shellcheck source=./g16.tools.rc 
   . "$g16_tools_rc_loc"
   message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
