@@ -1297,7 +1297,8 @@ print_configuration ()
 write_configuration_to_file ()
 {
   local settings_filename
-  if [[ "$route_mode" == "true" || "$translate_mode" == "true" ]] ; then 
+  if [[ "$overwrite_mode" == "true" ]] ; then 
+    debug "Overwrite mode active ($overwrite_mode)."
     settings_filename="${g16_tools_rc_loc:-$scriptpath/../.g16.toolsrc}"
   fi
   if [[ -z $settings_filename ]] ; then
@@ -1411,7 +1412,7 @@ get_scriptpath_and_source_files || exit 1
 # Initialise options
 OPTIND="1"
 
-while getopts :hRT options ; do
+while getopts :hROT options ; do
   #hlp   Usage: $scriptname [options]
   #hlp
   #hlp   Options:
@@ -1428,6 +1429,15 @@ while getopts :hRT options ; do
     R) 
       warning "This is highly experimental currently."
       route_mode="true"
+      overwrite_mode="true"
+      ;;
+
+    #hlp     -O        Overwrite mode. 
+    #hlp               Load (specified) configuration file, replace read file with updated file.
+    #hlp
+    O) 
+      warning "This is highly experimental currently."
+      overwrite_mode="true"
       ;;
 
     #hlp     -T        Translate mode. 
@@ -1437,6 +1447,7 @@ while getopts :hRT options ; do
     T) 
       warning "This is highly experimental currently."
       translate_mode="true"
+      overwrite_mode="true"
       ;;
 
     #hlp     --       Close reading options.
