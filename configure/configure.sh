@@ -581,12 +581,27 @@ ask_qsys_details ()
 ask_xmail_details ()
 {
   ask "Would you like to use the extra mail interface (experimental)?"
-  use_xmail_interface=$(read_yes_no) || return 0
-  debug "use_xmail_interface=$use_xmail_interface"
-  ask "Please specify a command to use as an interface."
-  if mymail_found=$( command -v mymail_slurm.sh ) ; then
-    message "Suggestion: $mymail_found"
+  if use_xmail_interface=$(read_yes_no) ; then
+   debug "Activating extra mail interface."
+  else 
+    unset use_xmail_cmd
+    return 0
   fi
+  debug "use_xmail_interface=$use_xmail_interface"
+  debug "use_xmail_cmd=$use_xmail_cmd"
+  ask "Please specify a command to use as an interface."
+  local mymail_found mymail_test
+  local -a mymail_names
+  mymail_names=( "mymail_slurm.sh" "mymail_slurm" "mymail" )
+  for mymail_test in "${mymail_names[@]}" ; do
+    debug "Checking for $mymail_test."
+    if mymail_found=$( command -v "$mymail_test" ) ; then
+      message "Suggestion: $mymail_found"
+      break
+    else
+      debug "'$mymail_test not found."
+    fi
+  done
   use_xmail_cmd=$(read_human_input)
   if [[ -z $use_xmail_cmd ]] ; then
     warning "No interface specified, turning option off."
@@ -957,7 +972,7 @@ get_configuration_interactive ()
     message "Recovered setting: 'xmail_interface=$use_xmail_interface"
     message "Recovered setting: 'xmail_cmd=$use_xmail_cmd"
     ask "Would you like to change this setting?"
-    if read_boolean ; then ask_walltime ; fi
+    if read_boolean ; then ask_xmail_details ; fi
   fi
   debug "use_xmail_interface=$use_xmail_interface"
   debug "use_xmail_cmd=$use_xmail_cmd"

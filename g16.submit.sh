@@ -325,11 +325,11 @@ write_jobscript ()
       cat >&9 <<-EOF
 				# Add the User's bin directory to PATH to be sure not to miss local commands
 				PATH="\$HOME/bin:\$PATH"
-				local mail_subject='\\(^o^)/ COMPLETED, '
-				(( \$joberror > 0 ))  && mail_subject='( ; __ ; ) FAILED, '
 				
 				sendmail () {
-				  mail_subject+="Job_id=\$jobid Name=$jobname ended"
+				  local mail_subject='\\(^o^)/ COMPLETED, '
+				  (( joberror > 0 ))  && mail_subject='( ; __ ; ) FAILED, '
+				  mail_subject+="${queue_short^} Job_id=\$jobid Name=$jobname ended"
 				  echo "Sending mail with: $xmail_cmd -s \"\$mail_subject\""
 				  ${xmail_cmd:-mail} -s "\$mail_subject"
 				  sleep 10
