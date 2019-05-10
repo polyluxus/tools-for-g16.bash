@@ -158,12 +158,17 @@
 #
 # qsys_project=default
 
+# Deliver the default queuing system email
+# Values are for using this "1/yes/active" (default) or not using it "0/no/disabled"
+#
+  qsys_email="active"
+
 # Sent notifications to the following email address 
 #
   user_email="default"
 
 # Activate/deactivate sending extra mail (this is a configuration file only option)
-# Values are for using this "1/yes/active" or not using it (default) "0/no/disabled"
+# Values are for using this "1/yes/active" or not using it "0/no/disabled" (default)
 #
   xmail_interface="disabled"
 #

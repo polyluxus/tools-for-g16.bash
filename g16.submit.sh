@@ -229,7 +229,6 @@ write_jobscript ()
 			#BSUB -M $overhead_memory
 			#BSUB -W ${requested_walltime%:*}
 			#BSUB -J ${jobname}
-			#BSUB -N 
 			#BSUB -o $submitscript.o%J
 			#BSUB -e $submitscript.e%J
 			EOF
@@ -269,6 +268,15 @@ write_jobscript ()
         fi
       fi
 
+      local qsys_email_pattern='^(|1|[Yy][Ee][Ss]|[Aa][Cc][Tt][Ii][Vv][Ee]|[Dd][Ee][Ff][Aa][Uu][Ll][Tt])$'
+      debug "qsys_email='$qsys_email'; pattern: $qsys_email_pattern"
+      if [[ "$qsys_email" =~ $qsys_email_pattern ]] ; then
+        debug "Standard slurm mail active."
+        echo "#BSUB -N" >&9
+      else
+        debug "Standard slurm mail inactive ($qsys_email)."
+      fi
+
       if [[ "$user_email" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
         message "No email address given, notifications will be sent to system default."
       else
@@ -286,7 +294,6 @@ write_jobscript ()
 			#SBATCH --cpus-per-task=$requested_numCPU
 			#SBATCH --mem-per-cpu=$(( overhead_memory / requested_numCPU ))
 			#SBATCH --time=${requested_walltime}
-			#SBATCH --mail-type=END,FAIL
 			EOF
       if [[ "$qsys_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
         warning "No project selected."
@@ -303,6 +310,14 @@ write_jobscript ()
           echo "#SBATCH --constraint=hpcwork" >&9
         fi
         echo "#SBATCH --export=NONE" >&9
+      fi
+      local qsys_email_pattern='^(|1|[Yy][Ee][Ss]|[Aa][Cc][Tt][Ii][Vv][Ee]|[Dd][Ee][Ff][Aa][Uu][Ll][Tt])$'
+      debug "qsys_email='$qsys_email'; pattern: $qsys_email_pattern"
+      if [[ "$qsys_email" =~ $qsys_email_pattern ]] ; then
+        debug "Standard slurm mail active."
+        echo "#SBATCH --mail-type=END,FAIL" >&9
+      else
+        debug "Standard slurm mail inactive ($qsys_email)."
       fi
       if [[ "$user_email" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
         debug "No email address given, notifications will be sent to system default."

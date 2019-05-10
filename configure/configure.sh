@@ -592,7 +592,7 @@ ask_xmail_details ()
   ask "Please specify a command to use as an interface."
   local mymail_found mymail_test
   local -a mymail_names
-  mymail_names=( "mymail_slurm.sh" "mymail_slurm" "mymail" )
+  mymail_names=( "mymail_slurm.sh" "mymail_slurm" "mymail" "mymail.sh" )
   for mymail_test in "${mymail_names[@]}" ; do
     debug "Checking for $mymail_test."
     if mymail_found=$( command -v "$mymail_test" ) ; then
@@ -609,6 +609,13 @@ ask_xmail_details ()
   fi
   debug "use_xmail_interface=$use_xmail_interface"
   debug "use_xmail_cmd=$use_xmail_cmd"
+  ask "Would you like to also enable the standard queueing system email?"
+  if use_qsys_email=$(read_yes_no) ; then
+   debug "Activating standard email."
+  else 
+   debug "Deactivating standard email."
+  fi
+  debug "use_qsys_email=$use_qsys_email"
 }
 
 ask_walltime ()
@@ -770,8 +777,10 @@ translate_conf_settings_to_internal ()
   debug "use_qsys_project=$use_qsys_project"
   debug "use_user_email=$use_user_email"
   debug "use_bsub_machinetype=$use_bsub_machinetype"
+  use_qsys_email="$use_qsys_email"
   use_xmail_interface="$xmail_interface"
   use_xmail_cmd="$xmail_cmd"
+  debug "use_qsys_email=$use_qsys_email"
   debug "use_xmail_interface=$use_xmail_interface"
   debug "use_xmail_cmd=$use_xmail_cmd"
   use_requested_walltime="$requested_walltime"
@@ -964,11 +973,13 @@ get_configuration_interactive ()
   debug "use_user_email=$use_user_email"
   debug "use_bsub_machinetype=$use_bsub_machinetype"
 
+  use_qsys_email="$qsys_email"
   use_xmail_interface="$xmail_interface"
   use_xmail_cmd="$xmail_cmd"
   if [[ -z $use_xmail_interface ]] ; then
     ask_xmail_details
   else
+    message "Recovered setting: 'qsys_email=$use_qsys_email"
     message "Recovered setting: 'xmail_interface=$use_xmail_interface"
     message "Recovered setting: 'xmail_cmd=$use_xmail_cmd"
     ask "Would you like to change this setting?"
@@ -1248,7 +1259,12 @@ print_configuration ()
   fi
   echo ""
 
-  echo "# Sent notifications to the following email address (slurm, bsub)"
+  echo "# Deliver the default queuing system email"
+  echo "# Values are for using this '1/yes/active' (default) or not using it '0/no/disabled'"
+  echo "#"
+  echo "  qsys_email=\"${use_qsys_email:-active}\""
+  echo ""
+
   echo "#"
   if [[ -z $use_user_email ]] || [[ "$use_user_email" == "default" ]] ; then
     echo "# user_email=default@default.com"
