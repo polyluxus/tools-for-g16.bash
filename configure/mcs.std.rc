@@ -97,10 +97,20 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
   g16_route_section_predefined_comment[15]="like above, uses solvent, uses GIC and needs additional input section"
 #
 
+#
 # Default options for printing and verbosity
 #
-  values_separator=" " # (space separated values)
+
+# Delimit values in the printout with 'space' (default)/ 'comma'/ 'semicolon'/ 'colon'/ 'slash'/ 'pipe' 
+#
+  values_delimiter="space"
+
+# Corresponds to any switches '-v' (default: 0)
+#
   output_verbosity=0
+
+# Corresponds to any switches '-s' that silence the output (default: 0)
+#
   stay_quiet=0
 
 #
@@ -132,9 +142,25 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
 #
 # qsys_project=default
 
-# Sent notifications to the following email address (slurm, bsub)
+# Deliver the default queuing system email
+# Values are for using this '1/yes/active' (default) or not using it '0/no/disabled'
+#
+  qsys_email="active"
+
 #
 # user_email=default@default.com
+
+# Activate/deactivate sending extra mail (this is a configuration file only option)
+# Values are for using this '1/yes/active' or not using it (default) '0/no/disabled'
+#
+  xmail_interface="disabled"
+#
+# Provide the interface command (this can be any script/binary)
+# The routine uses 'mail' as a template and sends
+# > mail -s 'a subject line' 
+# This defaults to mail if empty and therefore would send an empty email.
+#
+  xmail_cmd="mail"
 
 # Use following machine type (only for bsub)
 #
@@ -144,4 +170,4 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
   requested_submit_status="run"
 
 #
-# End of automatic configuration, Mon Apr 29 13:26:24 CEST 2019.
+# End of automatic configuration, Wed May 15 17:55:22 CEST 2019.

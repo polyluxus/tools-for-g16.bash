@@ -25,6 +25,10 @@
 #
   g16_overhead=2000
 
+# Save checkpoint files by default.
+#
+  g16_checkpoint_save="true"
+
 # If a modular software management is available, use it?
 # [Default: true]
 #
@@ -122,10 +126,20 @@
   g16_route_section_predefined_comment[8]="hybrid DFT method with DFT-D3 with Becke-Johnson damping, triple zeta BS (default route)"
 #
 
+#
 # Default options for printing and verbosity
 #
-  values_separator=" " # (space separated values)
+
+# Delimit values in the printout with "space" (default)/ "comma"/ "semicolon"/ "colon"/ "slash"/ "pipe" 
+#
+  values_delimiter="space" 
+
+# Corresponds to any switches '-v' (default: 0)
+#
   output_verbosity=0
+
+# Corresponds to any switches '-s' that silence the output (default: 0)
+#
   stay_quiet=0
 
 #

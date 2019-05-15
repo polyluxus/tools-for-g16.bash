@@ -516,17 +516,14 @@ ask_output_verbosity ()
   debug "use_output_verbosity=$use_output_verbosity"
 } 
 
-ask_values_separator ()
+ask_values_delimiter ()
 {
-  ask "What value separator would you like to use?"
-  message "Enter 'space' to use ' ', or skip this section to use the default (space)."
-  use_values_separator=$(read_human_input)
-  if [[ $use_values_separator =~ ^[[:space:]]*[Ss][Pp]([Aa]([Cc][Ee]?)?)? ]] ; then
-    use_values_separator=" "
-  elif [[ -z $use_values_separator ]] ; then
-    use_values_separator=" "
-  fi
-  debug "use_values_separator=$use_values_separator"
+  ask "For delimiter-separated values, which character  would you like to use?"
+  message "Recognised arguments: space/comma/semicolon/colon/slash/pipe." 
+  message "Skip this section to use the default (space)."
+  use_values_delimiter=$(read_human_input)
+  [[ -z $use_values_delimiter ]] &&  use_values_delimiter="space"
+  debug "use_values_delimiter=$use_values_delimiter"
 }
 
 ask_qsys_details ()
@@ -765,8 +762,34 @@ translate_conf_settings_to_internal ()
   debug "use_stay_quiet=$use_stay_quiet"
   use_output_verbosity="$output_verbosity"
   debug "use_output_verbosity=$use_output_verbosity"
+  # backwards compatibility
   use_values_separator="$values_separator"
   debug "use_values_separator=$use_values_separator"
+  case $use_values_separator in 
+    [[:space:]])
+      use_values_delimiter="space"
+      ;;
+    ',')
+      use_values_delimiter="comma"
+      ;;
+    ';')
+      use_values_delimiter="semicolon"
+      ;;
+    '|')
+      use_values_delimiter="pipe"
+      ;;
+    '/')
+      use_values_delimiter="slash"
+      ;;
+    '')
+      debug "Empty (new configuration or unset): $use_values_separator"
+      ;;
+    *)
+      debug "Not regognised: $use_values_separator"
+      ;;
+  esac
+  use_values_delimiter="${use_values_delimiter:-$values_delimiter}"
+  debug "use_values_delimiter=$use_values_delimiter"
   use_request_qsys="$request_qsys"
   # backwards compatibility
   use_qsys_project="${qsys_project:-$bsub_project}"
@@ -922,12 +945,39 @@ get_configuration_interactive ()
   if read_boolean ; then ask_output_verbosity ; fi
   debug "use_output_verbosity=$use_output_verbosity"
 
+  # backwards compatibility
   use_values_separator="$values_separator"
-  [[ -z $use_values_separator ]] && use_values_separator=" "
-  message "Recovered setting: 'values_separator=$use_values_separator'"
-  ask "Would you like to change this setting?"
-  if read_boolean ; then ask_values_separator ; fi
   debug "use_values_separator=$use_values_separator"
+  case $use_values_separator in 
+    [[:space:]])
+      use_values_delimiter="space"
+      ;;
+    ',')
+      use_values_delimiter="comma"
+      ;;
+    ';')
+      use_values_delimiter="semicolon"
+      ;;
+    '|')
+      use_values_delimiter="pipe"
+      ;;
+    '/')
+      use_values_delimiter="slash"
+      ;;
+    '')
+      debug "Empty (new configuration or unset): $use_values_separator"
+      ;;
+    *)
+      debug "Not regognised: $use_values_separator"
+      ;;
+  esac
+  use_values_delimiter="${use_values_delimiter:-$values_delimiter}"
+  use_values_delimiter="${use_values_delimiter:-space}"
+  debug "use_values_delimiter=$use_values_delimiter"
+  message "Recovered setting: 'values_delimiter=$use_values_delimiter'"
+  ask "Would you like to change this setting?"
+  if read_boolean ; then ask_values_delimiter ; fi
+  debug "use_values_delimiter=$use_values_delimiter"
 
   use_request_qsys="$request_qsys"
   # backwards compatibility
@@ -1193,11 +1243,21 @@ print_configuration ()
   echo ""
 
   # These values are always set
+  echo "#"
   echo "# Default options for printing and verbosity"
   echo "#"
-  echo "  values_separator=\"$use_values_separator\" # (space separated values)"
-  echo "  output_verbosity=$use_output_verbosity"
-  echo "  stay_quiet=$use_stay_quiet"
+  echo ""
+  echo "# Delimit values in the printout with 'space' (default)/ 'comma'/ 'semicolon'/ 'colon'/ 'slash'/ 'pipe' "
+  echo "#"
+  echo "  values_delimiter=\"${use_values_delimiter:-space}\""
+  echo ""
+  echo "# Corresponds to any switches '-v' (default: 0)"
+  echo "#"
+  echo "  output_verbosity=${use_output_verbosity:-0}"
+  echo ""
+  echo "# Corresponds to any switches '-s' that silence the output (default: 0)"
+  echo "#"
+  echo "  stay_quiet=${use_stay_quiet:-0}"
   echo ""
 
   echo "#"

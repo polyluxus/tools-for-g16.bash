@@ -346,8 +346,31 @@ print_energies_table ()
 
 print_energies_inline ()
 {
-    local element printstring 
-    local format="%s%-*s$values_separator"
+    local element printstring internal_values_separator
+    case $values_delimiter in
+      ''|[Ss][Pp][Aa][Cc][Ee])
+        internal_values_separator=" "
+        ;;
+      [Cc][Oo][Mm][Mm][Aa])
+        internal_values_separator=","
+        ;;
+      [Ss][Ee][Mm][Ii][Cc][Oo][Ll][Oo][Nn]|[Ss][Ee][Mm][Ii]-[Cc][Oo][Ll][Oo][Nn])
+        internal_values_separator=";"
+        ;;
+      [Cc][Oo][Ll][Oo][Nn])
+        internal_values_separator=":"
+        ;;
+      [Ss][Ll][Aa][Ss][Hh])
+        internal_values_separator="/"
+        ;;
+      [Pp][Ii][Pp][Ee])
+        internal_values_separator="|"
+        ;;
+      *)
+        internal_values_separator=" "
+        ;;
+    esac
+    local format="%s%-*s$internal_values_separator"
     for element in "$@" ; do
       # shellcheck disable=SC2059
       printf -v printstring "$format" "$printstring" ${#element} "$element" 
@@ -386,7 +409,7 @@ process_options ()
     local ignore_verbosity_switch=false
     local printlevel
     # Evaluate options
-    while getopts :vV:cf:sh options ; do
+    while getopts :vV:cC:f:sh options ; do
       #hlp   Usage: $scriptname [options] filenames(s)
       #hlp 
       #hlp   Options:
@@ -423,7 +446,14 @@ process_options ()
           #hlp     -c         Separate values with comma (only affects -V0, -V1)
           #hlp
           c) 
-            values_separator="," 
+            values_delimiter="comma"
+            ;;
+
+          #hlp     -C <ARG>   Separate values with <ARG> (only affects -V0, -V1)
+          #hlp                Arguments: space, comma, semicolon, colon, slash, pipe
+          #hlp
+          C) 
+            values_delimiter="$OPTARG"
             ;;
 
           #hlp     -f <ARG>   Write summary to file <ARG> instead of displaying it.
