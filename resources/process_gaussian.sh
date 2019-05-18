@@ -1240,6 +1240,11 @@ validate_g16_route ()
     else
       debug "Found route card and will process."
     fi 
+    if [[ -z $g16_testrt_cmd ]] ; then
+      message "Command to 'testrt' is unset, route section cannot be checked."
+      message "Continue anyway pretending there are no syntax errors."
+      return 0
+    fi
     if g16_output=$($g16_testrt_cmd "$read_route" 2>&1) ; then
       message "Route section has no syntax errors."
       debug "$g16_output"
@@ -1367,6 +1372,12 @@ write_g16_input_file ()
     while ! route_section=$(remove_maxdisk_keyword "$route_section") ; do : ; done
     use_route_section=$(collate_route_keywords "$route_section MaxDisk=${requested_maxdisk}MB")
     message "Added 'MaxDisk=${requested_maxdisk}MB' to the route section."
+    if validate_g16_route "$use_route_section" ; then
+      debug "Assembled route section is fine."
+    else
+      warning "Syntax error detected in the route section, please check manually."
+      message "Continue as if there are no errors."
+    fi
     # Fold the route section to 80 characters for better readability
     fold -w80 -s <<< "$use_route_section"
     # A blank line terminates the route section
