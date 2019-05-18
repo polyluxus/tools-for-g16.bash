@@ -220,7 +220,7 @@ edit_single_route ()
     done <<< "$( fold -w78 -s <<< "$read_route_comment" )" 
     write_to_file  "% End of temporary file."
     exec 9>&-
-    $editor "$tmpfile_route" >&1
+    $editor "$tmpfile_route"
   else
     fatal "Command not found: $editor" 
   fi
@@ -372,8 +372,16 @@ while index=$( read_index ) ; do
     unset "g16_route_section_predefined_comment[$index]"
   else
     edit_single_route "${g16_route_section_predefined[$index]}" "${g16_route_section_predefined_comment[$index]}" 
-    g16_route_section_predefined[$index]=${edited_route%%!*}
-    g16_route_section_predefined_comment[$index]=${edited_route#*!}
+    g16_route_section_predefined[$index]="${edited_route%%!*}"
+    if validate_g16_route "${g16_route_section_predefined[$index]}" ; then
+      debug "Route has no syntax error."
+      g16_route_section_predefined_comment[$index]="${edited_route#*!}"
+    else
+      sleep 2
+      debug "Route has syntax error(s)."
+      g16_route_section_predefined_comment[$index]='(WARNING: Syntax error detected.) '
+      g16_route_section_predefined_comment[$index]+="${edited_route#*!}"
+    fi
   fi
   list_route_sections
 done
