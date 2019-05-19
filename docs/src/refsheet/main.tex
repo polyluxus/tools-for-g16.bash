@@ -37,7 +37,7 @@
 \newcommand\mybackslash{\char`\\}
 
 % What this is about
-\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.2.2, 2019-04-04)}
+\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.3.0.dev, 2019-05-XX)}
 \author{Martin C Schwarzer}
 \date{\today}
 
@@ -317,6 +317,8 @@ Usage: \texttt{g16.getfreq.sh [opt] <file(s)>}
   \item[-v      ] Incrementally increase verbosity
   \item[-V <INT>] Set level of verbosity directly, (0-4)
   \item[-c      ] Separate values by comma (\texttt{-V0} or \texttt{-V1})
+  \item[-c <ARG>] Separate values by \texttt{ARG} (\texttt{-V0} or \texttt{-V1});
+    arguments: \texttt{space}, \texttt{comma}, \texttt{semicolon}, \texttt{colon}, \texttt{slash}, \texttt{pipe}, 
   \item[-f <ARG>] Write summary to file instead of screen
   \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
@@ -332,6 +334,10 @@ Usage: \texttt{g16.chk2xyz.sh [-s] -h | -a | <chk-file(s)>}
 
 \begin{rslisttt}{-m <ARG>}
   \item[-a      ] Formats all checkpointfiles that are found in the current directory
+  \item[-A      ] Formats almost all checkpointfiles that are found in the current directory (same as \texttt{-aS})
+  \item[-B      ] Create backup files in cases where it would overwrite them (default)
+  \item[-F      ] Forces files to be overwritten
+  \item[-S      ] Skips files in cases where it would overwrite them
   \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 

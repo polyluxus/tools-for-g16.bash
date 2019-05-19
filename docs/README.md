@@ -1,5 +1,5 @@
 This document is based on the Cheat-Sheet for `tools-for-g16.bash`
-and was last updated with version 0.2.2, 2019-04-04.
+and was last updated with version 0.3.0.dev, 2019-05-XX.
 
 Introduction
 ============
@@ -260,6 +260,7 @@ Usage: `g16.getfreq.sh [opt] <file(s)>`
 | `-v`       | Incrementally increase verbosity
 | `-V <INT>` | Set level of verbosity directly, (0-4)
 | `-c`       | Separate values by comma (`-V0` or `-V1`)
+| `-C <ARG>` | Separate values with `<ARG>` (`-V0` or `-V1`); arguments: `space`, `comma`, `semicolon`, `colon`, `slash`, `pipe`
 | `-f <ARG>` | Write summary to file instead of screen
 | `--`       | Close reading options
 | `-s`       | silence script (incremental)
@@ -276,6 +277,10 @@ Usage: `g16.chk2xyz.sh [-s] -h | -a | <chk-file(s)>`
 | option     | description 
 | ---------- | -----------
 | `-a`       | Formats all checkpointfiles that are found in the current directory
+| `-A`       | Formats almost all checkpointfiles that are found in the current directory (same as `-aS`)
+| `-B`       | Create backup files in cases where it would overwrite them (default)
+| `-F`       | Forces files to be overwritten
+| `-S`       | Skips files in cases where it would overwrite them
 | `--`       | Close reading options
 | `-s`       | silence script (incremental)
 | `-h`       | Help file
