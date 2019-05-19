@@ -358,14 +358,37 @@ ask_load_modules ()
 
 ask_g16_utilities ()
 {
+  ask "Which command shall be used as a wrapper to Gaussian commands?"
+  message "This may be an executable script found in PATH, or an absolute location."
+  message "No sanity check of the input will be performed."
+  local wrapper_found wrapper_test
+  local -a wrapper_names
+  wrapper_names=( "g16.wrapper.sh" "g16.wraapper" "wrapper.g16.sh" "wrapper.g16" "rung16.sh" "rung16" )
+  for wrapper_test in "${wrapper_names[@]}" ; do
+    debug "Checking for $wrapper_test."
+    if wrapper_found=$( command -v "$wrapper_test" ) ; then
+      message "Suggestion: $wrapper_found"
+      break
+    else
+      debug "'$wrapper_test not found."
+    fi
+  done
+  use_g16_wrapper_cmd=$(read_human_input)
+  debug "use_g16_wrapper_cmd=$use_g16_wrapper_cmd"
+
   local check_g16_formchk_cmd
   ask "Which command shall be used to execute Gaussians 'formchk' utility?"
-  message "This may be any string used to call the program, be it via a wrapper,"
+  message "This may be the name used to call the program, be it via the previously specified wrapper,"
   message "loaded via PATH, or the absolute location of the program."
-  if check_g16_formchk_cmd="$(command -v formchk)" ; then
-    message "Found executable command 'formchk' as '$check_g16_formchk_cmd'."
+  if [[ -n $use_wrapper_cmd ]] ; then
+    if check_g16_formchk_cmd="$( $use_wrapper_cmd command -v formchk)" ; then
+      message "Found command via wrapper as 'formchk'."
+    fi
+  else
+    if check_g16_formchk_cmd="$(command -v formchk)" ; then
+      message "Found executable command 'formchk' as '$check_g16_formchk_cmd'."
+    fi
   fi
-  message "(In preparation: g16.wrapper shortcuts from this toolbox.)"
   message "No sanity check of the input will be performed."
   message "Please do not include options, they will be specified next."
   use_g16_formchk_cmd=$(read_human_input)
@@ -382,8 +405,14 @@ ask_g16_utilities ()
   local check_g16_testrt_cmd
   ask "Which command shall be used to execute Gaussians 'testrt' utility?"
   message "This should be very similar to the above."
-  if check_g16_testrt_cmd="$(command -v testrt)" ; then
-    message "Found executable command 'testrt' as '$check_g16_testrt_cmd'."
+  if [[ -n $use_wrapper_cmd ]] ; then
+    if check_g16_testrt_cmd="$( $use_wrapper_cmd command -v testrt)" ; then
+      message "Found command via wrapper as 'testrt'."
+    fi
+  else
+    if check_g16_testrt_cmd="$(command -v testrt)" ; then
+      message "Found executable command 'testrt' as '$check_g16_testrt_cmd'."
+    fi
   fi
   use_g16_testrt_cmd=$(read_human_input)
   debug "use_g16_testrt_cmd=$use_g16_testrt_cmd"
@@ -740,9 +769,11 @@ translate_conf_settings_to_internal ()
   use_load_modules="$load_modules"
   use_g16_modules=( "${g16_modules[@]}" )
   debug "use_load_modules=$use_load_modules"
+  use_g16_wrapper_cmd="$use_g16_wrapper_cmd"
   use_g16_formchk_cmd="$g16_formchk_cmd"
   use_g16_formchk_opts="$g16_formchk_opts"
   use_g16_testrt_cmd="$g16_testrt_cmd"
+  debug "use_g16_wrapper_cmd=$use_g16_wrapper_cmd"
   debug "use_g16_testrt_cmd=$use_g16_testrt_cmd"
   debug "use_g16_formchk_cmd=$use_g16_formchk_cmd"
   debug "use_g16_formchk_opts=$use_g16_formchk_opts"
@@ -877,18 +908,21 @@ get_configuration_interactive ()
   fi
   debug "use_load_modules=$use_load_modules"
 
+  use_g16_wrapper_cmd="$use_g16_wrapper_cmd"
   use_g16_formchk_cmd="$g16_formchk_cmd"
   use_g16_formchk_opts="$g16_formchk_opts"
   use_g16_testrt_cmd="$g16_testrt_cmd"
   if [[ -z $use_g16_formchk_cmd || -z $use_g16_testrt_cmd ]] ; then
     ask_g16_utilities
   else
+    message "Recovered setting: 'g16_wrapper_cmd=$use_g16_wrapper_cmd'"
     message "Recovered setting: 'g16_testrt_cmd=$use_g16_testrt_cmd'"
     message "Recovered setting: 'g16_formchk_cmd=$use_g16_formchk_cmd'"
     message "Recovered setting: 'g16_formchk_opts=$use_g16_formchk_opts'"
     ask "Would you like to change these settings?"
     if read_boolean ; then ask_g16_utilities ; fi
   fi
+  debug "use_g16_wrapper_cmd=$use_g16_wrapper_cmd"
   debug "use_g16_testrt_cmd=$use_g16_testrt_cmd"
   debug "use_g16_formchk_cmd=$use_g16_formchk_cmd"
   debug "use_g16_formchk_opts=$use_g16_formchk_opts"
@@ -1164,13 +1198,22 @@ print_configuration ()
 
   echo "# Set the commands or paths for utilities:"
   echo "#"
+  echo "# - wrapper for all Gaussian commands"
+  echo "#"
+  echo "#   The wrapper will load the Gaussian environment before executing the below utilities"
+  echo "#   This should be blank if the utilities are found in PATH, or the absolute paths are provided"
+  if [[ -z $use_g16_wrapper_cmd ]] ; then
+    echo "#   g16_wrapper_cmd=\"g16.wrapper.sh\""
+  else
+    echo "    g16_wrapper_cmd=\"$use_g16_wrapper_cmd\""
+  fi
+  echo "#"
   echo "# - formatted checkpoint files"
   echo "#   "
-  echo "#   Command that accesses formcheck."
-  echo "#   Wrappers work, command in PATH works, path to the binary works"
+  echo "#   The command that executes formchk."
+  echo "#   Local install with formchk found in PATH, or wrapped with above, or absolute path."
   echo "#"
   if [[ -z $use_g16_formchk_cmd ]] ; then
-    echo "#   g16_formchk_cmd=\"g16.wrapper.sh formchk\""
     echo "#   g16_formchk_cmd=\"formchk\""
     echo "#   bin_formchk_cmd=\"/path/to/g16/formchk\""
     echo "#"

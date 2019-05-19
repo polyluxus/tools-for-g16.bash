@@ -557,6 +557,7 @@ read_xyz_geometry_file ()
       local tmplog 
       tmplog=$(mktemp tmp.XXXXXXXX) 
       debug "$(ls -lh "$tmplog")"
+      command -v "$obabel_cmd" &> /dev/null || fatal "Open Babel ($obabel_cmd) was not found."
       mapfile -t inputfile_coord2xyz < <("$obabel_cmd" -itmol "$parsefile" -oxyz 2> "$tmplog")
       debug "$(cat "$tmplog")"
       debug "$(rm -v -- "$tmplog")"
@@ -1240,19 +1241,33 @@ validate_g16_route ()
     else
       debug "Found route card and will process."
     fi 
+    # Check whether the command is actually set
     if [[ -z $g16_testrt_cmd ]] ; then
       message "Command to 'testrt' is unset, route section cannot be checked."
       message "Continue anyway pretending there are no syntax errors."
       return 0
     fi
-    if g16_output=$($g16_testrt_cmd "$read_route" 2>&1) ; then
-      message "Route section has no syntax errors."
-      debug "$g16_output"
+    # Check if a wrapper should be used
+    if [[ -n $g16_wrapper_cmd ]] ; then
+      command -v "$g16_wrapper_cmd" &> /dev/null || fatal "Wrapper command ($g16_wrapper_cmd) not found."
+      $g16_wrapper_cmd command -v "$g16_testrt_cmd" &> /dev/null || fatal "Wrapped testrt command ($g16_testrt_cmd) not found."
+      if g16_output=$( $g16_wrapper_cmd $g16_testrt_cmd "$read_route" 2>&1 ) ; then
+        message "Route section has no syntax errors."
+        debug "$g16_output"
+        return 0
+      fi
     else
-      warning "There was an error in the route section"
-      message "$g16_output"
-      return 1
+      command -v "$g16_testrt_cmd" &> /dev/null || fatal "Gaussian testrt command ($g16_testrt_cmd) not found."
+      if g16_output=$( $g16_testrt_cmd "$read_route" 2>&1 ) ; then
+        message "Route section has no syntax errors."
+        debug "$g16_output"
+        return 0
+      fi
     fi
+    # In case all failed so far
+    warning "There was an error in the route section:"
+    warning "$g16_output"
+    return 1
 }
 
 #

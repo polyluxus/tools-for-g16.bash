@@ -47,33 +47,34 @@
 
 # Set the commands or paths for utilities:
 #
+# - wrapper for all Gaussian commands
+#
+#   The wrapper will load the Gaussian environment before executing the below utilities
+#   This should be blank if the utilities are found in PATH, or the absolute paths are provided
+    g16_wrapper_cmd="g16.wrapper.sh"
+#
 # - formatted checkpoint files
 #   
-#   Tools-for-g16 wrapper (if found in path)
-#   g16_formchk_cmd="g16.wrapper.sh formchk" # ( - TO DO - )
-#   Any command that executes formchk
-    g16_formchk_cmd="wrapper.g16 formchk" # ( Current workaround )
-#   Local install with formchk found in PATH
-#   g16_formchk_cmd="formchk" 
+#   The command that executes formchk 
+#   Local install with formchk found in PATH, or wrapped with above
+    g16_formchk_cmd="formchk" 
 #   The hard coded path to the binary works also.
-#   bin_formchk_cmd="/path/to/g16/formchk"
+#   g16_formchk_cmd="/path/to/g16/formchk"
 #
 #   No options should be included in the above, but can be set:
     g16_formchk_opts="-3"
-#   If no options should be given to fromchk, the leave set it to empty,
+#   If no options should be given to fromchk, then explicitly set it to empty,
 #   g16_formchk_opts=""
 #   otherwise the scripts will use '-3' as option.
 #
 # - checking the route section (this is similar to above)
 #   
-#   Tools-for-g16 wrapper (if found in path)
-#   g16_testrt_cmd="g16.wrapper.sh testrt" # ( - TO DO - )
-#   Any command that executes testrt
-    g16_testrt_cmd="wrapper.g16 testrt" # ( Current workaround )
-#   Local install with testrt found in PATH
-#   g16_testrt_cmd="testrt" 
+#   The command that executes testrt
+#   Local install with testrt found in PATH, or wrapped
+    g16_testrt_cmd="testrt" 
 #   The hard coded path to the binary works also.
-#   bin_testrt_cmd="/path/to/g16/testrt"
+#   g16_testrt_cmd="/path/to/g16/testrt"
+#   (There are no options for this utility.)
 #
 
 # This script requires an installation of Open Babel.
@@ -83,7 +84,7 @@
 #
   obabel_cmd="obabel"
 #
-# should be enough. (Or is you use a wrapper, enter the command here.)
+# should be enough. 
 #
 # Otherwise, provide the path to the binary
 # obabel_cmd="/path/to/openbabel/bin/obabel"

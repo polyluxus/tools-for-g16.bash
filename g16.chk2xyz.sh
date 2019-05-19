@@ -147,8 +147,10 @@ format_one_checkpoint ()
     
     local output_fchk="${use_input_chk%.*}.fchk"
     local output_xyz="${use_input_chk%.*}.xyz"
-    local g16_output g16_formchk_args obabel_output
-    debug "global variables used: 'g16_formchk_cmd=\"$g16_formchk_cmd\"' 'g16_formchk_opts=\"$g16_formchk_opts\"'"
+    local g16_output  obabel_output
+    local -a g16_formchk_commandline
+    debug "Global variables used: 'g16_wrapper_cmd=\"$g16_wrapper_cmd\"'"
+    debug "Global variables used: 'g16_formchk_cmd=\"$g16_formchk_cmd\"' 'g16_formchk_opts=\"$g16_formchk_opts\"'"
 
     if [[ "${operation_write_mode}" =~ [Bb][Aa][Cc][Kk][Uu][Pp] ]] ; then
       debug "Backup mode will test files and prevent overwriting."
@@ -163,13 +165,30 @@ format_one_checkpoint ()
       [[ -e "$output_fchk" ]] && message "Forced mode. $( rm -v -- "$output_fchk" )"
       [[ -e "$output_xyz"  ]] && message "Forced mode. $( rm -v -- "$output_xyz" )"
     fi
+
+    # Check whether the command is actually set
+    if [[ -z $g16_formchk_cmd ]] ; then
+      warning "Command to 'formchk' is unset, action cannot be performed."
+      return 1
+    fi
+    # Check if a wrapper should be used
+    if [[ -n $g16_wrapper_cmd ]] ; then
+      command -v "$g16_wrapper_cmd" &> /dev/null || { warning "Wrapper command ($g16_wrapper_cmd) not found." ; return 1 ; }
+      $g16_wrapper_cmd command -v "$g16_formchk_cmd" &> /dev/null || { warning "Wrapped formchk command ($g16_formchk_cmd) not found." ; return 1 ; }
+      g16_formchk_commandline=( "$g16_wrapper_cmd" "$g16_formchk_cmd" )
+      debug "Current command line: ${g16_formchk_commandline[*]}"
+    else
+      command -v "$g16_formchk_cmd" &> /dev/null || { warning "Gaussian formchk command ($g16_formchk_cmd) not found." ; return 1 ; }
+      g16_formchk_commandline=( "$g16_formchk_cmd" )
+      debug "Current command line: ${g16_formchk_commandline[*]}"
+    fi
     
     # Run the programs
-    [[ -z "$g16_formchk_opts" ]] || g16_formchk_args+=( "$g16_formchk_opts" )
-    g16_formchk_args+=( "$use_input_chk" "$output_fchk" )
+    [[ -z "$g16_formchk_opts" ]] || g16_formchk_commandline+=( "$g16_formchk_opts" )
+    g16_formchk_commandline+=( "$use_input_chk" "$output_fchk" )
+    debug "Current command line: ${g16_formchk_commandline[*]}"
 
-    debug "Command: $g16_formchk_cmd ${g16_formchk_args[*]} 2>&1"
-    g16_output=$($g16_formchk_cmd "${g16_formchk_args[@]}" 2>&1) || returncode="$?"
+    g16_output=$( ${g16_formchk_commandline[@]} 2>&1 ) || returncode="$?"
     if (( returncode != 0 )) ; then
       warning "There was an issue with formatting the checkpointfile."
       debug "Output: $g16_output"
@@ -183,7 +202,8 @@ format_one_checkpoint ()
     debug "Command: $obabel_cmd -ifchk \"$output_fchk\" -oxyz -O\"$output_xyz\" 2>&1"
     # Options for obabel to read a formatted checkpoint and output xyz coordinates
     
-    obabel_output=$($obabel_cmd -ifchk "$output_fchk" -oxyz -O"$output_xyz" 2>&1) || (( returncode+=$? ))
+    command -v "$obabel_cmd" &> /dev/null || { warning "Open babel command ($obabel_cmd) not found." ; return 1 ; }
+    obabel_output=$( $obabel_cmd -ifchk "$output_fchk" -oxyz -O"$output_xyz" 2>&1 ) || (( returncode+=$? ))
     if (( returncode != 0 )) ; then
       warning "There was an issue with writing the coordinates."
       debug "Output: $obabel_output"
