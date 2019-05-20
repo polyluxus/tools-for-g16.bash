@@ -45,7 +45,9 @@ g16_modules[0]="CHEMISTRY"
 g16_modules[1]="gaussian/16.b01_bin"
 # Specify a path to a wrapper command loading the Gaussian environment, 
 # this will be executed immediately before the utilities below
-g16_wrapper_cmd="wrapper.g16"
+# g16_wrapper_cmd="wrapper.g16" # for example
+# empty by default
+g16_wrapper_cmd=""
 # Options relating to producing a formatted checkpoint file
 # should be found in PATH, an absolute path, or found via the wrapper above
 g16_formchk_cmd="formchk"

@@ -360,6 +360,7 @@ ask_g16_utilities ()
 {
   ask "Which command shall be used as a wrapper to Gaussian commands?"
   message "This may be an executable script found in PATH, or an absolute location."
+  message "If no wrapper should be used, please eneter 'none'."
   message "No sanity check of the input will be performed."
   local wrapper_found wrapper_test
   local -a wrapper_names
@@ -367,28 +368,36 @@ ask_g16_utilities ()
   for wrapper_test in "${wrapper_names[@]}" ; do
     debug "Checking for $wrapper_test."
     if wrapper_found=$( command -v "$wrapper_test" ) ; then
-      message "Suggestion: $wrapper_found"
+      message "Suggestion '$wrapper_found'"
       break
     else
-      debug "'$wrapper_test not found."
+      debug "'$wrapper_test' not found."
     fi
   done
   use_g16_wrapper_cmd=$(read_human_input)
+  if [[ "$use_g16_wrapper_cmd" =~ ^[Nn]([Oo]([Nn]([Ee])?)?)?$ ]] ; then
+    unset use_g16_wrapper_cmd
+  fi
   debug "use_g16_wrapper_cmd=$use_g16_wrapper_cmd"
 
   local check_g16_formchk_cmd
   ask "Which command shall be used to execute Gaussians 'formchk' utility?"
   message "This may be the name used to call the program, be it via the previously specified wrapper,"
   message "loaded via PATH, or the absolute location of the program."
-  if [[ -n $use_wrapper_cmd ]] ; then
-    if check_g16_formchk_cmd="$( $use_wrapper_cmd command -v formchk)" ; then
+  if [[ -n $use_g16_wrapper_cmd ]] ; then
+    debug "Wrapper is used."
+    if check_g16_formchk_cmd="$( $use_g16_wrapper_cmd command -v formchk 2>&1 )" ; then
       message "Found command via wrapper as 'formchk'."
+    else
+      debug "$check_g16_formchk_cmd"
     fi
   else
+    debug "Wrapper is _not_ used."
     if check_g16_formchk_cmd="$(command -v formchk)" ; then
       message "Found executable command 'formchk' as '$check_g16_formchk_cmd'."
     fi
   fi
+  debug "check_g16_formchk_cmd=$check_g16_formchk_cmd"
   message "No sanity check of the input will be performed."
   message "Please do not include options, they will be specified next."
   use_g16_formchk_cmd=$(read_human_input)
@@ -405,11 +414,13 @@ ask_g16_utilities ()
   local check_g16_testrt_cmd
   ask "Which command shall be used to execute Gaussians 'testrt' utility?"
   message "This should be very similar to the above."
-  if [[ -n $use_wrapper_cmd ]] ; then
-    if check_g16_testrt_cmd="$( $use_wrapper_cmd command -v testrt)" ; then
+  if [[ -n $use_g16_wrapper_cmd ]] ; then
+    debug "Wrapper is used."
+    if check_g16_testrt_cmd="$( $use_g16_wrapper_cmd command -v testrt 2>&1 )" ; then
       message "Found command via wrapper as 'testrt'."
     fi
   else
+    debug "Wrapper is _not_ used."
     if check_g16_testrt_cmd="$(command -v testrt)" ; then
       message "Found executable command 'testrt' as '$check_g16_testrt_cmd'."
     fi

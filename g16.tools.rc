@@ -51,7 +51,8 @@
 #
 #   The wrapper will load the Gaussian environment before executing the below utilities
 #   This should be blank if the utilities are found in PATH, or the absolute paths are provided
-    g16_wrapper_cmd="g16.wrapper.sh"
+#   g16_wrapper_cmd="g16.wrapper.sh"
+    g16_wrapper_cmd=""
 #
 # - formatted checkpoint files
 #   

@@ -35,18 +35,24 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
 
 # Set the commands or paths for utilities:
 #
+# - wrapper for all Gaussian commands
+#
+#   The wrapper will load the Gaussian environment before executing the below utilities
+#   This should be blank if the utilities are found in PATH, or the absolute paths are provided
+    g16_wrapper_cmd="g16.wrapper"
+#
 # - formatted checkpoint files
 #   
-#   Command that accesses formcheck.
-#   Wrappers work, command in PATH works, path to the binary works
+#   The command that executes formchk.
+#   Local install with formchk found in PATH, or wrapped with above, or absolute path.
 #
-    g16_formchk_cmd="wrapper.g16 formchk"
+    g16_formchk_cmd="formchk"
 #   No options should be included in the above, but can be set:
     g16_formchk_opts="-3"
 #
 # - checking the route section (this is similar to above)
 #   
-    g16_testrt_cmd="wrapper.g16 testrt"
+    g16_testrt_cmd="testrt"
 #
 
 # This script requires an installation of Open Babel.
@@ -156,4 +162,4 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
   requested_submit_status="run"
 
 #
-# End of automatic configuration, Wed May 15 17:54:02 CEST 2019.
+# End of automatic configuration, Mon May 20 15:15:01 CEST 2019.
