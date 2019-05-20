@@ -364,7 +364,7 @@ ask_g16_utilities ()
   message "No sanity check of the input will be performed."
   local wrapper_found wrapper_test
   local -a wrapper_names
-  wrapper_names=( "g16.wrapper.sh" "g16.wraapper" "wrapper.g16.sh" "wrapper.g16" "rung16.sh" "rung16" )
+  wrapper_names=( "g16.wrapper.sh" "g16.wrapper" "rung16.sh" "rung16" "wrapper.g16.sh" "wrapper.g16" )
   for wrapper_test in "${wrapper_names[@]}" ; do
     debug "Checking for $wrapper_test."
     if wrapper_found=$( command -v "$wrapper_test" ) ; then
@@ -1537,6 +1537,18 @@ else
 fi
 
 get_scriptpath_and_source_files || exit 1
+
+# Remove the local directory from PATH
+if [[ ":$PATH:" =~ :.: ]] ; then
+  debug "PATH is '$PATH'"
+  modpath=":$PATH:"
+  modpath=${modpath/:.:/:}
+  modpath=${modpath%:}
+  modpath=${modpath#:}
+  PATH="$modpath"
+  debug "PATH is now '$PATH'"
+  unset modpath
+fi
 
 # Get options
 # Initialise options
