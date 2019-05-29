@@ -1,9 +1,9 @@
 #!/bin/bash
 #
-#hlp A very quick script to transform a checkpointfile
-#hlp to a formatted checkpointfile and then to xyz 
-#hlp coordinates using Open Babel.
-#hlp Usage: $scriptname [option] [--] <checkpointfile(s)>
+#hlp This is a wrapper script to set the Gaussian 16 environemt, 
+#hlp so that available  utilities can be used interactively.
+#hlp See http://gaussian.com/utils/ for more information.
+#hlp Usage: $scriptname [option] [--] <commands>
 #hlp
 # 
 
