@@ -169,7 +169,7 @@ process_inputfile ()
     additional_keywords+=("guess(read)")
     message "Added '${additional_keywords[-1]}' to the route section."
     if check_allcheck_option "$modified_route" ; then 
-      : 
+      debug "Keyword 'AllCheck' detected in input stream."
     else 
       while ! modified_route=$(remove_geom_keyword     "$modified_route") ; do : ; done
       additional_keywords+=("geom(check)")
@@ -189,9 +189,9 @@ process_inputfile ()
       additional_keywords+=('ChkBasis')
       message "Added '${additional_keywords[-1]}' to the route section."
       if check_denfit_keyword "$modified_route" ; then
-        debug "No 'DenFit' present."
-      else
         warning "Please check density fitting settings are compatible with 'ChkBasis'."
+      else
+        debug "No 'DenFit' present."
       fi
     fi
 

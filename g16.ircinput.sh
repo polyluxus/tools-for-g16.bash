@@ -162,7 +162,7 @@ process_inputfile ()
     while ! modified_route=$(remove_opt_keyword      "$modified_route") ; do : ; done
     # IRC calculations build upon Freq calculations, hence the latter should be present in the source
     if check_freq_keyword "$modified_route" ; then
-      debug "Source input was frequency calculation."
+      message "Source input is frequency calculation, found 'FREQ' keyword."
     else
       warning "Keyword 'freq' was not found in input stream. Please check source input."
       warning "Running an IRC calculation makes only sense on a successful frequency calculation."
@@ -177,7 +177,7 @@ process_inputfile ()
     additional_keywords+=("guess(read)")
     message "Added '${additional_keywords[-1]}' to the route section."
     if check_allcheck_option "$modified_route" ; then 
-      : 
+      debug "Keyword 'AllCheck' detected in input stream."
     else 
       while ! modified_route=$(remove_geom_keyword     "$modified_route") ; do : ; done
       additional_keywords+=("geom(check)")
@@ -197,9 +197,9 @@ process_inputfile ()
       additional_keywords+=('ChkBasis')
       message "Added '${additional_keywords[-1]}' to the route section."
       if check_denfit_keyword "$modified_route" ; then
-        debug "No 'DenFit' present."
+        warning "Please check density fitting ('DenFit') settings are compatible with 'ChkBasis'."
       else
-        warning "Please check density fitting settings are compatible with 'ChkBasis'."
+        debug "No 'DenFit' present."
       fi
     fi
 

@@ -159,10 +159,11 @@ process_inputfile ()
     # remove the opt keyword (it can be added later)
     if [[ $use_opt_keyword =~ [Tt][Rr][Uu][Ee] ]] ; then
       if check_opt_keyword "$modified_route" ; then
-        debug "Found Opt keyword in input stream, it will be preserved."
+        message "Detected 'OPT' keyword in input stream, it will be preserved including options."
       else
-        debug "Opt keyword not present in input stream."
+        debug "'OPT' keyword not present in input stream."
         additional_keywords+=("OPT")
+        message "Added '${additional_keywords[-1]}' to the route section."
       fi
     else
       while ! modified_route=$(remove_opt_keyword      "$modified_route") ; do : ; done
@@ -192,7 +193,7 @@ process_inputfile ()
     additional_keywords+=("guess(read)")
     message "Added '${additional_keywords[-1]}' to the route section."
     if check_allcheck_option "$modified_route" ; then 
-      : 
+      debug "Keyword 'AllCheck' detected in input stream."
     else 
       while ! modified_route=$(remove_geom_keyword     "$modified_route") ; do : ; done
       additional_keywords+=("geom(check)")
@@ -208,9 +209,9 @@ process_inputfile ()
       additional_keywords+=('ChkBasis')
       message "Added '${additional_keywords[-1]}' to the route section."
       if check_denfit_keyword "$modified_route" ; then
-        debug "No 'DenFit' present."
-      else
         warning "Please check density fitting settings are compatible with 'ChkBasis'."
+      else
+        debug "No 'DenFit' present."
       fi
     fi
 

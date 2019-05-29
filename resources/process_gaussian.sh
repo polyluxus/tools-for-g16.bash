@@ -1147,8 +1147,7 @@ check_allcheck_option ()
     local keyword_alias="AllCheck"
     debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
     if check_any_keyword "$parseline" "$pattern" ; then
-      message "Keyword '$keyword_alias' found in input stream."
-      debug "Again returning with 0."
+      debug "Keyword '$keyword_alias' found in input stream. (Return 0)"
       return 0
     fi
     debug "Keyword '$keyword_alias' not found. (Return 1)"
@@ -1164,8 +1163,7 @@ check_freq_keyword ()
     local keyword_alias="Freq"
     debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
     if check_any_keyword "$parseline" "$pattern" ; then
-      message "Keyword '$keyword_alias' found in input stream."
-      debug "Again returning with 0."
+      debug "Keyword '$keyword_alias' found in input stream. (Return 0)"
       return 0
     fi
     debug "Keyword '$keyword_alias' not found. (Return 1)"
@@ -1181,8 +1179,7 @@ check_denfit_keyword ()
     local keyword_alias="Denfit"
     debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
     if check_any_keyword "$parseline" "$pattern" ; then
-      message "Keyword '$keyword_alias' found in input stream."
-      debug "Again returning with 0."
+      debug "Keyword '$keyword_alias' found in input stream. (Return 0)"
       return 0
     fi
     debug "Keyword '$keyword_alias' not found. (Return 1)"
@@ -1198,8 +1195,7 @@ check_gen_keyword ()
     local keyword_alias="Gen"
     debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
     if check_any_keyword "$parseline" "$pattern" ; then
-      message "Keyword '$keyword_alias' found in input stream."
-      debug "Again returning with 0."
+      debug "Keyword '$keyword_alias' found in input stream. (Return 0)"
       return 0
     fi
     debug "Keyword '$keyword_alias' not found. (Return 1)"
@@ -1215,8 +1211,7 @@ check_opt_keyword ()
     local keyword_alias="Opt"
     debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
     if check_any_keyword "$parseline" "$pattern" ; then
-      message "Keyword '$keyword_alias' found in input stream."
-      debug "Again returning with 0."
+      debug "Keyword '$keyword_alias' found in input stream. (Return 0)"
       return 0
     fi
     debug "Keyword '$keyword_alias' not found. (Return 1)"

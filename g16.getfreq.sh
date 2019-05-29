@@ -149,7 +149,7 @@ process_one_file ()
 
     extracted_route=$(getlines_route_g16_output_file "$logfile")
     if check_freq_keyword "$extracted_route" ; then
-      debug "Fine, this appears to be a frequency calculations."
+      debug "Fine, this appears to be a frequency calculations (FREQ found in route section)."
     else
       warning "This does not appear to be a frequency calculation."
       warning "Only the first route section will be checked,"
