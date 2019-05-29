@@ -1421,6 +1421,9 @@ print_configuration ()
   fi
   echo ""
   echo "#"
+  echo "# Created with $scriptname, which is part of $softwarename"
+  echo "configured_version=$version"
+  echo "configured_versiondate=$versiondate"
   echo "# End of automatic configuration, $(date)."
 }
 
