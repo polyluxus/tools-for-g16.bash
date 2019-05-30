@@ -765,6 +765,13 @@ get_configuration_from_file ()
   #shellcheck source=../g16.tools.rc 
   . "$g16_tools_rc_loc"
   message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
+  # Put a warning for pre-0.3.0 versions
+  if [[ "$configured_version" =~ ^0\.3\.[[:digit:]]+ ]] ; then
+    debug "Configured version was $configured_version ($configured_versiondate)."
+  else
+    warning "Configured version was $configured_version ($configured_versiondate),"
+    warning "some sttings might have changed, or newer ones have not been configured yet."
+  fi
 }
 
 translate_conf_settings_to_internal ()
@@ -1420,6 +1427,8 @@ print_configuration ()
     echo "  requested_submit_status=\"$use_requested_submit_status\""
   fi
   echo ""
+  echo "#"
+  echo "# Meta information "
   echo "#"
   echo "# Created with $scriptname, which is part of $softwarename"
   echo "configured_version=$version"

@@ -201,3 +201,9 @@
 
 # Calculations will be submitted to run (hold/keep)
   requested_submit_status="run"
+
+# Meta information:
+# This is to avoid unnecessary warnings, if the configuration has not been performed.
+configured_version="$version"
+configured_versiondate="$versiondate"
+
