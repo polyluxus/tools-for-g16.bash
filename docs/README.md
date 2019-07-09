@@ -1,5 +1,5 @@
 This document is based on the Cheat-Sheet for `tools-for-g16.bash`
-and was last updated with version 0.3.0.dev, 2019-05-XX.
+and was last updated with version 0.3.0.dev, 2019-07-XX.
 
 Introduction
 ============
@@ -37,7 +37,8 @@ which always has precedence. Every script will check four different
 directories in the order (1.) installation directory, (2.) user's home, 
 (3.) `.config` in user's home, (4.) parent working directory.
 It will load the last configuration file it finds.
-Setting files can be generated with the `configure/configure.sh` script.
+Setting files can be generated with the `configure/configure.sh` script,
+see the manual for more detailed information.
 
 `g16.prepare.sh`
 ================
@@ -188,6 +189,20 @@ Usage: `g16.spinput.sh [opt] <file>`
 | `-s`       | silence script (incremental)
 | `-h`       | Help file
 
+`g16.testroute.sh`
+==================
+
+This tool parses a Gaussian 16 inputfile and tests the route section for
+syntax errors with the Gaussian 16 utility `testrt`.
+
+Usage: `g16.testroute.sh [opt] <file>`
+
+| option | description 
+| ------ | ---
+| `--`   | Close reading options
+| `-s`   | Silence script (incremental)
+| `-h`   | Help file
+
 `g16.submit.sh`
 ===============
 
@@ -217,16 +232,16 @@ Usage: `g16.submit.sh [opt] <file>`
 `g16.testroute.sh`
 ==================
 
-This tool parses a Gaussian 16 inputfile and tests the route section for
-syntax errors with the Gaussian 16 utility `testrt`.
+This tool provides a Gaussian 16 environment to execute utilities interactively. 
 
-Usage: `g16.testroute.sh [opt] <file>`
+Usage: `g16.wrapper.sh [opt] <utility (commandline)>`
 
-| option | description 
-| ------ | ---
-| `--`   | Close reading options
-| `-s`   | Silence script (incremental)
-| `-h`   | Help file
+| option     | description 
+| ---------- | -----------
+| `-m <INT>` | Memory (megabyte)
+| `-p <INT>` | Processors
+| `--`       | Close reading options
+| `-h`       | Help file
 
 `g16.getenergy.sh`
 ==================

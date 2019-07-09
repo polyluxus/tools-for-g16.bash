@@ -13,6 +13,8 @@
 \section{Installation \& Configuration}
 \label{sec:installation}
 
+\subsection{Installation of the main scripts}
+
 The scripts of this repository are not self-contained,
 they each need access to the resources directory 
 and it has to be called like that.
@@ -40,17 +42,67 @@ The scripts will search for these configuration settings in the following order 
 \end{enumerate}
 Only the last found file will be applied.
 
-The repository comes with a configuration script in the \texttt{configure} directory.
-It produces a formatted file like \lstinline`g16.tools.rc` from old or the default settings.
-While you can assign an arbitrary filename, 
-I recommend to store as \lstinline`.g16.toolsrc` in the root directory of the repository.
-
 To make the scripts accessible from anywhere, the directory where they have been stored
 must be found in the \texttt{PATH} variable.
 Alternatively, you can create softlinks to them in a directory, 
 which is already recognised by \texttt{PATH}.
 A common setting for this is the local \texttt{\$HOME/bin}.
-The configure script will, if desired, try to create these softlinks (omitting the \texttt{sh} suffix).
+
+\subsection{The configuration scripts}
+
+The repository comes with a configuration script in the \texttt{configure} directory.
+It produces a formatted file like \lstinline`g16.tools.rc` from old or the default settings.
+While you can assign an arbitrary filename, 
+I recommend to store as \lstinline`.g16.toolsrc` in the root directory of the repository.
+
+The script will prompt for options and will take user input where necessary.
+
+Usage: 
+
+\lstinline`configure.sh [opt]`
+
+Options:
+
+\begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
+  {\lstinline`-R`}       & Route mode. 
+    Load the default configuration file and skip directly to the route section editor.
+    This will replace the loaded configuration file.\\
+  {\lstinline`-O`}       & Overwrite mode.
+    Load a (specified) configuration file, run the configuration routine to update settings.
+    This will replace the loaded configuration file.\\
+  {\lstinline`-T`}       & Translate mode.
+    Load the default cofiguration file (possibly from an earlier version), 
+    and translate the settings to the most recent version and use default settings for everything unspecified.
+    Depending on the configuration file loaded, this may or may not work well.
+    This will replace the loaded default configuration file.\\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-h`}       & Print a small help file. \\
+\end{tabular}
+
+The configure script will also, if desired, try to create softlinks to the scripts (omitting the \texttt{sh} suffix),
+in the \texttt{\$HOME/bin} directory.
+
+In the \texttt{configure} directory is a second script, \lstinline`routebuilder.sh`,
+which is not designed to be executed on its own.
+Instead it interfaces to the \lstinline`configure.sh` script to update the route sections within the configuration files.
+However, it can be run by itself, creating an overwiew for the predefined routes and also manipulate them.
+If no target file is specified, then they will be written to a temporary file.
+
+Usage: 
+
+\lstinline`routebuilder.sh [opt]`
+
+Options:
+
+\begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
+  {\lstinline`-r <ARG>`} & Raw mode. 
+    Do not load the default configuration file, load \lstinline`<ARG>` instead as input.\\
+  {\lstinline`-o <ARG>`} & Specify the output file for the created/ stored route sections.\\
+  {\lstinline`-m <ARG>`} & Specify a custom message \lstinline`<ARG>` to include into the menu build.\\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-h`}       & Print a small help file. \\
+\end{tabular}
+
 
 \subsection{Dependencies}
 
@@ -63,20 +115,25 @@ and the post-processing scripts.
 
 It should be no surprise that an installation of Gaussian 16 is necessary for
 some of the scripts, currently used are the utilities \texttt{testrt} and \texttt{formchk}.
-While a main wrapper (see next chapter) is still not included in the repository,
-the scripts will accept these.
-Otherwise the Gaussian environment has to be set up, 
-and the utilities must be found in the \texttt{PATH} directories.
-The direct path to these utilities might work, too.
+They can either be specified via paths to the respective binaries or directories,
+or as modules which may be loaed at runtime via the \texttt{module} command.
+A wrapper to set a suitable environment is included within this repository (see next chapter).
+ % While a main wrapper (see next chapter) is still not included in the repository,
+ % the scripts will accept these.
+ % Otherwise the Gaussian environment has to be set up, 
+ % and the utilities must be found in the \texttt{PATH} directories.
+ % The direct path to these utilities might work, too.
+ % 
+ % The following example is a very simple wrapper script when using software modules. 
+ % \begin{lstlisting}[language=bash]
+ % #!/bin/bash
+ % module load gaussian
+ % "$@"
+ % \end{lstlisting}
 
-The following example is a very simple wrapper script when using software modules. 
-\begin{lstlisting}[language=bash]
-#!/bin/bash
-module load gaussian
-"$@"
-\end{lstlisting}
-For the RWTH clusters, which have such an environment installed, 
-there is a separate repository with such wrapper scripts:
+For the RWTH clusters, which have a modular environment installed, 
+there is a separate repository with some more scripts, 
+which can also interface to this repository.
 \href{https://github.com/polyluxus/rwth-tools}{github.com/polyluxus/rwth-tools}.
 
 \end{document}

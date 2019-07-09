@@ -37,7 +37,7 @@
 \newcommand\mybackslash{\char`\\}
 
 % What this is about
-\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.3.0.dev, 2019-05-XX)}
+\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.3.0.dev, 2019-07-XX)}
 \author{Martin C Schwarzer}
 \date{\today}
 
@@ -87,7 +87,8 @@ Every script will check four different directories in the order
 \end{enumerate*}
 It will load the last configuration file it finds.
 
-Setting files can be generated with the \texttt{configure/configure.sh} script.
+Setting files can be generated with the \texttt{configure/configure.sh} script,
+see the manual for more detailed information.
 
 \section{\texttt{g16.prepare.sh}}
 
@@ -247,9 +248,24 @@ Usage: \texttt{g16.spinput.sh [opt] <file>}
   \item[-h      ] Help file 
 \end{rslisttt}
 
+\section{\texttt{g16.testroute.sh}}
+
+This tool parses a Gaussian 16 inputfile and 
+tests the route section for syntax errors 
+with the Gaussian 16 utility \texttt{testrt}.
+
+Usage: \texttt{g16.testroute.sh [opt] <file>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[--      ] Close reading options
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
 \section{\texttt{g16.submit.sh}}
 
 This tool parses and then submits a Gaussian 16 inputfile to a queueing system.
+For details on the extended mail interface see the manual.
 
 Usage: \texttt{g16.submit.sh [opt] <file>}
 
@@ -278,15 +294,16 @@ Usage: \texttt{g16.submit.sh [opt] <file>}
   \item[-h      ] Help file 
 \end{rslisttt}
 
-\section{\texttt{g16.testroute.sh}}
+\section{\texttt{g16.wrapper.sh}}
 
-This tool parses a Gaussian 16 inputfile and 
-tests the route section for syntax errors 
-with the Gaussian 16 utility \texttt{testrt}.
+This tool provides a Gaussian 16 environment to execute utilities interactively.
+
+Usage: \texttt{g16.wrapper.sh [opt] <utility commandline>}
 
 \begin{rslisttt}{-m <ARG>}
+  \item[-m <INT>] Memory (megabyte)
+  \item[-p <INT>] Processors
   \item[--      ] Close reading options
-  \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
 
