@@ -102,6 +102,11 @@ get_scriptpath_and_source_files ()
     stay_quiet=0
     process_input_files="true"
     print_full_logname="false"
+    # set default format for logfile format
+    print_format_logname="%-25s"
+    print_one_line="false"
+    recurse_through_directories="false"
+    header_printed="false"
     
     # Import other functions
     #shellcheck source=./resources/messaging.sh
@@ -129,25 +134,32 @@ get_scriptpath_and_source_files ()
     fi
 }
 
+
 #
 # Specific functions for this script only
 #
 
+print_headerline ()
+{
+  [[ "$header_printed" == "false" ]] || return 0 
+  # shellcheck disable=SC2059
+  printf "$print_format_logname %-15s   %20s ( %6s )\n" "Command file" "Functional" "Energy / Hartree" "cycles"
+  header_printed="true"
+}
+
 process_one_file ()
 {
   # run only for one file at the time
-  local testfile="$1" logfile logname print_format_logname
+  local testfile="$1" logfile logname
   local readline returned_array
   local functional energy cycles
   debug "Tested file: ${testfile}."
-  # set default format for logfile format
-  print_format_logname="%-25s"
 
   if logfile="$(match_output_file "$testfile")" ; then
     logname=${logfile%.*}
     logname=${logname/\.\//}
     (( ${#logname} > 25 )) && logname="${logname:0:10}*${logname:(-14)}"
-    debug "Using: '$logname' for '$filename'."
+    debug "Using: '$logname' for '$testfile'."
     # Could also be achived with getlines_g16_output_file but would be overkill
     readline=$(tac "$logfile" | grep -m1 'SCF Done')
     mapfile -t returned_array < <( find_energy "$readline" )
@@ -157,8 +169,11 @@ process_one_file ()
     cycles="${returned_array[2]}"
     if [[ "$print_full_logname" == "true" ]] ; then
       # Overwrite format for logfile
-      print_format_logname="%s:\\n  "
-      logname="$logfile"
+      if [[ "$print_one_line" == "true" ]] ; then
+        logname="$(get_absolute_location "$logfile")"
+      else
+        logname="$logfile"
+      fi
     fi
 
     if (( ${#returned_array[@]} > 0 )) ; then
@@ -172,6 +187,14 @@ process_one_file ()
   else
     logname=${testfile/\.\//}
     logname="${logname} (input)"
+    if [[ "$print_full_logname" == "true" ]] ; then
+      # Overwrite format for logfile
+      if [[ "$print_one_line" == "true" ]] ; then
+        logname="$(get_absolute_location "$testfile") (input)"
+      else
+        logname="$testfile (input)"
+      fi
+    fi
     # shellcheck disable=SC2059
     printf "$print_format_logname No output file found.\\n" "$logname"
     return 1
@@ -184,20 +207,24 @@ process_directory ()
   local suffix="$1" returncode=0
   local -a file_list
   local testfile process_file 
-  printf '%-25s %s\n' "Summary for " "${PWD#\/*\/*\/}" 
-  printf '%-25s %s\n\n' "Created " "$(date +"%Y/%m/%d %k:%M:%S")"
-  # Print a header
-  if [[ "$print_full_logname" == "true" ]] ; then
-    printf '%s\n   %-15s   %20s ( %6s )\n' "Command/output file" "Functional" "Energy / Hartree" "cycles"
-  else
-    printf '%-25s %-15s   %20s ( %6s )\n' "Command/output file" "Functional" "Energy / Hartree" "cycles"
+  if [[ "$print_one_line" == "false" ]] ; then
+    # shellcheck disable=SC2059
+    printf "$print_format_logname %s\n" "Summary for " "${PWD#*$USER\/}" 
+    # shellcheck disable=SC2059
+    printf "$print_format_logname %s\n" "Created " "$(date +"%Y/%m/%d %k:%M:%S")"
   fi
+  # Print a header
+  print_headerline
   for testfile in ./*."$suffix" ; do
     [[ -e $testfile ]] || continue
     file_list+=( "$testfile" )
   done
   if (( ${#file_list[*]} == 0 )) ; then
-    warning "No output files found in this directory."
+    if [[ "$print_one_line" == "false" ]] ; then
+      warning "No '*.$suffix' files found in this directory."
+    else
+      warning "No '*.$suffix' files found in directory '$PWD'."
+    fi
     return 1
   else
     debug "Files found: ${#file_list[*]}"
@@ -206,6 +233,34 @@ process_directory ()
     process_one_file "$process_file" || (( returncode++ ))
   done
   return $returncode
+}
+
+recurse_directories ()
+{
+  # Find all directories
+  local returncode=0
+  local suffix="$1"
+  local directory_start="$2"
+  local directory_process
+  for directory_process in "$directory_start"/* ; do
+    debug "Processing: $directory_process"
+    if [[ -d "$directory_process" ]] ; then 
+      debug "Directory found: $directory_process"
+      push_directory_to_stack "$directory_process" || fatal "Switching to '$directory_process' failed."
+      recurse_directories "$suffix" "$PWD"
+      pop_directory_from_stack -- || fatal "Popping directory from stack failed."
+    fi
+  done
+  if [[ "$print_one_line" == "false" ]] ; then
+    # Always print a header in not one line mode
+    header_printed="false"
+  else
+    # Only print a single header
+    print_headerline
+  fi
+  debug "We are here: $PWD"
+  process_directory "$suffix"
+  [[ "$print_one_line" == "false" ]] && printf '\n'
 }
 
 #
@@ -250,7 +305,7 @@ warn_and_set_locale
 # Initialise options
 OPTIND="1"
 
-while getopts :hsLi:o: options ; do
+while getopts :hsRL1i:o: options ; do
   #hlp   Usage: $scriptname [options] <filenames>
   #hlp
   #hlp   If no filenames are specified, the script looks for all '*.com'
@@ -259,18 +314,27 @@ while getopts :hsLi:o: options ; do
   #hlp   Options:
   #hlp
   case $options in
-    #hlp     -h        Prints this help text
+    #hlp     -h        Prints this help text.
     #hlp
     h) helpme ;; 
 
-    #hlp     -s        Suppress messages, warnings, and errors
+    #hlp     -s        Suppress messages, warnings, and errors.
     #hlp               (May be specified multiple times.)
     #hlp
     s) (( stay_quiet++ )) ;; 
 
-    #hlp     -L        Print the full name and path (relative to pwd) of the logfile
+    #hlp     -R        Recurse through directories.
+    #hlp
+    R) recurse_through_directories="true" ;;
+
+    #hlp     -L        Print the full name and path (relative to the current pwd) of the logfile.
+    #hlp               In combination with '-1', it will print the absolute path to the file.
     #hlp
     L) print_full_logname="true" ;;
+
+    #hlp     -1        (in words: one) Print only one line per file.
+    #hlp
+    1) print_one_line="true" ;;
 
     #hlp     -i <ARG>  Specify input suffix if processing a directory.
     #hlp               (Will look for input files with given suffix and
@@ -293,31 +357,44 @@ while getopts :hsLi:o: options ; do
 
     :) fatal "Option -$OPTARG requires an argument." ;;
 
+    #hlp
+
   esac
 done
 
 shift $(( OPTIND - 1 ))
 
+if [[ "$print_full_logname" == "true" ]] ; then
+  # Overwrite format for logfile
+  if [[ "$print_one_line" == "true" ]] ; then
+    print_format_logname="%s "
+  else
+    print_format_logname="%s:\\n  "
+  fi
+fi
+
 if (( $# == 0 )) ; then
   if [[ $process_input_files =~ [Tt][Rr][Uu][Ee] ]] ; then
     debug "Processing inputfiles with suffix '$g16_input_suffix'."
-    process_directory "$g16_input_suffix" 
+    use_g16_suffix="$g16_input_suffix" 
   else
     if use_g16_output_suffix=$(match_output_suffix "$g16_output_suffix") ; then
       debug "Recognised output suffix '$use_g16_output_suffix'."
     else
       fatal "Unrecognised output suffix '$g16_output_suffix'."
     fi
-    process_directory "$use_g16_output_suffix"
+    use_g16_suffix="$use_g16_output_suffix"
+  fi
+  if [[ "$recurse_through_directories" =~ [Tt][Rr][Uu][Ee] ]] ; then
+    debug "Recursing through directories."
+    recurse_directories "$use_g16_suffix" "$PWD"
+  else
+    process_directory "$use_g16_suffix"
   fi
 else
   # Print a header if more than one file specified
   if (( $# > 1 )) ; then 
-    if [[ "$print_full_logname" == "true" ]] ; then
-      printf '%s\n   %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
-    else
-      printf '%-25s %-15s   %20s ( %6s )\n' "Command file" "Functional" "Energy / Hartree" "cycles"
-    fi
+    print_headerline
   fi
   for inputfile in "$@"; do
     process_one_file "$inputfile"
@@ -325,5 +402,6 @@ else
 fi
 
 message "Created with $script_invocation_spell."
+message "Created $(date +"%Y/%m/%d %k:%M:%S")."
 message "$scriptname is part of $softwarename $version ($versiondate)"
 #hlp   $scriptname is part of $softwarename $version ($versiondate) 

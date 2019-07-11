@@ -172,3 +172,34 @@ print_declared_array ()
 
     debug "$parseline"
 }
+
+#
+# Redefinitions of command functions
+#
+
+push_directory_to_stack ()
+{
+  local tmplog line returncode=0
+  tmplog=$(mktemp --tmpdir tmplog.XXXXXXXX)
+  debug "Created temporary log file: $tmplog"
+  command pushd "$@" &> "$tmplog" || returncode="$?"
+  while read -r line || [[ -n "$line" ]] ; do
+    debug "(pushd) $line"
+  done < "$tmplog"
+  debug "$(rm -v -- "$tmplog")"
+  return $returncode
+}
+
+pop_directory_from_stack ()
+{
+  local tmplog line returncode=0
+  tmplog=$(mktemp --tmpdir tmplog.XXXXXXXX)
+  debug "Created temporary log file: $tmplog"
+  command popd "$@" > "$tmplog" || returncode="$?"
+  while read -r line || [[ -n "$line" ]] ; do
+    debug "(popd) $line"
+  done < "$tmplog"
+  debug "$(rm -v -- "$tmplog")"
+  return $returncode
+}
+

@@ -564,12 +564,21 @@ Options:
 \begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
   {\lstinline`-i <ARG>`} & Specify the input suffix to be used for finding matching output files when processing a directory. \\
   {\lstinline`-o <ARG>`} & Specify the output suffix to be used for finding the files when processing a directory. \\
+  {\lstinline`-R`}       & Recurse into directories will cause a summary for each directory up until the parent working directory.\\
   {\lstinline`-L`}       & Print the full file and path name of the parsed output file (seperated by newline). 
     The default behaviour is printing only the filename without the suffix. \\
+  {\lstinline`-1`}       & Print only one line per filename.
+    This will also skip some header lines.
+    If used in conjunction with \lstinline`-L` the absolute path to the file is printed.\\
   {\lstinline`--`}       & Explicitly close reading script options. \\
   {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
   {\lstinline`-h`}       & Print a small help file. \\
 \end{tabular}
+
+If a table of all energies in a given directory tree is desired, 
+for example from a conformational scan, this can be accomplished by:
+
+\lstinline`g16.getenergy.sh -RL1`
 
 \subsection{Post-processing: \texorpdfstring{{\lstinline`g16.getfreq.sh`}}{g16.getfreq.sh}}
 \label{sec:g16.getfreq}

@@ -257,7 +257,9 @@ current directory.
 | ---------- | -----------
 | `-i <ARG>` | Specify input suffix if processing directory
 | `-o <ARG>` | Specify output suffix if processing directory
+| `-R`       | Recurse into directories
 | `-L`       | Print the full file and path name (seperated by newline)
+| `-1`       | Print only one line per file
 | `--`       | Close reading options
 | `-s`       | silence script (incremental)
 | `-h`       | Help file
