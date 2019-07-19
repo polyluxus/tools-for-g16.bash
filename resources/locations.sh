@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # If this script is not sourced, return before executing anything
-if (( ${#BASH_SOURCE[*]} == 1 )) ; then
+if (return 0 2>/dev/null) ; then
+  # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
+  : #Everything is fine
+else
   echo "This script is only meant to be sourced."
   exit 0
 fi
@@ -86,7 +89,7 @@ get_scriptpath_and_source_files ()
     fi
     
     # Import default variables
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/default_variables.sh
+    #shellcheck source=../resources/default_variables.sh
     source "$resourcespath/default_variables.sh" &> "$tmplog" || (( error_count++ ))
     
     # Set more default variables
@@ -97,15 +100,15 @@ get_scriptpath_and_source_files ()
     unset outputfile
     
     # Import other functions
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
+    #shellcheck source=../resources/messaging.sh
     source "$resourcespath/messaging.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/rcfiles.sh
+    #shellcheck source=../resources/rcfiles.sh
     source "$resourcespath/rcfiles.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
+    #shellcheck source=../resources/test_files.sh
     source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/process_gaussian.sh
+    #shellcheck source=../resources/process_gaussian.sh
     source "$resourcespath/process_gaussian.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/validate_numbers.sh
+    #shellcheck source=../resources/validate_numbers.sh
     source "$resourcespath/validate_numbers.sh" &> "$tmplog" || (( error_count++ ))
 
     if (( error_count > 0 )) ; then

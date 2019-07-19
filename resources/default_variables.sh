@@ -4,7 +4,10 @@
 # They can (or should) be set in the rc file, too.
 
 # If this script is not sourced, return before executing anything
-if (( ${#BASH_SOURCE[*]} == 1 )) ; then
+if (return 0 2>/dev/null) ; then
+  # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
+  : #Everything is fine
+else
   echo "This script is only meant to be sourced."
   exit 0
 fi
@@ -13,8 +16,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-g16.bash"
-version="0.2.2"
-versiondate="2019-04-04"
+version="0.3.0"
+versiondate="2019-07-19"
 
 #
 # Standard commands for external software:
@@ -40,11 +43,18 @@ load_modules="true"
 # the names (in correct order) of the modules:
 g16_modules[0]="CHEMISTRY"
 g16_modules[1]="gaussian/16.b01_bin"
+# Specify a path to a wrapper command loading the Gaussian environment, 
+# this will be executed immediately before the utilities below
+# g16_wrapper_cmd="wrapper.g16" # for example
+# empty by default
+g16_wrapper_cmd=""
 # Options relating to producing a formatted checkpoint file
-g16_formchk_cmd="wrapper.g16 formchk" # ( Current workaround )
+# should be found in PATH, an absolute path, or found via the wrapper above
+g16_formchk_cmd="formchk"
 g16_formchk_opts="-3"
 # Options related to testing the route section
-g16_testrt_cmd="wrapper.g16 testrt" # ( Current workaround )
+# should be found in PATH, an absolute path, or found via the wrapper above
+g16_testrt_cmd="testrt" 
 # (There are no options for this utility.)
 
 # Options related to use open babel
@@ -55,9 +65,12 @@ obabel_cmd="obabel"
 #
 g16_input_suffix="com"
 g16_output_suffix="log"
-g16_route_section_predefined[00]="# PM6"
-g16_route_section_predefined[01]="#P BP86/def2SVP   EmpiricalDispersion=GD3BJ"
-g16_route_section_predefined[02]="#P B97D3/def2SVP"
+g16_route_section_predefined[0]="# PM6"
+g16_route_section_predefined_comment[0]="semi-empirical method (default route)"
+g16_route_section_predefined[1]="#P BP86/def2SVP   EmpiricalDispersion=GD3BJ"
+g16_route_section_predefined_comment[1]="pure DFT method with DFT-D3 with Becke-Johnson damping, double zeta BS (default route)"
+g16_route_section_predefined[2]="#P B97D3/def2SVP"
+g16_route_section_predefined_comment[2]="pure DFT method with double zeta BS (default route)"
 g16_route_section_default="# B97D3/def2SVP"
 
 #
@@ -69,7 +82,7 @@ output_verbosity=0
 #
 # Default values for queueing system submission
 #
-# Select a queueing system (pbs-gen, slurm-gen, slurm-rwth, bsub-rwth, bsub-gen
+# Select a queueing system (pbs-gen, slurm-gen, slurm-rwth, bsub-rwth, bsub-gen)
 request_qsys="pbs-gen"
 # Walltime for remote execution, header line for the queueing system
 requested_walltime="24:00:00"
@@ -84,6 +97,11 @@ requested_maxdisk=10000
 qsys_project=default
 # E-Mail address to send notifications to
 user_email=default
+# Activate/deactivate sending extra mail (this is a configuration file only option)
+# ("1/yes/active" or "0/no/disabled")
+xmail_interface="disabled"
+# Provide the interface command (this can be any script/binary)
+xmail_cmd="mail"
 # Request a certain machine type
 bsub_machinetype=default
 # Calculations will be submitted to run (hold/keep)

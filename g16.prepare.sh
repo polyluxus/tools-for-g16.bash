@@ -104,7 +104,7 @@ get_scriptpath_and_source_files ()
     fi
     
     # Import default variables
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/default_variables.sh
+    #shellcheck source=./resources/default_variables.sh
     source "$resourcespath/default_variables.sh" &> "$tmplog" || (( error_count++ ))
     
     # Set more default variables
@@ -115,15 +115,15 @@ get_scriptpath_and_source_files ()
     unset outputfile
     
     # Import other functions
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
+    #shellcheck source=./resources/messaging.sh
     source "$resourcespath/messaging.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/rcfiles.sh
+    #shellcheck source=./resources/rcfiles.sh
     source "$resourcespath/rcfiles.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
+    #shellcheck source=./resources/test_files.sh
     source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/process_gaussian.sh
+    #shellcheck source=./resources/process_gaussian.sh
     source "$resourcespath/process_gaussian.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/validate_numbers.sh
+    #shellcheck source=./resources/validate_numbers.sh
     source "$resourcespath/validate_numbers.sh" &> "$tmplog" || (( error_count++ ))
 
     if (( error_count > 0 )) ; then
@@ -174,7 +174,7 @@ process_inputfile ()
     if [[ -z $route_section ]] ; then 
       route_section="$g16_route_section_default"
       warning "No route section was specified, using default:"
-      warning "$(fold -w80 -c -s <<< "$route_section")"
+      warning "$(fold -w80 -s <<< "$route_section")"
     fi
     if [[ -z $use_temp_keyword ]] ; then
       debug "No temperature set."      
@@ -309,9 +309,14 @@ process_options ()
           #hlp              This can be amended with other switches, like -r, -T, -P.
           #hlp 
           R) 
-            route_section="$OPTARG" 
+            # Remove possible comment
+            # (just to be sure as other scripts would do that anyway, might be redundant)
+            # route_section="$OPTARG" 
+            route_section=$( remove_g16_input_comment "$OPTARG" )
             if validate_g16_route "$route_section" ; then
               debug "Route specified with -R is fine."
+              message "Applied route section:"
+              message "$(fold -w80 -s <<< "$route_section")"
             else
               warning "Syntax error in specified route section:"
               warning "  $route_section"
@@ -327,23 +332,32 @@ process_options ()
               local array_index=0
               for array_index in "${!g16_route_section_predefined[@]}" ; do
                 (( array_index > 0 )) && printf '\n'
-                printf '%5d : ' "$array_index" 
+                printf '%3d       : ' "$array_index" 
                 local printvar printline=0
                 while read -r printvar || [[ -n "$printvar" ]] ; do
                   if (( printline == 0 )) ; then
                     printf '%-80s\n' "$printvar"
                   else
-                    printf '        %-80s\n' "$printvar"
+                    printf '            %-80s\n' "$printvar"
                   fi
                   (( printline++ ))
-                done <<< "$( fold -w80 -c -s <<< "${g16_route_section_predefined[$array_index]}" )"
+                done <<< "$( fold -w80 -s <<< "${g16_route_section_predefined[$array_index]}" )"
+                unset printvar 
+                while read -r printvar || [[ -n "$printvar" ]] ; do
+                  [[ -z "$printvar" ]] && printvar="no comment"
+                  printf '%3d(cmt.) : %-80s\n' "$array_index" "$printvar"
+                done <<< "$( fold -w80 -s <<< "${g16_route_section_predefined_comment[$array_index]}" )"
               done
               exit 0
             elif is_integer "$OPTARG" ; then
               [[ -z ${g16_route_section_predefined[$OPTARG]} ]] && fatal "Out of range: $OPTARG"
-              route_section="${g16_route_section_predefined[$OPTARG]}"
+              # Remove possible comment
+              # (just to be sure as other scripts would do that anyway, might be redundant)
+              # route_section="$OPTARG" 
+              # route_section="${g16_route_section_predefined[$OPTARG]}"
+              route_section=$( remove_g16_input_comment "${g16_route_section_predefined[$OPTARG]}" )
               message "Applied route section:"
-              message "$(fold -w80 -c -s <<< "$route_section")"
+              message "$(fold -w80 -s <<< "$route_section")"
             else
               fatal "No valid argument '$OPTARG'."
             fi
@@ -506,7 +520,11 @@ process_options ()
 #
 
 # If this script is sourced, return before executing anything
-(( ${#BASH_SOURCE[*]} > 1 )) && return 0
+if ( return 0 2>/dev/null ) ; then
+  # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
+  debug "Script is sourced. Return now."
+  return 0
+fi
 
 exit_status=0
 # Save how script was called
@@ -544,10 +562,14 @@ debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 
 # Load custom settings from the rc
 
-if [[ ! -z $g16_tools_rc_loc ]] ; then
-  #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
+if [[ -n $g16_tools_rc_loc ]] ; then
+  #shellcheck source=./g16.tools.rc 
   . "$g16_tools_rc_loc"
   message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
+  if [[ "${configured_version}" =~ ^${version%.*} ]] ; then 
+    warning "Configured version was $configured_version ($configured_versiondate),"
+    warning "and probably needs an update to $version ($versiondate)."
+  fi
 else
   debug "No custom settings found."
 fi

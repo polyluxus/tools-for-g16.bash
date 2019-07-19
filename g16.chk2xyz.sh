@@ -1,9 +1,9 @@
 #!/bin/bash
 #
-#hlp   A very quick script to transform a checkpointfile
-#hlp   to a formatted checkpointfile and then to xyz 
-#hlp   coordinates using Open Babel.
-#hlp   Usage: $scriptname [option] [--] <checkpointfile(s)>
+#hlp A very quick script to transform a checkpointfile
+#hlp to a formatted checkpointfile and then to xyz 
+#hlp coordinates using Open Babel.
+#hlp Usage: $scriptname [option] [--] <checkpointfile(s)>
 #hlp
 # 
 
@@ -90,7 +90,7 @@ get_scriptpath_and_source_files ()
     fi
     
     # Import default variables
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/default_variables.sh
+    #shellcheck source=./resources/default_variables.sh
     source "$resourcespath/default_variables.sh" &> "$tmplog" || (( error_count++ ))
     
     # Set more default variables
@@ -98,15 +98,15 @@ get_scriptpath_and_source_files ()
     stay_quiet=0
     
     # Import other functions
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
+    #shellcheck source=./resources/messaging.sh
     source "$resourcespath/messaging.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/rcfiles.sh
+    #shellcheck source=./resources/rcfiles.sh
     source "$resourcespath/rcfiles.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
+    #shellcheck source=./resources/test_files.sh
     source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/process_gaussian.sh
+    #shellcheck source=./resources/process_gaussian.sh
     source "$resourcespath/process_gaussian.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/validate_numbers.sh
+    #shellcheck source=./resources/validate_numbers.sh
     source "$resourcespath/validate_numbers.sh" &> "$tmplog" || (( error_count++ ))
 
     if (( error_count > 0 )) ; then
@@ -147,18 +147,48 @@ format_one_checkpoint ()
     
     local output_fchk="${use_input_chk%.*}.fchk"
     local output_xyz="${use_input_chk%.*}.xyz"
-    local g16_output g16_formchk_args obabel_output
-    debug "global variables used: 'g16_formchk_cmd=\"$g16_formchk_cmd\"' 'g16_formchk_opts=\"$g16_formchk_opts\"'"
+    local g16_output  obabel_output
+    local -a g16_formchk_commandline
+    debug "Global variables used: 'g16_wrapper_cmd=\"$g16_wrapper_cmd\"'"
+    debug "Global variables used: 'g16_formchk_cmd=\"$g16_formchk_cmd\"' 'g16_formchk_opts=\"$g16_formchk_opts\"'"
 
-    backup_if_exists "$output_fchk"
-    backup_if_exists "$output_xyz"
+    if [[ "${operation_write_mode}" =~ [Bb][Aa][Cc][Kk][Uu][Pp] ]] ; then
+      debug "Backup mode will test files and prevent overwriting."
+      backup_if_exists "$output_fchk"
+      backup_if_exists "$output_xyz"
+    elif [[ "${operation_write_mode}" =~ [Ss][Kk][Ii][Pp] ]] ; then
+      debug "Skipping mode."
+      [[ -e "$output_fchk" ]] && message "File '$output_fchk' exists, skipping." && return 0
+      [[ -e "$output_xyz"  ]] && message "File '$output_xyz' exists, skipping." && return 0
+    elif [[ "${operation_write_mode}" =~ [Ff][Oo][Rr][Cc][Ee] ]] ; then
+      debug "Forced mode."
+      [[ -e "$output_fchk" ]] && message "Forced mode. $( rm -v -- "$output_fchk" )"
+      [[ -e "$output_xyz"  ]] && message "Forced mode. $( rm -v -- "$output_xyz" )"
+    fi
+
+    # Check whether the command is actually set
+    if [[ -z $g16_formchk_cmd ]] ; then
+      warning "Command to 'formchk' is unset, action cannot be performed."
+      return 1
+    fi
+    # Check if a wrapper should be used
+    if [[ -n $g16_wrapper_cmd ]] ; then
+      command -v "$g16_wrapper_cmd" &> /dev/null || { warning "Wrapper command ($g16_wrapper_cmd) not found." ; return 1 ; }
+      $g16_wrapper_cmd command -v "$g16_formchk_cmd" &> /dev/null || { warning "Wrapped formchk command ($g16_formchk_cmd) not found." ; return 1 ; }
+      g16_formchk_commandline=( "$g16_wrapper_cmd" "$g16_formchk_cmd" )
+      debug "Current command line: ${g16_formchk_commandline[*]}"
+    else
+      command -v "$g16_formchk_cmd" &> /dev/null || { warning "Gaussian formchk command ($g16_formchk_cmd) not found." ; return 1 ; }
+      g16_formchk_commandline=( "$g16_formchk_cmd" )
+      debug "Current command line: ${g16_formchk_commandline[*]}"
+    fi
     
     # Run the programs
-    [[ -z "$g16_formchk_opts" ]] || g16_formchk_args+=( "$g16_formchk_opts" )
-    g16_formchk_args+=( "$use_input_chk" "$output_fchk" )
+    [[ -z "$g16_formchk_opts" ]] || g16_formchk_commandline+=( "$g16_formchk_opts" )
+    g16_formchk_commandline+=( "$use_input_chk" "$output_fchk" )
+    debug "Current command line: ${g16_formchk_commandline[*]}"
 
-    debug "Command: $g16_formchk_cmd ${g16_formchk_args[*]} 2>&1"
-    g16_output=$($g16_formchk_cmd "${g16_formchk_args[@]}" 2>&1) || returncode="$?"
+    g16_output=$( ${g16_formchk_commandline[@]} 2>&1 ) || returncode="$?"
     if (( returncode != 0 )) ; then
       warning "There was an issue with formatting the checkpointfile."
       debug "Output: $g16_output"
@@ -172,7 +202,8 @@ format_one_checkpoint ()
     debug "Command: $obabel_cmd -ifchk \"$output_fchk\" -oxyz -O\"$output_xyz\" 2>&1"
     # Options for obabel to read a formatted checkpoint and output xyz coordinates
     
-    obabel_output=$($obabel_cmd -ifchk "$output_fchk" -oxyz -O"$output_xyz" 2>&1) || (( returncode+=$? ))
+    command -v "$obabel_cmd" &> /dev/null || { warning "Open babel command ($obabel_cmd) not found." ; return 1 ; }
+    obabel_output=$( $obabel_cmd -ifchk "$output_fchk" -oxyz -O"$output_xyz" 2>&1 ) || (( returncode+=$? ))
     if (( returncode != 0 )) ; then
       warning "There was an issue with writing the coordinates."
       debug "Output: $obabel_output"
@@ -191,25 +222,6 @@ format_only ()
     format_one_checkpoint "$tested_file" || return $?
 }
 
-###   get_all_checkpoint ()
-###   {
-###       # See [How to return an array in bash without using globals?](https://stackoverflow.com/a/49971213/3180795)
-###       # Works only in Bash 4.3 :(
-###       local -n arrayname="$1"
-###       # run over all checkpoint files
-###       local test_chk returncode=0
-###       # truncate first two directories 
-###       message "Finding all checkpoint files in ${PWD#\/*\/*\/}." 
-###       for test_chk in *.chk; do
-###         if [[ "$test_chk" == "*.chk" ]] ; then
-###           warning "There are no checkpointfiles in this directory."
-###           returncode=1
-###         fi
-###         arrayname+=("$test_chk")
-###       done
-###       return $returncode
-###   }
-
 format_list ()
 {
     # run over all checkpoint files
@@ -226,7 +238,11 @@ format_list ()
 #
 
 # If this script is sourced, return before executing anything
-(( ${#BASH_SOURCE[*]} > 1 )) && return 0
+if ( return 0 2>/dev/null ) ; then
+  # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
+  debug "Script is sourced. Return now."
+  return 0
+fi
 
 # Save how script was called
 printf -v script_invocation_spell "'%s' " "${0/#$HOME/<HOME>}" "$@"
@@ -250,6 +266,11 @@ else
   exec 4> /dev/null
 fi
 
+# Set default operation modus to single file
+
+operation_file_mode=single
+operation_write_mode=backup
+
 get_scriptpath_and_source_files || exit 1
 
 # Check whether we have the right numeric format (set it if not)
@@ -266,10 +287,14 @@ debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 
 # Load custom settings from the rc
 
-if [[ ! -z $g16_tools_rc_loc ]] ; then
-  #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
+if [[ -n $g16_tools_rc_loc ]] ; then
+  #shellcheck source=./g16.tools.rc 
   . "$g16_tools_rc_loc"
   message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
+  if [[ "${configured_version}" =~ ^${version%.*} ]] ; then 
+    warning "Configured version was $configured_version ($configured_versiondate),"
+    warning "and probably needs an update to $version ($versiondate)."
+  fi
 else
   debug "No custom settings found."
 fi
@@ -278,33 +303,72 @@ fi
 debug "Initialising option index."
 OPTIND="1"
 
-while getopts :ash options ; do
+while getopts :aABFSsh options ; do
   #hlp   Options:
   #hlp
   case $options in
-    #hlp     -a      Formats all checkpointfiles that are found in the current directory
+    #hlp     -a         Selects all checkpointfiles that are found in the current directory.
+    #hlp                Create backup files in cases where it would overwrite the files.
     #hlp
     a) 
-       ### get_all_checkpoint checkpoint_list # Needs Bash > 4.3
-       debug "Executing for directory; looking for all checkpoint files."
-       mapfile -t checkpoint_list < <( ls ./*.chk 2> /dev/null ) 
-       debug "Found: ${checkpoint_list[*]}"
-       (( ${#checkpoint_list[*]} == 0 )) &&  warning "No checkpoint files found in this directory."
-       ;;
+      debug "Executing for directory."
+      operation_file_mode="all"
+      # operation_write_mode="backup"
+      debug "Setting modus to '${operation_file_mode}'."
+      ;;
+    #hlp     -A         Formats almost all checkpointfiles that are found in the current directory.
+    #hlp                Skips files in cases where it would overwrite them.
+    #hlp                This is synonymous with -aS.
+    #hlp
+    A)
+      debug "Executing for directory. Skipping already formatted files."
+      operation_file_mode="all"
+      operation_write_mode="skip"
+      debug "Setting modus to '${operation_file_mode}' and '${operation_write_mode}'."
+      ;;
+    #hlp     -B         Create backup files in cases where it would overwrite them. [Default]
+    #hlp                Only the last option amongst -B/-F/-S will take affect.
+    #hlp
+    B) 
+      operation_write_mode="backup"
+      debug "Setting modus to '${operation_write_mode}'."
+      ;;
+    #hlp     -F         Forces files to be overwritten (actually they are removed before writing).
+    #hlp                Only the last option amongst -B/-F/-S will take affect.
+    #hlp
+    F) 
+      operation_write_mode="force"
+      debug "Setting modus to '${operation_write_mode}'."
+      ;;
+    #hlp     -S         Skips files in cases where it would overwrite them.
+    #hlp                Only the last option amongst -B/-F/-S will take affect.
+    #hlp
+    S) 
+      operation_write_mode="skip"
+      debug "Setting modus to '${operation_write_mode}'."
+      ;;
     #hlp     -s         Suppress messages, warnings, and errors of this script
     #hlp                (May be specified multiple times.)
     #hlp
-    s) (( stay_quiet++ )) ;; 
+    s) 
+      (( stay_quiet++ )) 
+      ;; 
     #hlp     -h         Prints this help text
     #hlp
-    h) helpme ;; 
+    h) 
+      helpme 
+      ;; 
 
     #hlp     --         Close reading options.
     # This is the standard closing argument for getopts, it needs no implemenation.
 
-   \?) fatal "Invalid option: -$OPTARG." ;;
+    \?) 
+     fatal "Invalid option: -$OPTARG." 
+     ;;
 
-    :) fatal "Option -$OPTARG requires an argument." ;;
+    :) 
+     fatal "Option -$OPTARG requires an argument." 
+     ;;
 
   esac
 done
@@ -313,8 +377,28 @@ debug "Reading options completed."
 
 shift $(( OPTIND - 1 ))
 
-# Assume all other arguments are filenames
-checkpoint_list+=("$@")
+# needs work: vars etc
+case "$operation_file_mode" in
+  single)
+    debug "Explicitly adding checkpoint files to process (file mode: $operation_file_mode)"
+    # Assume all other arguments are filenames
+    checkpoint_list+=("$@")
+    debug "Processing: ${checkpoint_list[*]}"
+    ;;
+  all)
+    debug "Executing for directory; looking for all checkpoint files."
+    # Set the nullglob option to allow for empty globbing parameter
+    shopt -s nullglob
+    (( ${#checkpoint_list[*]} == 0 )) || warning "File list already contains ${#checkpoint_list[*]} elements, they will be unset."
+    checkpoint_list=( ./*.chk )
+    debug "Found: ${checkpoint_list[*]}"
+    (( ${#checkpoint_list[*]} == 0 )) &&  warning "No checkpoint files found in this directory."
+    warn_additional_args "$@"
+    ;;
+  *)
+    fatal "Unrecognised operation mode: '$operation_file_mode'."
+    ;;
+esac
 
 if (( ${#checkpoint_list[*]} == 0 )) ; then
   warning "No checkpoint files to operate on."

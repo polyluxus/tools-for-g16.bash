@@ -86,19 +86,19 @@ get_scriptpath_and_source_files ()
     fi
     
     # Import default variables
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/default_variables.sh
+    #shellcheck source=../resources/default_variables.sh
     source "$resourcespath/default_variables.sh" &> "$tmplog" || (( error_count++ ))
     
     # Import other functions
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
+    #shellcheck source=../resources/messaging.sh
     source "$resourcespath/messaging.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/rcfiles.sh
+    #shellcheck source=../resources/rcfiles.sh
     source "$resourcespath/rcfiles.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
+    #shellcheck source=../resources/test_files.sh
     source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/process_gaussian.sh
+    #shellcheck source=../resources/process_gaussian.sh
     source "$resourcespath/process_gaussian.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/validate_numbers.sh
+    #shellcheck source=../resources/validate_numbers.sh
     source "$resourcespath/validate_numbers.sh" &> "$tmplog" || (( error_count++ ))
 
     if (( error_count > 0 )) ; then
@@ -237,6 +237,7 @@ read_true_false ()
     echo "true"
   else
     echo "false"
+    return 1
   fi
 }
 
@@ -246,6 +247,7 @@ read_yes_no ()
     echo "yes"
   else
     echo "no"
+    return 1
   fi
 }
 
@@ -356,14 +358,46 @@ ask_load_modules ()
 
 ask_g16_utilities ()
 {
+  ask "Which command shall be used as a wrapper to Gaussian commands?"
+  message "This may be an executable script found in PATH, or an absolute location."
+  message "If no wrapper should be used, please eneter 'none'."
+  message "No sanity check of the input will be performed."
+  local wrapper_found wrapper_test
+  local -a wrapper_names
+  wrapper_names=( "g16.wrapper.sh" "g16.wrapper" "rung16.sh" "rung16" "wrapper.g16.sh" "wrapper.g16" )
+  for wrapper_test in "${wrapper_names[@]}" ; do
+    debug "Checking for $wrapper_test."
+    if wrapper_found=$( command -v "$wrapper_test" ) ; then
+      message "Suggestion '$wrapper_found'"
+      break
+    else
+      debug "'$wrapper_test' not found."
+    fi
+  done
+  use_g16_wrapper_cmd=$(read_human_input)
+  if [[ "$use_g16_wrapper_cmd" =~ ^[Nn]([Oo]([Nn]([Ee])?)?)?$ ]] ; then
+    unset use_g16_wrapper_cmd
+  fi
+  debug "use_g16_wrapper_cmd=$use_g16_wrapper_cmd"
+
   local check_g16_formchk_cmd
   ask "Which command shall be used to execute Gaussians 'formchk' utility?"
-  message "This may be any string used to call the program, be it via a wrapper,"
+  message "This may be the name used to call the program, be it via the previously specified wrapper,"
   message "loaded via PATH, or the absolute location of the program."
-  if check_g16_formchk_cmd="$(command -v formchk)" ; then
-    message "Found executable command 'formchk' as '$check_g16_formchk_cmd'."
+  if [[ -n $use_g16_wrapper_cmd ]] ; then
+    debug "Wrapper is used."
+    if check_g16_formchk_cmd="$( $use_g16_wrapper_cmd command -v formchk 2>&1 )" ; then
+      message "Found command via wrapper as 'formchk'."
+    else
+      debug "$check_g16_formchk_cmd"
+    fi
+  else
+    debug "Wrapper is _not_ used."
+    if check_g16_formchk_cmd="$(command -v formchk)" ; then
+      message "Found executable command 'formchk' as '$check_g16_formchk_cmd'."
+    fi
   fi
-  message "(In preparation: g16.wrapper shortcuts from this toolbox.)"
+  debug "check_g16_formchk_cmd=$check_g16_formchk_cmd"
   message "No sanity check of the input will be performed."
   message "Please do not include options, they will be specified next."
   use_g16_formchk_cmd=$(read_human_input)
@@ -380,8 +414,16 @@ ask_g16_utilities ()
   local check_g16_testrt_cmd
   ask "Which command shall be used to execute Gaussians 'testrt' utility?"
   message "This should be very similar to the above."
-  if check_g16_testrt_cmd="$(command -v testrt)" ; then
-    message "Found executable command 'testrt' as '$check_g16_testrt_cmd'."
+  if [[ -n $use_g16_wrapper_cmd ]] ; then
+    debug "Wrapper is used."
+    if check_g16_testrt_cmd="$( $use_g16_wrapper_cmd command -v testrt 2>&1 )" ; then
+      message "Found command via wrapper as 'testrt'."
+    fi
+  else
+    debug "Wrapper is _not_ used."
+    if check_g16_testrt_cmd="$(command -v testrt)" ; then
+      message "Found executable command 'testrt' as '$check_g16_testrt_cmd'."
+    fi
   fi
   use_g16_testrt_cmd=$(read_human_input)
   debug "use_g16_testrt_cmd=$use_g16_testrt_cmd"
@@ -421,68 +463,76 @@ ask_g16_default_extensions ()
 
 ask_g16_store_route_section ()
 {
-  local user_input array_index array_index_current
-  local -a tmp_g16_route_section_predefined
-  while true ; do
-    if (( ${#use_g16_route_section_predefined[@]} != 0 )) ; then
-      printf '%5s : %s\n' "Index" "Predefined route section"
-      array_index=0
+  if [[ -x "$scriptpath/routebuilder.sh" ]] ; then
+    debug "Calling the route builder script."
+    local tmpfile_routes_tomodify
+    tmpfile_routes_tomodify="$( mktemp --tmpdir )"
+    {
+      local array_index=0
       for array_index in "${!use_g16_route_section_predefined[@]}" ; do
-        printf '%5d : %s\n' "$array_index" "${use_g16_route_section_predefined[$array_index]}"
-        array_index_current=$(( array_index + 1 ))
+        printf '  g16_route_section_predefined[%d]="%s"\n' "$array_index" "${use_g16_route_section_predefined[$array_index]}"
+        printf '  g16_route_section_predefined_comment[%d]="%s"\n' "$array_index" "${use_g16_route_section_predefined_comment[$array_index]}"
       done
-    fi
-    ask "Would you like to change these settings?"
-    message "To delete an entry, enter 'del <number>',"
-    message "to add or replace an entry, enter 'add <number>',"
-    message "where <number> is optional."
-    user_input=$(read_human_input)
-    [[ -z $user_input ]] && break
-    if [[ "$user_input" =~ ^[[:space:]]*[Dd][Ee][Ll][[:space:]]*([0-9]*)[[:space:]]*$ ]] ; then
-      if [[ -z ${BASH_REMATCH[1]} ]] ; then
-        ask "Which entry would you like to delete?"
-        array_index=$(read_integer)
-      else
-        array_index="${BASH_REMATCH[1]}"
-      fi
-      unset 'use_g16_route_section_predefined[array_index]'
-    elif [[ "$user_input" =~ ^[[:space:]]*[Aa][Dd][Dd][[:space:]]*([0-9]*)[[:space:]]*$ ]] ; then
-      if [[ -z ${BASH_REMATCH[1]} ]] ; then
-        array_index="$array_index_current"
-        while array_index in "${!use_g16_route_section_predefined[@]}" ; do
-          (( array_index++ ))
-        done
-      else
-        array_index="${BASH_REMATCH[1]}"
-      fi
-      ask "What should the new route section be?"
-      user_input=$(read_human_input)
-      use_g16_route_section_predefined[$array_index]="$user_input"
-    else
-      warning "Unrecognised command."
-    fi
-    unset user_input array_index
-  done
-  tmp_g16_route_section_predefined=( "${use_g16_route_section_predefined[@]}" )
-  if (( ${#tmp_g16_route_section_predefined[@]} != 0 )) ; then
-    array_index=0
-    printf '%5s : %s\n' "Index" "Predefined route section"
-    for array_index in "${!tmp_g16_route_section_predefined[@]}" ; do
-      printf '%5d : %s\n' "$array_index" "${tmp_g16_route_section_predefined[$array_index]}"
+    } > "$tmpfile_routes_tomodify"
+    local tmpfile_routes_edited
+    tmpfile_routes_edited="$( mktemp --tmpdir )"
+    debug "Created temporary file: $tmpfile_routes_edited"
+    local pass_on_a_message
+    pass_on_a_message="Route builder was called from $scriptname, don't forget to save your edits."
+    local -a routebuilder_opts
+    [[ "$debugging" == "true" ]] && routebuilder_opts+=( "debug" )
+    routebuilder_opts+=( '-r' "$tmpfile_routes_tomodify" '-o' "$tmpfile_routes_edited" '-m' "$pass_on_a_message" )
+    debug "Calling: $scriptpath/routebuilder.sh ${routebuilder_opts[*]}"
+    "$scriptpath/routebuilder.sh" "${routebuilder_opts[@]}"
+    debug "Received: $( cat "$tmpfile_routes_edited" )"
+    debug "Resetting routevariables."
+    unset use_g16_route_section_predefined use_g16_route_section_predefined_comment
+    unset     g16_route_section_predefined     g16_route_section_predefined_comment
+    debug "Sourceing '$tmpfile_routes_edited'."
+    #shellcheck disable=SC1090
+    . "$tmpfile_routes_edited"
+    debug "$( rm -v -- "$tmpfile_routes_edited" )"
+    use_g16_route_section_predefined=( "${g16_route_section_predefined[@]}" )
+    use_g16_route_section_predefined_comment=( "${g16_route_section_predefined_comment[@]}" )
+    debug "$(declare -p use_g16_route_section_predefined)"
+    debug "$(declare -p use_g16_route_section_predefined_comment)"
+    local array_index=0
+    for array_index in "${!use_g16_route_section_predefined[@]}" ; do
+      (( array_index > 0 )) && printf '\n'
+      printf '%3d       : ' "$array_index" 
+      local printvar printline=0
+      while read -r printvar || [[ -n "$printvar" ]] ; do
+        if (( printline == 0 )) ; then
+          printf '%-80s\n' "$printvar"
+        else
+          printf '            %-80s\n' "$printvar"
+        fi
+        (( printline++ ))
+      done <<< "$( fold -w80 -s <<< "${use_g16_route_section_predefined[$array_index]}" )"
+      unset printvar 
+      while read -r printvar || [[ -n "$printvar" ]] ; do
+        [[ -z "$printvar" ]] && printvar="no comment"
+        printf '%3d(cmt.) : %-80s\n' "$array_index" "$printvar"
+      done <<< "$( fold -w80 -s <<< "${use_g16_route_section_predefined_comment[$array_index]}" )"
     done
+    (( ${#use_g16_route_section_predefined[@]} == 0 )) && return 0
     ask "Which entry would you like to set as the default?"
+    local user_input
     user_input=$(read_integer)
-    while (( user_input >= ${#tmp_g16_route_section_predefined[@]} )) ; do
+    while (( user_input >= ${#use_g16_route_section_predefined[@]} )) ; do
       user_input=$(read_integer)
     done
-    use_g16_route_section_default="${tmp_g16_route_section_predefined[$user_input]}"
-  else
-    ask "What should be the default route section?"
-    use_g16_route_section_default=$(read_human_input)
+    use_g16_route_section_default="${use_g16_route_section_predefined[$user_input]}"
+    
+    return 0
   fi
+  
+  debug "Calling old function."
+  warning "You shouldn't actually see the following part of the script. Installation might have gone wrong."
+  #  Unsetting related variables
+  unset use_g16_route_section_default
   unset use_g16_route_section_predefined
-  use_g16_route_section_predefined=( "${tmp_g16_route_section_predefined[@]}" )
-  unset tmp_g16_route_section_predefined
+  unset use_g16_route_section_predefined_comment
 }
 
 ask_stay_quiet ()
@@ -506,17 +556,14 @@ ask_output_verbosity ()
   debug "use_output_verbosity=$use_output_verbosity"
 } 
 
-ask_values_separator ()
+ask_values_delimiter ()
 {
-  ask "What value separator would you like to use?"
-  message "Enter 'space' to use ' ', or skip this section to use the default (space)."
-  use_values_separator=$(read_human_input)
-  if [[ $use_values_separator =~ ^[[:space:]]*[Ss][Pp]([Aa]([Cc][Ee]?)?)? ]] ; then
-    use_values_separator=" "
-  elif [[ -z $use_values_separator ]] ; then
-    use_values_separator=" "
-  fi
-  debug "use_values_separator=$use_values_separator"
+  ask "For delimiter-separated values, which character  would you like to use?"
+  message "Recognised arguments: space/comma/semicolon/colon/slash/pipe." 
+  message "Skip this section to use the default (space)."
+  use_values_delimiter=$(read_human_input)
+  [[ -z $use_values_delimiter ]] &&  use_values_delimiter="space"
+  debug "use_values_delimiter=$use_values_delimiter"
 }
 
 ask_qsys_details ()
@@ -562,10 +609,50 @@ ask_qsys_details ()
   [[ -z "$use_qsys_project" ]] && use_qsys_project="default"
   debug "use_qsys_project=$use_qsys_project"
 
-  ask "What what email address should recieve notifications?"
+  ask "What email address should recieve notifications?"
   use_user_email=$(read_email)
   [[ -z "$use_user_email" ]] && use_user_email="default"
   debug "use_user_email=$use_user_email"
+}
+
+ask_xmail_details ()
+{
+  ask "Would you like to use the extra mail interface (experimental)?"
+  if use_xmail_interface=$(read_yes_no) ; then
+   debug "Activating extra mail interface."
+  else 
+    unset use_xmail_cmd
+    return 0
+  fi
+  debug "use_xmail_interface=$use_xmail_interface"
+  debug "use_xmail_cmd=$use_xmail_cmd"
+  ask "Please specify a command to use as an interface."
+  local mymail_found mymail_test
+  local -a mymail_names
+  mymail_names=( "mymail_slurm.sh" "mymail_slurm" "mymail" "mymail.sh" )
+  for mymail_test in "${mymail_names[@]}" ; do
+    debug "Checking for $mymail_test."
+    if mymail_found=$( command -v "$mymail_test" ) ; then
+      message "Suggestion: $mymail_found"
+      break
+    else
+      debug "'$mymail_test not found."
+    fi
+  done
+  use_xmail_cmd=$(read_human_input)
+  if [[ -z $use_xmail_cmd ]] ; then
+    warning "No interface specified, turning option off."
+    use_xmail_interface="disabled"
+  fi
+  debug "use_xmail_interface=$use_xmail_interface"
+  debug "use_xmail_cmd=$use_xmail_cmd"
+  ask "Would you like to also enable the standard queueing system email?"
+  if use_qsys_email=$(read_yes_no) ; then
+   debug "Activating standard email."
+  else 
+   debug "Deactivating standard email."
+  fi
+  debug "use_qsys_email=$use_qsys_email"
 }
 
 ask_walltime ()
@@ -639,8 +726,8 @@ ask_submit_status ()
 #
 get_configuration_from_file ()
 {
-  # Check for settings in three default locations (increasing priority):
-  #   install path of the script, user's home directory, current directory
+  # Check for settings in four default locations (increasing priority):
+  #   install path of the script, user's home directory, 'config' in user's home directory, current directory
   g16_tools_path=$(get_absolute_dirname "$scriptpath/../g16.tools.rc")
   local g16_tools_rc_searchlocations
   g16_tools_rc_searchlocations=( "$g16_tools_path" "$HOME" "$HOME/.config" "$PWD" )
@@ -653,27 +740,131 @@ get_configuration_from_file ()
     message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' found."
   else
     debug "No custom settings found."
-    return 1
   fi
     
-  ask "Would you like to specify a file to read settings from?"
-  if read_boolean ; then
-    ask "What file would you like to load?"
-    local test_g16_tools_rc_loc
-    test_g16_tools_rc_loc=$(read_human_input)
-    if test_g16_tools_rc_loc=$(test_rc_file "$test_g16_tools_rc_loc") ; then
-      g16_tools_rc_loc="$test_g16_tools_rc_loc"
-    else
-      warning "Loading configuration file '$test_g16_tools_rc_loc' failed."
-      message "Continue with defaults."
-      return 1
-    fi
+  if [[ "$route_mode" == "true" || "$translate_mode" == "true" ]] ; then
+    debug "Route (${route_mode:-false}) / translate (${translate_mode:-false}) mode active, skipping alternative file."
   else
-    debug "g16_tools_rc_loc=$g16_tools_rc_loc"
+    ask "Would you like to specify a file to read settings from?"
+    if read_boolean ; then
+      ask "What file would you like to load?"
+      local test_g16_tools_rc_loc
+      test_g16_tools_rc_loc=$(read_human_input)
+      if test_g16_tools_rc_loc=$(test_rc_file "$test_g16_tools_rc_loc") ; then
+        g16_tools_rc_loc="$test_g16_tools_rc_loc"
+      else
+        warning "Loading configuration file '$test_g16_tools_rc_loc' failed."
+        message "Continue with defaults."
+      fi
+    else
+      debug "g16_tools_rc_loc=$g16_tools_rc_loc"
+    fi
   fi
-  #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
+
+  [[ -z $g16_tools_rc_loc ]] && return 1
+  #shellcheck source=../g16.tools.rc 
   . "$g16_tools_rc_loc"
   message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
+  # Put a warning for pre-0.3.0 versions
+  if [[ "$configured_version" =~ ^0\.3\.[[:digit:]]+ ]] ; then
+    debug "Configured version was $configured_version ($configured_versiondate)."
+  else
+    warning "Configured version was $configured_version ($configured_versiondate),"
+    warning "some sttings might have changed, or newer ones have not been configured yet."
+  fi
+}
+
+translate_conf_settings_to_internal ()
+{
+  use_g16_installpath="$g16_installpath"
+  debug "use_g16_installpath=$use_g16_installpath"
+  use_g16_scratch="$g16_scratch"
+  debug "use_g16_scratch=$use_g16_scratch"
+  use_g16_overhead="$g16_overhead"
+  debug "use_g16_overhead=$use_g16_overhead"
+  use_g16_checkpoint_save="$g16_checkpoint_save"
+  debug "use_g16_checkpoint_save=$use_g16_checkpoint_save"
+  use_load_modules="$load_modules"
+  use_g16_modules=( "${g16_modules[@]}" )
+  debug "use_load_modules=$use_load_modules"
+  use_g16_wrapper_cmd="$use_g16_wrapper_cmd"
+  use_g16_formchk_cmd="$g16_formchk_cmd"
+  use_g16_formchk_opts="$g16_formchk_opts"
+  use_g16_testrt_cmd="$g16_testrt_cmd"
+  debug "use_g16_wrapper_cmd=$use_g16_wrapper_cmd"
+  debug "use_g16_testrt_cmd=$use_g16_testrt_cmd"
+  debug "use_g16_formchk_cmd=$use_g16_formchk_cmd"
+  debug "use_g16_formchk_opts=$use_g16_formchk_opts"
+  use_obabel_cmd="$obabel_cmd"
+  debug "use_obabel_cmd=$use_obabel_cmd"
+  use_g16_input_suffix="$g16_input_suffix"
+  use_g16_output_suffix="$g16_output_suffix"
+  debug "use_g16_input_suffix=$use_g16_input_suffix"
+  debug "use_g16_output_suffix=$use_g16_output_suffix"
+  use_g16_route_section_default="$g16_route_section_default"
+  debug "g16_route_section_default=$use_g16_route_section_default"
+  use_g16_route_section_predefined=( "${g16_route_section_predefined[@]}" )
+  use_g16_route_section_predefined_comment=( "${g16_route_section_predefined_comment[@]}" )
+  debug "$(declare -p use_g16_route_section_predefined)"
+  debug "$(declare -p use_g16_route_section_predefined_comment)"
+  use_stay_quiet="$stay_quiet"
+  debug "use_stay_quiet=$use_stay_quiet"
+  use_output_verbosity="$output_verbosity"
+  debug "use_output_verbosity=$use_output_verbosity"
+  # backwards compatibility
+  use_values_separator="$values_separator"
+  debug "use_values_separator=$use_values_separator"
+  case $use_values_separator in 
+    [[:space:]])
+      use_values_delimiter="space"
+      ;;
+    ',')
+      use_values_delimiter="comma"
+      ;;
+    ';')
+      use_values_delimiter="semicolon"
+      ;;
+    '|')
+      use_values_delimiter="pipe"
+      ;;
+    '/')
+      use_values_delimiter="slash"
+      ;;
+    '')
+      debug "Empty (new configuration or unset): $use_values_separator"
+      ;;
+    *)
+      debug "Not regognised: $use_values_separator"
+      ;;
+  esac
+  use_values_delimiter="${use_values_delimiter:-$values_delimiter}"
+  debug "use_values_delimiter=$use_values_delimiter"
+  use_request_qsys="$request_qsys"
+  # backwards compatibility
+  use_qsys_project="${qsys_project:-$bsub_project}"
+  use_user_email="${user_email:-$bsub_email}"
+  # Very specific constraint:
+  use_bsub_machinetype="$bsub_machinetype"
+  debug "use_request_qsys=$use_request_qsys"
+  debug "use_qsys_project=$use_qsys_project"
+  debug "use_user_email=$use_user_email"
+  debug "use_bsub_machinetype=$use_bsub_machinetype"
+  use_qsys_email="$use_qsys_email"
+  use_xmail_interface="$xmail_interface"
+  use_xmail_cmd="$xmail_cmd"
+  debug "use_qsys_email=$use_qsys_email"
+  debug "use_xmail_interface=$use_xmail_interface"
+  debug "use_xmail_cmd=$use_xmail_cmd"
+  use_requested_walltime="$requested_walltime"
+  debug "use_requested_walltime=$use_requested_walltime"
+  use_requested_memory="$requested_memory"
+  debug "use_requested_memory=$use_requested_memory"
+  use_requested_numCPU="$requested_numCPU"
+  debug "use_requested_numCPU=$use_requested_numCPU"
+  use_requested_maxdisk="$requested_maxdisk"
+  debug "use_requested_maxdisk=$use_requested_maxdisk"
+  use_requested_submit_status="$requested_submit_status"
+  debug "use_requested_submit_status=$use_requested_submit_status"
 }
 
 #
@@ -735,18 +926,21 @@ get_configuration_interactive ()
   fi
   debug "use_load_modules=$use_load_modules"
 
+  use_g16_wrapper_cmd="$use_g16_wrapper_cmd"
   use_g16_formchk_cmd="$g16_formchk_cmd"
   use_g16_formchk_opts="$g16_formchk_opts"
   use_g16_testrt_cmd="$g16_testrt_cmd"
   if [[ -z $use_g16_formchk_cmd || -z $use_g16_testrt_cmd ]] ; then
     ask_g16_utilities
   else
+    message "Recovered setting: 'g16_wrapper_cmd=$use_g16_wrapper_cmd'"
     message "Recovered setting: 'g16_testrt_cmd=$use_g16_testrt_cmd'"
     message "Recovered setting: 'g16_formchk_cmd=$use_g16_formchk_cmd'"
     message "Recovered setting: 'g16_formchk_opts=$use_g16_formchk_opts'"
     ask "Would you like to change these settings?"
     if read_boolean ; then ask_g16_utilities ; fi
   fi
+  debug "use_g16_wrapper_cmd=$use_g16_wrapper_cmd"
   debug "use_g16_testrt_cmd=$use_g16_testrt_cmd"
   debug "use_g16_formchk_cmd=$use_g16_formchk_cmd"
   debug "use_g16_formchk_opts=$use_g16_formchk_opts"
@@ -760,7 +954,6 @@ get_configuration_interactive ()
     if read_boolean ; then ask_other_utilities ; fi
   fi
   debug "use_obabel_cmd=$use_obabel_cmd"
-
 
   use_g16_input_suffix="$g16_input_suffix"
   use_g16_output_suffix="$g16_output_suffix"
@@ -778,8 +971,10 @@ get_configuration_interactive ()
   use_g16_route_section_default="$g16_route_section_default"
   debug "g16_route_section_default=$use_g16_route_section_default"
   use_g16_route_section_predefined=( "${g16_route_section_predefined[@]}" )
+  use_g16_route_section_predefined_comment=( "${g16_route_section_predefined_comment[@]}" )
   debug "$(declare -p use_g16_route_section_predefined)"
-  if [[ ! -z $use_g16_route_section_default ]] ; then
+  debug "$(declare -p use_g16_route_section_predefined_comment)"
+  if [[ -n $use_g16_route_section_default ]] ; then
     message "Recovered setting: 'g16_route_section_default=$use_g16_route_section_default'"
   fi
   if (( ${#use_g16_route_section_predefined[@]} != 0 )) ; then
@@ -802,12 +997,39 @@ get_configuration_interactive ()
   if read_boolean ; then ask_output_verbosity ; fi
   debug "use_output_verbosity=$use_output_verbosity"
 
+  # backwards compatibility
   use_values_separator="$values_separator"
-  [[ -z $use_values_separator ]] && use_values_separator=" "
-  message "Recovered setting: 'values_separator=$use_values_separator'"
-  ask "Would you like to change this setting?"
-  if read_boolean ; then ask_values_separator ; fi
   debug "use_values_separator=$use_values_separator"
+  case $use_values_separator in 
+    [[:space:]])
+      use_values_delimiter="space"
+      ;;
+    ',')
+      use_values_delimiter="comma"
+      ;;
+    ';')
+      use_values_delimiter="semicolon"
+      ;;
+    '|')
+      use_values_delimiter="pipe"
+      ;;
+    '/')
+      use_values_delimiter="slash"
+      ;;
+    '')
+      debug "Empty (new configuration or unset): $use_values_separator"
+      ;;
+    *)
+      debug "Not regognised: $use_values_separator"
+      ;;
+  esac
+  use_values_delimiter="${use_values_delimiter:-$values_delimiter}"
+  use_values_delimiter="${use_values_delimiter:-space}"
+  debug "use_values_delimiter=$use_values_delimiter"
+  message "Recovered setting: 'values_delimiter=$use_values_delimiter'"
+  ask "Would you like to change this setting?"
+  if read_boolean ; then ask_values_delimiter ; fi
+  debug "use_values_delimiter=$use_values_delimiter"
 
   use_request_qsys="$request_qsys"
   # backwards compatibility
@@ -852,6 +1074,21 @@ get_configuration_interactive ()
   debug "use_qsys_project=$use_qsys_project"
   debug "use_user_email=$use_user_email"
   debug "use_bsub_machinetype=$use_bsub_machinetype"
+
+  use_qsys_email="$qsys_email"
+  use_xmail_interface="$xmail_interface"
+  use_xmail_cmd="$xmail_cmd"
+  if [[ -z $use_xmail_interface ]] ; then
+    ask_xmail_details
+  else
+    message "Recovered setting: 'qsys_email=$use_qsys_email"
+    message "Recovered setting: 'xmail_interface=$use_xmail_interface"
+    message "Recovered setting: 'xmail_cmd=$use_xmail_cmd"
+    ask "Would you like to change this setting?"
+    if read_boolean ; then ask_xmail_details ; fi
+  fi
+  debug "use_xmail_interface=$use_xmail_interface"
+  debug "use_xmail_cmd=$use_xmail_cmd"
 
   use_requested_walltime="$requested_walltime"
   if [[ -z $use_requested_walltime ]] ; then
@@ -979,13 +1216,22 @@ print_configuration ()
 
   echo "# Set the commands or paths for utilities:"
   echo "#"
+  echo "# - wrapper for all Gaussian commands"
+  echo "#"
+  echo "#   The wrapper will load the Gaussian environment before executing the below utilities"
+  echo "#   This should be blank if the utilities are found in PATH, or the absolute paths are provided"
+  if [[ -z $use_g16_wrapper_cmd ]] ; then
+    echo "#   g16_wrapper_cmd=\"g16.wrapper.sh\""
+  else
+    echo "    g16_wrapper_cmd=\"$use_g16_wrapper_cmd\""
+  fi
+  echo "#"
   echo "# - formatted checkpoint files"
   echo "#   "
-  echo "#   Command that accesses formcheck."
-  echo "#   Wrappers work, command in PATH works, path to the binary works"
+  echo "#   The command that executes formchk."
+  echo "#   Local install with formchk found in PATH, or wrapped with above, or absolute path."
   echo "#"
   if [[ -z $use_g16_formchk_cmd ]] ; then
-    echo "#   g16_formchk_cmd=\"g16.wrapper.sh formchk\""
     echo "#   g16_formchk_cmd=\"formchk\""
     echo "#   bin_formchk_cmd=\"/path/to/g16/formchk\""
     echo "#"
@@ -1044,22 +1290,35 @@ print_configuration ()
   fi
   if (( ${#use_g16_route_section_predefined[@]} == 0 )) ; then
     echo "# g16_route_section_predefined[0]='#P B97D3/def2-SVP'"
+    echo "# g16_route_section_predefined_comment[0]='pure DFT method, double zeta BS'"
     echo "# g16_route_section_predefined[1]='#P B97D3/def2-TZVPP OPT'"
+    echo "# g16_route_section_predefined_comment[1]='pure DFT method, triple zeta BS, optimisation'"
   else
     local array_index=0
     for array_index in "${!use_g16_route_section_predefined[@]}" ; do
       printf '  g16_route_section_predefined[%d]="%s"\n' "$array_index" "${use_g16_route_section_predefined[$array_index]}"
+      printf '  g16_route_section_predefined_comment[%d]="%s"\n' "$array_index" "${use_g16_route_section_predefined_comment[$array_index]}"
     done
   fi
   echo "#"
   echo ""
 
   # These values are always set
+  echo "#"
   echo "# Default options for printing and verbosity"
   echo "#"
-  echo "  values_separator=\"$use_values_separator\" # (space separated values)"
-  echo "  output_verbosity=$use_output_verbosity"
-  echo "  stay_quiet=$use_stay_quiet"
+  echo ""
+  echo "# Delimit values in the printout with 'space' (default)/ 'comma'/ 'semicolon'/ 'colon'/ 'slash'/ 'pipe' "
+  echo "#"
+  echo "  values_delimiter=\"${use_values_delimiter:-space}\""
+  echo ""
+  echo "# Corresponds to any switches '-v' (default: 0)"
+  echo "#"
+  echo "  output_verbosity=${use_output_verbosity:-0}"
+  echo ""
+  echo "# Corresponds to any switches '-s' that silence the output (default: 0)"
+  echo "#"
+  echo "  stay_quiet=${use_stay_quiet:-0}"
   echo ""
 
   echo "#"
@@ -1121,12 +1380,34 @@ print_configuration ()
   fi
   echo ""
 
-  echo "# Sent notifications to the following email address (slurm, bsub)"
+  echo "# Deliver the default queuing system email"
+  echo "# Values are for using this '1/yes/active' (default) or not using it '0/no/disabled'"
+  echo "#"
+  echo "  qsys_email=\"${use_qsys_email:-active}\""
+  echo ""
+
   echo "#"
   if [[ -z $use_user_email ]] || [[ "$use_user_email" == "default" ]] ; then
     echo "# user_email=default@default.com"
   else
     echo "  user_email=\"$use_user_email\""
+  fi
+  echo ""
+
+  echo "# Activate/deactivate sending extra mail (this is a configuration file only option)"
+  echo "# Values are for using this '1/yes/active' or not using it (default) '0/no/disabled'"
+  echo "#"
+  echo "  xmail_interface=\"${use_xmail_interface:-disabled}\""
+  echo "#"
+  echo "# Provide the interface command (this can be any script/binary)"
+  echo "# The routine uses 'mail' as a template and sends"
+  echo "# > mail -s 'a subject line' "
+  echo "# This defaults to mail if empty and therefore would send an empty email."
+  echo "#"
+  if [[ -z $use_xmail_cmd ]] ; then 
+    echo "# xmail_cmd=mail"
+  else
+    echo "  xmail_cmd=\"$use_xmail_cmd\""
   fi
   echo ""
 
@@ -1147,24 +1428,36 @@ print_configuration ()
   fi
   echo ""
   echo "#"
+  echo "# Meta information "
+  echo "#"
+  echo "# Created with $scriptname, which is part of $softwarename"
+  echo "configured_version=$version"
+  echo "configured_versiondate=$versiondate"
   echo "# End of automatic configuration, $(date)."
 }
 
 write_configuration_to_file ()
 {
   local settings_filename
-  ask "Where do you want to store these settings?"
-  message "Predefined location: $PWD/g16.tools.rc"
-  message "Recommended location: $g16_tools_path/.g16.toolsrc"
-  settings_filename=$(read_human_input)
-  settings_filename=$(expand_tilde "$settings_filename")
-  debug "settings_filename=$settings_filename"
-  if [[ -z $settings_filename ]] ; then
-    settings_filename="$PWD/g16.tools.rc"
-  elif [[ -d "$settings_filename" ]] ; then
-    settings_filename="$settings_filename/g16.tools.rc"
-    warning "No valid filename specified, will use '$settings_filename' instead."
+  if [[ "$overwrite_mode" == "true" ]] ; then 
+    debug "Overwrite mode active ($overwrite_mode)."
+    settings_filename="${g16_tools_rc_loc:-$scriptpath/../.g16.toolsrc}"
   fi
+  if [[ -z $settings_filename ]] ; then
+    ask "Where do you want to store these settings?"
+    message "Predefined location: $PWD/g16.tools.rc"
+    message "Recommended location: $g16_tools_path/.g16.toolsrc"
+    settings_filename=$(read_human_input)
+    settings_filename=$(expand_tilde "$settings_filename")
+    debug "settings_filename=$settings_filename"
+    if [[ -z $settings_filename ]] ; then
+      settings_filename="$PWD/g16.tools.rc"
+    elif [[ -d "$settings_filename" ]] ; then
+      settings_filename="$settings_filename/g16.tools.rc"
+      warning "No valid filename specified, will use '$settings_filename' instead."
+    fi
+  fi
+
   backup_if_exists "$settings_filename"
 
   print_configuration > "$settings_filename"
@@ -1226,7 +1519,11 @@ create_softlinks_in_bin ()
 #
 
 # If this script is sourced, return before executing anything
-(( ${#BASH_SOURCE[*]} > 1 )) && return 0
+if ( return 0 2>/dev/null ) ; then
+  # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
+  debug "Script is sourced. Return now."
+  return 0
+fi
 
 # Save how script was called
 printf -v script_invocation_spell "'%s' " "${0/#$HOME/<HOME>}" "$@"
@@ -1245,21 +1542,98 @@ fi
 if [[ "$1" == "debug" ]] ; then
   exec 4>&1
   stay_quiet=0 
+  debugging=true
   shift 
 else
   exec 4> /dev/null
 fi
 
 get_scriptpath_and_source_files || exit 1
+
+# Remove the local directory from PATH
+if [[ ":$PATH:" =~ :.: ]] ; then
+  debug "PATH is '$PATH'"
+  modpath=":$PATH:"
+  modpath=${modpath/:.:/:}
+  modpath=${modpath%:}
+  modpath=${modpath#:}
+  PATH="$modpath"
+  debug "PATH is now '$PATH'"
+  unset modpath
+fi
+
+# Get options
+# Initialise options
+OPTIND="1"
+
+while getopts :hROT options ; do
+  #hlp   Usage: $scriptname [options]
+  #hlp
+  #hlp   Options:
+  #hlp
+  case $options in
+    #hlp     -h        Prints this help text
+    #hlp
+    h) helpme ;; 
+
+    #hlp     -R        Route mode. 
+    #hlp               Load default configuration file, skip immediately to the route section editor,
+    #hlp               replace read file with updated file.
+    #hlp
+    R) 
+      warning "This is highly experimental currently."
+      route_mode="true"
+      overwrite_mode="true"
+      ;;
+
+    #hlp     -O        Overwrite mode. 
+    #hlp               Load (specified) configuration file, replace read file with updated file.
+    #hlp
+    O) 
+      warning "This is highly experimental currently."
+      overwrite_mode="true"
+      ;;
+
+    #hlp     -T        Translate mode. 
+    #hlp               Load default configuration file, translate it to a newer version,
+    #hlp               replace read file with updated file.
+    #hlp
+    T) 
+      warning "This is highly experimental currently."
+      translate_mode="true"
+      overwrite_mode="true"
+      ;;
+
+    #hlp     --       Close reading options.
+    #hlp
+    # This is the standard closing argument for getopts, it needs no implemenation.
+
+    \?) fatal "Invalid option: -$OPTARG." ;;
+
+    :) fatal "Option -$OPTARG requires an argument." ;;
+
+  esac
+done
+
 get_configuration_from_file
-get_configuration_interactive
+if [[ "$route_mode" == true ]] ; then
+  translate_conf_settings_to_internal
+  ask_g16_store_route_section
+elif [[ "$translate_mode" == true ]] ; then
+  translate_conf_settings_to_internal
+else
+  get_configuration_interactive
+fi
 
 write_configuration_to_file
 
-ask "Would you like to create a symbolic links for the scripts in '~/bin'?"
-if read_boolean ; then
-  create_softlinks_in_bin
+if [[ "$route_mode" == "true" || "$translate_mode" == "true" ]] ; then
+  debug "Route (${route_mode:-false}) / translate (${translate_mode:-false}) mode active, skipping question about symbolic links."
+else
+  ask "Would you like to create a symbolic links for the scripts in '~/bin'?"
+  if read_boolean ; then create_softlinks_in_bin ; fi
 fi
 
+#hlp $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"

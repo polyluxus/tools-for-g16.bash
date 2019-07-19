@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # If this script is not sourced, return before executing anything
-if (( ${#BASH_SOURCE[*]} == 1 )) ; then
+if (return 0 2>/dev/null) ; then
+  # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
+  : #Everything is fine
+else
   echo "This script is only meant to be sourced."
   exit 0
 fi
@@ -125,7 +128,7 @@ check_locale ()
   local -a locale_settings
   mapfile -t locale_settings < <(locale)
   debug "Current locale settings:"
-  debug "$( fold -w80 -c -s <<< "$( printf '%s; ' "${locale_settings[@]}"; printf '\n' )" )"
+  debug "$( fold -w80 -s <<< "$( printf '%s; ' "${locale_settings[@]}"; printf '\n' )" )"
 
   local exit_status=0
   debug "Testing LANG='$LANG' and LC_NUMERIC='$LC_NUMERIC'."
@@ -144,7 +147,7 @@ warn_and_set_locale ()
     local -a locale_settings
     mapfile -t locale_settings < <(locale)
     debug "New locale settings:"
-    debug "$( fold -w80 -c -s <<< "$( printf '%s; ' "${locale_settings[@]}"; printf '\n' )" )"
+    debug "$( fold -w80 -s <<< "$( printf '%s; ' "${locale_settings[@]}"; printf '\n' )" )"
   fi
 }
 
@@ -169,3 +172,34 @@ print_declared_array ()
 
     debug "$parseline"
 }
+
+#
+# Redefinitions of command functions
+#
+
+push_directory_to_stack ()
+{
+  local tmplog line returncode=0
+  tmplog=$(mktemp --tmpdir tmplog.XXXXXXXX)
+  debug "Created temporary log file: $tmplog"
+  command pushd "$@" &> "$tmplog" || returncode="$?"
+  while read -r line || [[ -n "$line" ]] ; do
+    debug "(pushd) $line"
+  done < "$tmplog"
+  debug "$(rm -v -- "$tmplog")"
+  return $returncode
+}
+
+pop_directory_from_stack ()
+{
+  local tmplog line returncode=0
+  tmplog=$(mktemp --tmpdir tmplog.XXXXXXXX)
+  debug "Created temporary log file: $tmplog"
+  command popd "$@" > "$tmplog" || returncode="$?"
+  while read -r line || [[ -n "$line" ]] ; do
+    debug "(popd) $line"
+  done < "$tmplog"
+  debug "$(rm -v -- "$tmplog")"
+  return $returncode
+}
+

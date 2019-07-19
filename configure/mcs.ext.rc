@@ -35,18 +35,24 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
 
 # Set the commands or paths for utilities:
 #
+# - wrapper for all Gaussian commands
+#
+#   The wrapper will load the Gaussian environment before executing the below utilities
+#   This should be blank if the utilities are found in PATH, or the absolute paths are provided
+    g16_wrapper_cmd="g16.wrapper"
+#
 # - formatted checkpoint files
 #   
-#   Command that accesses formcheck.
-#   Wrappers work, command in PATH works, path to the binary works
+#   The command that executes formchk.
+#   Local install with formchk found in PATH, or wrapped with above, or absolute path.
 #
-    g16_formchk_cmd="wrapper.g16 formchk"
+    g16_formchk_cmd="formchk"
 #   No options should be included in the above, but can be set:
     g16_formchk_opts="-3"
 #
 # - checking the route section (this is similar to above)
 #   
-    g16_testrt_cmd="wrapper.g16 testrt"
+    g16_testrt_cmd="testrt"
 #
 
 # This script requires an installation of Open Babel.
@@ -62,36 +68,43 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
   g16_output_suffix="log"
 #
 # Predefined Route sections
-  g16_route_section_default="#P B97D3/def2SVP/W06   DenFit"
-  g16_route_section_predefined[0]="# PM6"
-  g16_route_section_predefined[1]="#P B97D3/def2SVP/W06   DenFit"
-  g16_route_section_predefined[2]="#P B97D3/def2TZVP/W06  DenFit"
-  g16_route_section_predefined[3]="#P B97D3/def2TZVPP/W06 DenFit"
-  g16_route_section_predefined[4]="#P B97D3/def2SVP/W06   DenFit opt(MaxCycle=100,VeryTight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[5]="#P B97D3/def2TZVP/W06  DenFit opt(MaxCycle=100,VeryTight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[6]="#P B97D3/def2TZVPP/W06 DenFit opt(MaxCycle=100,VeryTight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[7]="#P B97D3/def2SVP/W06   DenFit opt(TS,CalcFC,noeigentest,MaxCycle=100,VeryTight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[8]="#P B97D3/def2TZVP/W06  DenFit opt(TS,CalcFC,noeigentest,MaxCycle=100,VeryTight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[9]="#P B97D3/def2TZVPP/W06 DenFit opt(TS,CalcFC,noeigentest,MaxCycle=100,VeryTight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[10]="#P B97D3/def2SVP/W06   DenFit opt(AddGIC,MaxCycle=100,VeryTight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[11]="#P B97D3/def2TZVP/W06  DenFit opt(AddGIC,MaxCycle=100,VeryTight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[12]="#P B97D3/def2TZVPP/W06 DenFit opt(AddGIC,MaxCycle=100,VeryTight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[13]="#P B97D3/def2SVP/W06   DenFit scrf(smd,solvent=water) opt(AddGIC,MaxCycle=100,VeryTight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[14]="#P B97D3/def2TZVP/W06  DenFit scrf(smd,solvent=water) opt(AddGIC,MaxCycle=100,VeryTight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[15]="#P B97D3/def2TZVPP/W06 DenFit scrf(smd,solvent=water) opt(AddGIC,MaxCycle=100,VeryTight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[16]="#P BP86/def2SVP/W06   DenFit EmpiricalDispersion=GD3BJ int(ultrafinegrid) opt(MaxCycle=100, VeryTight)  scf(xqc) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[17]="#P BP86/def2TZVPP/W06 DenFit EmpiricalDispersion=GD3BJ int(ultrafinegrid) opt(MaxCycle=100, VeryTight)  scf(xqc) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[18]="#P BP86/def2SVP/W06   DenFit EmpiricalDispersion=GD3BJ int(ultrafinegrid) opt(AddGIC,MaxCycle=100, VeryTight)  scf(xqc) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[19]="#P BP86/def2TZVPP/W06 DenFit EmpiricalDispersion=GD3BJ int(ultrafinegrid) opt(AddGIC,MaxCycle=100, VeryTight)  scf(xqc) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[20]="#P BP86/def2SVP/W06   DenFit EmpiricalDispersion=GD3BJ int(ultrafinegrid) scrf(smd,solvent=water) opt(AddGIC,MaxCycle=100, VeryTight)  scf(xqc) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[21]="#P BP86/def2TZVPP/W06 DenFit EmpiricalDispersion=GD3BJ int(ultrafinegrid) scrf(smd,solvent=water) opt(AddGIC,MaxCycle=100, VeryTight)  scf(xqc) gfinput gfoldprint iop(6/7=3) symmetry(loose)"
-  g16_route_section_predefined[22]="#P TPSSh/def2TZVP opt(MaxCycle=100,VeryTight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) EmpiricalDispersion=GD3BJ IOp(3/174=1000000) IOp(3/175=2238200) IOp(3/177=452900) IOp(3/178=4655000)"
+  g16_route_section_default="# P B97D3/def2SVP/W06 DenFit  "
+  g16_route_section_predefined[0]="# PM6 OPT(loose,maxcycles=500)  "
+  g16_route_section_predefined_comment[0]=" semi-empirical method optimisation, very quick "
+  g16_route_section_predefined[1]="# P B97D3/def2SVP/W06 DenFit  "
+  g16_route_section_predefined_comment[1]=" Single point, pure DFA with dens. fitting, D3 corr. (Becke-Johnson damping), double zeta BS "
+  g16_route_section_predefined[2]="# P B97D3/def2SVP/W06 DenFit opt(MaxCycle=100,Tight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)  "
+  g16_route_section_predefined_comment[2]=" Optimisation, pure DFA with dens. fitting, D3 corr. (Becke-Johnson damping), double zeta BS "
+  g16_route_section_predefined[3]="# P B97D3/def2SVP/W06   DenFit opt(TS,CalcFC,noeigentest,MaxCycle=100,Tight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)  "
+  g16_route_section_predefined_comment[3]=" Transition State Opt., pure DFA with dens. fitting, D3 corr. (Becke-Johnson damping), double zeta BS "
+  g16_route_section_predefined[4]="# P B97D3/def2SVP/W06 DenFit opt(AddGIC,MaxCycle=100,Tight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)  "
+  g16_route_section_predefined_comment[4]=" Constrained opt. (needs another input section), pure DFA with dens. fitting, D3 corr. (Becke-Johnson damping), double zeta BS "
+  g16_route_section_predefined[5]="# P B97D3/def2SVP/W06   DenFit scrf(smd,solvent=water) opt(AddGIC,MaxCycle=100,Tight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) symmetry(loose)  "
+  g16_route_section_predefined_comment[5]=" Constrained opt. (needs another input section), including solvent correction, pure DFA with dens. fitting, D3 corr. (Becke-Johnson damping), double zeta BS "
+  g16_route_section_predefined[6]="# P BP86/def2SVP/W06 DenFit EmpiricalDispersion=GD3BJ int(ultrafinegrid) opt(MaxCycle=100, Tight) scf(xqc) gfinput gfoldprint iop(6/7=3) symmetry(loose)  "
+  g16_route_section_predefined_comment[6]=" Optimisation, pure DFA with dens. fitting, D3 corr. (Becke-Johnson damping), double zeta BS "
+  g16_route_section_predefined[7]="# P BP86/def2SVP/W06   DenFit EmpiricalDispersion=GD3BJ int(ultrafinegrid) opt(AddGIC,MaxCycle=100, VeryTight)  scf(xqc) gfinput gfoldprint iop(6/7=3) symmetry(loose)  "
+  g16_route_section_predefined_comment[7]=" Optimisation (GIC), pure DFA with dens. fitting, D3 corr. (Becke-Johnson damping), double zeta BS "
+  g16_route_section_predefined[8]="# P BP86/def2SVP/W06   DenFit EmpiricalDispersion=GD3BJ int(ultrafinegrid) scrf(smd,solvent=water) opt(GIC,MaxCycle=100, Tight)  scf(xqc) gfinput gfoldprint iop(6/7=3) symmetry(loose)  "
+  g16_route_section_predefined_comment[8]=" Optimisation (GIC), solvent model,  pure DFA with dens. fitting, D3 corr. (Becke-Johnson damping), double zeta BS "
+  g16_route_section_predefined[9]="# P TPSSh/def2SVP opt(MaxCycle=100,Tight) scf(xqc) int(ultrafinegrid) gfinput gfoldprint iop(6/7=3) EmpiricalDispersion=GD3BJ IOp(3/174=1000000) IOp(3/175=2238200) IOp(3/177=452900) IOp(3/178=4655000)  "
+  g16_route_section_predefined_comment[9]=" Optimisation, Hybrid functional TPSSh with double zeta BS and dispersion coefficients set via IOps "
 #
 
+#
 # Default options for printing and verbosity
 #
-  values_separator=" " # (space separated values)
+
+# Delimit values in the printout with 'space' (default)/ 'comma'/ 'semicolon'/ 'colon'/ 'slash'/ 'pipe' 
+#
+  values_delimiter="space"
+
+# Corresponds to any switches '-v' (default: 0)
+#
   output_verbosity=0
+
+# Corresponds to any switches '-s' that silence the output (default: 0)
+#
   stay_quiet=0
 
 #
@@ -100,7 +113,7 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
 
 # Specify default Walltime in [[HH:]MM:]SS
 #
-  requested_walltime="120:00:00"
+  requested_walltime="60:00:00"
 
 # Specify a default value for the memory (does not include overhead)
 #
@@ -114,24 +127,41 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
 #
   requested_maxdisk="30000"
 
-# Select a queueing system (pbs-gen/bsub-rwth)
+# Select a queueing system <queue>-<special>
+# (<queue>: pbs, slurm, bsub; <special>: gen, rwth)
 #
-  request_qsys="bsub-rwth"
+  request_qsys="slurm-rwth"
 
-# Account to project (only for bsub)
+# Account to project (bsub) or account (slurm)
 #
-  qsys_project="default"
+# qsys_project=default
 
-# Sent notifications to the following email address (only for bsub)
+# Deliver the default queuing system email
+# Values are for using this '1/yes/active' (default) or not using it '0/no/disabled'
 #
-  user_email="default"
+  qsys_email="active"
+
+#
+# user_email=default@default.com
+
+# Activate/deactivate sending extra mail (this is a configuration file only option)
+# Values are for using this '1/yes/active' or not using it (default) '0/no/disabled'
+#
+  xmail_interface="disabled"
+#
+# Provide the interface command (this can be any script/binary)
+# The routine uses 'mail' as a template and sends
+# > mail -s 'a subject line' 
+# This defaults to mail if empty and therefore would send an empty email.
+#
+  xmail_cmd="mail"
 
 # Use following machine type (only for bsub)
 #
-  bsub_machinetype="default"
+# bsub_machinetype=default
 
 # Calculations will be submitted to run (hold/keep)
   requested_submit_status="run"
 
 #
-# End of automatic configuration, Tue Feb 26 22:00:29 CET 2019.
+# End of automatic configuration, Mon May 20 15:10:23 CEST 2019.

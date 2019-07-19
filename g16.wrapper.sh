@@ -1,21 +1,11 @@
-#! /bin/bash
-
-# Gaussian 16 submission script
+#!/bin/bash
 #
-# You might not want to make modifications here.
-# If you do improve it, I would be happy to learn about it.
-#
-
+#hlp This is a wrapper script to set the Gaussian 16 environemt, 
+#hlp so that available  utilities can be used interactively.
+#hlp See http://gaussian.com/utils/ for more information.
+#hlp Usage: $scriptname [option] [--] <commands>
+#hlp
 # 
-# The help lines are distributed throughout the script and grepped for
-#
-#hlp   This script reads an input file, extracts the route section,
-#hlp   and tests it with the Gaussian utility testrt.
-#hlp
-#hlp   This software comes with absolutely no warrenty. None. Nada.
-#hlp
-#hlp   Usage: $scriptname [options] [--] <INPUT_FILE>
-#hlp
 
 #
 # Generic functions to find the scripts 
@@ -106,9 +96,6 @@ get_scriptpath_and_source_files ()
     # Set more default variables
     exit_status=0
     stay_quiet=0
-    # Ensure that in/outputfile variables are empty
-    unset inputfile
-    unset outputfile
     
     # Import other functions
     #shellcheck source=./resources/messaging.sh
@@ -140,63 +127,56 @@ get_scriptpath_and_source_files ()
 # Specific functions for this script only
 #
 
-process_inputfile ()
-{
-    local testfile
-    testfile=$(is_readable_file_or_exit "$1") || return 1
-    debug "Processing Input: $testfile"
-    read_g16_input_file "$testfile" 
-    validate_g16_route "$route_section" || return 1
+# Create a scratch directory for temporary files
+cleanup_scratch () {
+  message "Looking for files with filesize zero and delete them in '$g16_scratch'."
+  debug "$( find "$g16_scratch" -type f -size 0 -exec rm -v -- {} \; )"
+  message "Deleting scratch '$g16_scratch' if empty."
+  debug "$( find "$g16_scratch" -maxdepth 0 -empty -exec rmdir -v -- {} \; )"
+  [[ -e "$g16_scratch" ]] && warning "Scratch directory ($g16_scratch) is not empty, please check whether you need the files."
 }
 
-#
-# Process Options
-#
-
-process_options ()
+make_scratch ()
 {
-    local OPTIND=1 
+  debug "Creating new scratch directory."
+  local tempdir_pattern='^(|[Tt][Ee]?[Mm][Pp]([Dd][Ii][Rr])?|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$'
+  debug "g16_scratch='$g16_scratch'; pattern: $tempdir_pattern"
+  if [[ "$g16_scratch" =~ $tempdir_pattern ]] ; then
+    debug "Pattern was found."
+    #shellcheck disable=SC2016
+    g16_scratch=$( mktemp --directory --tmpdir )
+  else
+    debug "Pattern was not found."
+    g16_scratch=$( mktemp --directory --tmpdir="$g16_scratch" g16-interactive-XXXXXX )
+  fi
+  [[ -e "$g16_scratch" ]] || return 1
+  trap cleanup_scratch EXIT SIGTERM
+}
 
-    while getopts :sh options ; do
-        #hlp   Options:
-        #hlp    
-        case $options in
-
-          #hlp     -s       Suppress logging messages of the script.
-          #hlp              (May be specified multiple times.)
-          #hlp
-            s) (( stay_quiet++ )) ;;
-
-          #hlp     -h       this help.
-          #hlp
-            h) helpme ;;
-
-          #hlp     --       Close reading options.
-          # This is the standard closing argument for getopts, it needs no implemenation.
-
-           \?) fatal "Invalid option: -$OPTARG." ;;
-
-            :) fatal "Option -$OPTARG requires an argument." ;;
-
-        esac
-    done
-
-    # Shift all variables processed to far
-    shift $((OPTIND-1))
-
-    if [[ -z "$1" ]] ; then 
-      fatal "There is no inputfile specified"
-    fi
-
-    # If a filename is specified, it must exist, otherwise exit
-    # different mode let's you only use the jobname
-    #requested_inputfile=$(is_readable_file_or_exit "$1") || exit 1 
-    requested_inputfile="$1"
-    shift
-    debug "Specified input: $requested_inputfile"
-
-    # Issue a warning that the addidtional flag has no effect.
-    warn_additional_args "$@"
+# How Gaussian is loaded
+load_gaussian ()
+{
+  if [[ "$load_modules" =~ [Tt][Rr][Uu][Ee] ]] ; then
+    (( ${#g16_modules[*]} == 0 )) && fatal "No modules to load."
+    # assume that in the interactive session everything is set alright already
+    module load ${g16_modules[*]} 
+  else
+    [[ -z "$g16_installpath" ]] && fatal "Gaussian path is unset."
+    [[ -e "$g16_installpath/g16/bsd/g16.profile" ]] && fatal "Gaussian profile does not exist."
+    # Gaussian needs the g16root variable
+    g16root="$g16_installpath"
+    export g16root
+    #shellcheck disable=SC1090
+    . "${g16root}"/g16/bsd/g16.profile
+  fi
+  make_scratch || fatal "Setting scratch failed."
+  GAUSS_SCRDIR="$g16_scratch"
+  message "Using scratch '$g16_scratch'."
+  GAUSS_MEMDEF="${requested_memory}MB"
+  GAUSS_MDEF="${requested_memory}MB"
+  GAUSS_PDEF=$requested_numCPU
+  debug "$(declare -p g16root GAUSS_SCRDIR GAUSS_MEMDEF GAUSS_MDEF GAUSS_PDEF)"
+  export GAUSS_SCRDIR GAUSS_MEMDEF GAUSS_MDEF GAUSS_PDEF
 }
 
 #
@@ -204,7 +184,7 @@ process_options ()
 #
 
 # If this script is sourced, return before executing anything
-if ( return 0 2>/dev/null ) ; then
+if ( return 0 2> /dev/null ) ; then
   # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
   debug "Script is sourced. Return now."
   return 0
@@ -237,8 +217,11 @@ get_scriptpath_and_source_files || exit 1
 # Check whether we have the right numeric format (set it if not)
 warn_and_set_locale
 
-# Check for settings in three default locations (increasing priority):
-#   install path of the script, user's home directory, current directory
+# Warn if neither options nor a command is given
+(( $# == 0 )) && warning "There is nothing to do."
+
+# Check for settings in four default locations (increasing priority):
+#   install path of the script, user's home directory, .config in user's home, current directory
 g16_tools_rc_searchlocations=( "$scriptpath" "$HOME" "$HOME/.config" "$PWD" )
 g16_tools_rc_loc="$( get_rc "${g16_tools_rc_searchlocations[@]}" )"
 debug "g16_tools_rc_loc=$g16_tools_rc_loc"
@@ -257,12 +240,75 @@ else
   debug "No custom settings found."
 fi
 
-# Evaluate Options
+# Initialise options
+debug "Initialising option index."
+OPTIND="1"
 
-process_options "$@"
-process_inputfile "$requested_inputfile" || exit_status="$?"
+while getopts :m:p:sh options ; do
+  #hlp   Options:
+  #hlp
+  case $options in
+    #hlp     -m <ARG>   Define the total memory to be used in megabyte.
+    #hlp                (Default: $requested_memory)
+    #hlp
+      m) 
+         validate_integer "$OPTARG" "the memory"
+         if (( OPTARG == 0 )) ; then
+           fatal "Memory limit must not be zero."
+         fi
+         requested_memory="$OPTARG" 
+         ;;
+
+    #hlp     -p <ARG>   Define number of professors to be used. 
+    #hlp                (Default: $requested_numCPU)
+    #hlp
+      p) 
+         validate_integer "$OPTARG" "the number of threads"
+         if (( OPTARG == 0 )) ; then
+           fatal "Number of threads must not be zero."
+         fi
+         requested_numCPU="$OPTARG" 
+         ;;
+
+    s) 
+      (( stay_quiet++ )) 
+      ;; 
+
+    #hlp     -h         Prints this help text
+    #hlp
+    h) 
+      helpme 
+      ;; 
+
+    #hlp     --         Close reading options.
+    # This is the standard closing argument for getopts, it needs no implemenation.
+
+    \?) 
+     fatal "Invalid option: -$OPTARG." 
+     ;;
+
+    :) 
+     fatal "Option -$OPTARG requires an argument." 
+     ;;
+
+  esac
+done
+
+debug "Reading options completed."
+
+shift $(( OPTIND - 1 ))
+
+# Assume all other arguments are part of the wrapped command
+g16_commandline=("$@")
+debug "Processing: ${g16_commandline[*]}"
+
+#Now load gaussian here
+load_gaussian || fatal "Loading Gaussian failed."
+
+"${g16_commandline[@]}" || exit_status=$?
 
 #hlp   $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"
 debug "$script_invocation_spell"
-exit $exit_status
+
+(( exit_status == 0 )) || fatal "There have been one or more errors."

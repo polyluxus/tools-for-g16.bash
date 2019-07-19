@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # If this script is not sourced, return before executing anything
-if (( ${#BASH_SOURCE[*]} == 1 )) ; then
+if (return 0 2>/dev/null) ; then
+  # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
+  : #Everything is fine
+else
   echo "This script is only meant to be sourced."
   exit 0
 fi
@@ -554,6 +557,7 @@ read_xyz_geometry_file ()
       local tmplog 
       tmplog=$(mktemp tmp.XXXXXXXX) 
       debug "$(ls -lh "$tmplog")"
+      command -v "$obabel_cmd" &> /dev/null || fatal "Open Babel ($obabel_cmd) was not found."
       mapfile -t inputfile_coord2xyz < <("$obabel_cmd" -itmol "$parsefile" -oxyz 2> "$tmplog")
       debug "$(cat "$tmplog")"
       debug "$(rm -v -- "$tmplog")"
@@ -1143,8 +1147,7 @@ check_allcheck_option ()
     local keyword_alias="AllCheck"
     debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
     if check_any_keyword "$parseline" "$pattern" ; then
-      message "Keyword '$keyword_alias' found in input stream."
-      debug "Again returning with 0."
+      debug "Keyword '$keyword_alias' found in input stream. (Return 0)"
       return 0
     fi
     debug "Keyword '$keyword_alias' not found. (Return 1)"
@@ -1160,8 +1163,7 @@ check_freq_keyword ()
     local keyword_alias="Freq"
     debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
     if check_any_keyword "$parseline" "$pattern" ; then
-      message "Keyword '$keyword_alias' found in input stream."
-      debug "Again returning with 0."
+      debug "Keyword '$keyword_alias' found in input stream. (Return 0)"
       return 0
     fi
     debug "Keyword '$keyword_alias' not found. (Return 1)"
@@ -1177,8 +1179,7 @@ check_denfit_keyword ()
     local keyword_alias="Denfit"
     debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
     if check_any_keyword "$parseline" "$pattern" ; then
-      message "Keyword '$keyword_alias' found in input stream."
-      debug "Again returning with 0."
+      debug "Keyword '$keyword_alias' found in input stream. (Return 0)"
       return 0
     fi
     debug "Keyword '$keyword_alias' not found. (Return 1)"
@@ -1194,8 +1195,7 @@ check_gen_keyword ()
     local keyword_alias="Gen"
     debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
     if check_any_keyword "$parseline" "$pattern" ; then
-      message "Keyword '$keyword_alias' found in input stream."
-      debug "Again returning with 0."
+      debug "Keyword '$keyword_alias' found in input stream. (Return 0)"
       return 0
     fi
     debug "Keyword '$keyword_alias' not found. (Return 1)"
@@ -1211,8 +1211,7 @@ check_opt_keyword ()
     local keyword_alias="Opt"
     debug "Checking '$parseline' for pattern '$pattern'. Description: '$keyword_alias'."
     if check_any_keyword "$parseline" "$pattern" ; then
-      message "Keyword '$keyword_alias' found in input stream."
-      debug "Again returning with 0."
+      debug "Keyword '$keyword_alias' found in input stream. (Return 0)"
       return 0
     fi
     debug "Keyword '$keyword_alias' not found. (Return 1)"
@@ -1222,6 +1221,8 @@ check_opt_keyword ()
 validate_g16_route ()
 {
     local read_route="$1"
+    # Do not remove a possible comment at the end (if it is there, it is completely deliberate)
+    # This routine only checks, nothing more
     local pattern="^[[:space:]]*#"
     local g16_output
     debug "Read the following route section:"
@@ -1235,14 +1236,33 @@ validate_g16_route ()
     else
       debug "Found route card and will process."
     fi 
-    if g16_output=$($g16_testrt_cmd "$read_route" 2>&1) ; then
-      message "Route section has no syntax errors."
-      debug "$g16_output"
-    else
-      warning "There was an error in the route section"
-      message "$g16_output"
-      return 1
+    # Check whether the command is actually set
+    if [[ -z $g16_testrt_cmd ]] ; then
+      message "Command to 'testrt' is unset, route section cannot be checked."
+      message "Continue anyway pretending there are no syntax errors."
+      return 0
     fi
+    # Check if a wrapper should be used
+    if [[ -n $g16_wrapper_cmd ]] ; then
+      command -v "$g16_wrapper_cmd" &> /dev/null || fatal "Wrapper command ($g16_wrapper_cmd) not found."
+      $g16_wrapper_cmd command -v "$g16_testrt_cmd" &> /dev/null || fatal "Wrapped testrt command ($g16_testrt_cmd) not found."
+      if g16_output=$( $g16_wrapper_cmd $g16_testrt_cmd "$read_route" 2>&1 ) ; then
+        message "Route section has no syntax errors."
+        debug "$g16_output"
+        return 0
+      fi
+    else
+      command -v "$g16_testrt_cmd" &> /dev/null || fatal "Gaussian testrt command ($g16_testrt_cmd) not found."
+      if g16_output=$( $g16_testrt_cmd "$read_route" 2>&1 ) ; then
+        message "Route section has no syntax errors."
+        debug "$g16_output"
+        return 0
+      fi
+    fi
+    # In case all failed so far
+    warning "There was an error in the route section:"
+    warning "$g16_output"
+    return 1
 }
 
 #
@@ -1362,14 +1382,20 @@ write_g16_input_file ()
     while ! route_section=$(remove_maxdisk_keyword "$route_section") ; do : ; done
     use_route_section=$(collate_route_keywords "$route_section MaxDisk=${requested_maxdisk}MB")
     message "Added 'MaxDisk=${requested_maxdisk}MB' to the route section."
+    if validate_g16_route "$use_route_section" ; then
+      debug "Assembled route section is fine."
+    else
+      warning "Syntax error detected in the route section, please check manually."
+      message "Continue as if there are no errors."
+    fi
     # Fold the route section to 80 characters for better readability
-    fold -w80 -c -s <<< "$use_route_section"
+    fold -w80 -s <<< "$use_route_section"
     # A blank line terminates the route section
     echo ""
 
     if [[ ! -z $title_section ]] ; then
       # Fold the title section to 80 characters for better readability
-      fold -w80 -c -s <<< "$title_section"
+      fold -w80 -s <<< "$title_section"
       # A blank line terminates the title section
       echo ""
       [[ -z $molecule_charge ]] && fatal "Charge unset; somewhere, something went wrong."

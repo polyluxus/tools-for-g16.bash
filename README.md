@@ -85,6 +85,9 @@ This reposity comes with the following scripts (and files):
    More keywords can be added with commandline options, too.
    The script can now interface to Turbomole and GFN-xTB coord files, too.
 
+ * `g16.wrapper.sh`
+   This tool provides  Gaussian environment at runtime to execute Gaussian utilities interactively.
+
  * `g16.dissolve.sh`
    This tool parses a Gaussian input file and adds keywords for solvent corrections.
 
@@ -96,4 +99,4 @@ All of the scripts come with a `-h` switch to give a summary of the available op
 A reference card (or cheat-sheet) with a summary can be found as a
 pdf-file in the [docs](./docs) directory.
 
-Martin (0.2.2, 2019-04-04)
+Martin (0.3.0, 2019-07-19)

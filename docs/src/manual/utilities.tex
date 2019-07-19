@@ -34,7 +34,7 @@ In the next chapter the interplay of the utilities is further explained with exa
 This of course makes these files dependending on each other,
 more precisely the newly generated input relies on the successful creation
 of a checkpoint file of the previous job.
-The mechanism employed by the scripts was introduced in Gaussian 09 Rev. E.01,
+The mechanism employed by the scripts was introduced in Gaussian 09 Rev. D.01,
 with the \texttt{\%OldChk} directive, which essentially copies the checkpoint file
 of a completed calculation to the new location.
 The contents of which can then be read, or accessed, with the \texttt{geom}/\texttt{guess} keywords.
@@ -53,9 +53,11 @@ depending on what was done, the level of theory may actually vary.\footnote{%
 Second most important is that any of these steps may fail;
 if they do, you loose the fallback and with it results and calculation time.
 Another inconvenience is that some visualisation programs are not able to
-parse these kind of output files.
+parse these kind of output files, e.g. molden,
+for which you may have to split these files.
 
-Essentially the scripts emulate this process, but split it up and externalise the dependencies.
+Essentially the scripts emulate the multi-step process, 
+but divide it in parts, and externalise the dependencies.
 
 The second group of scripts are execution or submission scripts.
 Working with a queueing system often comes with some waiting time.
@@ -66,15 +68,16 @@ To further avoid failing in early stages, it is reasonable to check the route se
 for syntax errors before submission (see \lstinline`g16.testroute`, \ref{sec:g16.testroute}).
 Nothing is worse than waiting for a job to start, only to realise that a keyword is misspelt.
 
-In this category one crucial example is yet missing:
-A multipurpose wrapper (or shortcut) script, 
-to actually call the utilities without having them permanently accessible 
+In this category probably the most universal script is the multipurpose wrapper script
+(see \lstinline`g16.wrapper`, \ref{sec:g16.wrapper}). 
+It is used to actually call the utilities without having them permanently accessible 
 in the environment.
-The whole repository was intended to be based on this, 
-however, it is still the one thing that is missing.\footnote{%
-  For comparison, the wrapper script existed in the now deprecated
+Initially the whole repository was intended to be based on this, 
+however, its importance is now significantly scaled back.\footnote{%
+  For comparison, a more extensive wrapper script existed in the now deprecated
   \href{https://github.com/polyluxus/tools-for-g09.bash}{github.com/polyluxus/tools-for-g09.bash}
-  repository; and it may be implemented some time in the future.}
+  repository; and it made acessing certain utilities easier because of preset values.
+  The current version included here may be extended some time in the future.}
 
 The last category are post-processing scripts, 
 which help extract data, or transform data files into file formats,
@@ -107,7 +110,8 @@ if Open Babel is installed on the system.
 
 Since the implementation actually only looks for lines containing a string (at least one letter)
 and four floating point numbers separated by spaces (or tabs),
-it is therefore also suitable to also parse already generated input files.
+it is therefore also suitable to also parse already generated input files,
+which contain Cartesian coordinates.
 This was necessary due to the incapabilities of GaussView to produce
 actual coordinate files; it rather produces Gaussian input data files (\texttt{*.gjf}) 
 containing structural information.
@@ -129,8 +133,9 @@ Options:
     It will be checked for syntax errors, and it can further be modified with {\lstinline`-r <ARG>`}. \\
   {\lstinline`-l <INT>`} & Load predefined route section. 
     The basic configuration (and the default values) comes with a couple predefined route sections (as examples).
-    They can be changed in the configuration files and eith the configuration script. 
-    I still have not gotten around to write a route section building script, so this has to be done by hand. \\
+    They can be changed in the configuration files and with the configuration script. 
+    Each of the predefined route sections has a free text comment associated to it.
+    Along with the configuration script comes a route section building script, which should simplify the process of defining them. \\
   {\lstinline`-l list `} & Show all predefined route sections. This is a special argument to the above. \\
   {\lstinline`-t <ARG>`} & Adds {\lstinline`ARG`} to end of file. 
     Sometimes it is necessary to add additional lines to the end of an input file.
@@ -478,6 +483,67 @@ Options:
   {\lstinline`-h`}       & Print a small help file. \\
 \end{longtable}
 
+\subsubsection{The extended (or extra) mail interface}
+
+This an internal setting for the submission script to include a routine to send more information as an email as part of the job. 
+It cannot be activated with a commandline option, but has to be configured with the rc file(s).
+
+It is essentially a command, which should be executed during the cleanup routine of the batch job.
+This could be in theory any executable file (or script), it doesn't have to be mailing program.
+However, the executed command will be analogous to the \texttt{mail} program, 
+and therefore defaults to:
+
+\lstinline`mail -s 'a subject line'`
+
+The used subject line is built dynamically from the job status, job id, and jobname.
+
+Consequently, the system email of the queueing system can also be turned off.
+
+The responsible setting for this extension are:
+
+\begin{lstlisting}
+# Deliver the default queuing system email
+# "1/yes/active" (default), or "0/no/disabled"
+  qsys_email="active"
+# Activate/deactivate sending extra mail 
+# "1/yes/active", or "0/no/disabled" (default)
+  xmail_interface="disabled"
+# Interface command (default: unset)
+  xmail_cmd="<mymail.sh>"
+\end{lstlisting}
+
+\subsection{Execution: \texorpdfstring{{\lstinline`g16.wrapper.sh`}}{g16.wrapper.sh}}
+\label{sec:g16.wrapper}
+
+This tool is intended to provide a Gaussian environment at runtime.
+This can therefore be used to execute Gaussian utilities interactively, see also
+\href{http://gaussian.com/utils/}{the Gaussian online manual} for more information.
+
+Usage: 
+
+\lstinline`g16.wrapper.sh [opt] -- <commands>`
+
+Options:
+
+\begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
+  {\lstinline`-m <INT>`} & Memory (megabyte).\newline 
+    This will set the \texttt{GAUSS\_MEMDEF} and \texttt{GAUSS\_MDEF} environment variables to \texttt{{\lstinline`INT`}MB},
+    which is equivalent to setting the \texttt{\%mem=} directive in the input file.\\
+  {\lstinline`-p <INT>`} & Processors.\newline 
+    This will set the \texttt{GAUSS\_PDEF} environment variable to \lstinline`INT`, 
+    which is equivalent to adding  \texttt{\%NProcShared={\lstinline`INT`}} to the input file. \\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-h`}       & Print a small help file. \\
+\end{tabular}
+
+Examples:
+
+If you have an formatted checkpoint file (\lstinline`<example.fchk>`), 
+but you would like to recreate the binary (\lstinline`<example.chk>`, optional),
+you can issue the following command:
+
+\lstinline`g16.wrapper.sh unfchk example.fchk example.chk` 
+
 \subsection{Post-processing: \texorpdfstring{{\lstinline`g16.getenergy.sh`}}{g16.getenergy.sh}}
 \label{sec:g16.getenergy}
 
@@ -501,12 +567,21 @@ Options:
 \begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
   {\lstinline`-i <ARG>`} & Specify the input suffix to be used for finding matching output files when processing a directory. \\
   {\lstinline`-o <ARG>`} & Specify the output suffix to be used for finding the files when processing a directory. \\
+  {\lstinline`-R`}       & Recurse into directories will cause a summary for each directory up until the parent working directory.\\
   {\lstinline`-L`}       & Print the full file and path name of the parsed output file (seperated by newline). 
     The default behaviour is printing only the filename without the suffix. \\
+  {\lstinline`-1`}       & Print only one line per filename.
+    This will also skip some header lines.
+    If used in conjunction with \lstinline`-L` the absolute path to the file is printed.\\
   {\lstinline`--`}       & Explicitly close reading script options. \\
   {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
   {\lstinline`-h`}       & Print a small help file. \\
 \end{tabular}
+
+If a table of all energies in a given directory tree is desired, 
+for example from a conformational scan, this can be accomplished by:
+
+\lstinline`g16.getenergy.sh -RL1`
 
 \subsection{Post-processing: \texorpdfstring{{\lstinline`g16.getfreq.sh`}}{g16.getfreq.sh}}
 \label{sec:g16.getfreq}
@@ -568,6 +643,16 @@ Options:
 
 \begin{tabular}{p{0.1\linewidth}p{0.8\linewidth}}
   {\lstinline`-a`}       & Formats all checkpointfiles that are found in the current directory. \\
+  {\lstinline`-A`}       & Formats almost all checkpointfiles that are found in the current directory. 
+    Skips files in cases where it would overwrite them.
+    This is synonymous with \lstinline`-aS`.\\
+  {\lstinline`-B`}       & Create backup files where is would overwrite them (default). 
+    Only the last option amongst \lstinline`-B`, \lstinline`-F`, \lstinline`-S` will take affact.\\
+  {\lstinline`-F`}       & Forces existing files to be removed before they are written, 
+    which is effectively equal to overwriting them.
+    Only the last option amongst \lstinline`-B`, \lstinline`-F`, \lstinline`-S` will take affact.\\
+  {\lstinline`-S`}       & Skips files in cases where it would overwrite them.
+    Only the last option amongst \lstinline`-B`, \lstinline`-F`, \lstinline`-S` will take affact.\\
   {\lstinline`--`}       & Explicitly close reading script options. \\
   {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
   {\lstinline`-h`}       & Print a small help file. \\

@@ -95,7 +95,7 @@ get_scriptpath_and_source_files ()
     fi
     
     # Import default variables
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/default_variables.sh
+    #shellcheck source=./resources/default_variables.sh
     source "$resourcespath/default_variables.sh" &> "$tmplog" || (( error_count++ ))
     
     # Set more default variables
@@ -103,15 +103,15 @@ get_scriptpath_and_source_files ()
     stay_quiet=0
     
     # Import other functions
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
+    #shellcheck source=./resources/messaging.sh
     source "$resourcespath/messaging.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/rcfiles.sh
+    #shellcheck source=./resources/rcfiles.sh
     source "$resourcespath/rcfiles.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
+    #shellcheck source=./resources/test_files.sh
     source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/process_gaussian.sh
+    #shellcheck source=./resources/process_gaussian.sh
     source "$resourcespath/process_gaussian.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/validate_numbers.sh
+    #shellcheck source=./resources/validate_numbers.sh
     source "$resourcespath/validate_numbers.sh" &> "$tmplog" || (( error_count++ ))
 
     if (( error_count > 0 )) ; then
@@ -149,7 +149,7 @@ process_one_file ()
 
     extracted_route=$(getlines_route_g16_output_file "$logfile")
     if check_freq_keyword "$extracted_route" ; then
-      debug "Fine, this appears to be a frequency calculations."
+      debug "Fine, this appears to be a frequency calculations (FREQ found in route section)."
     else
       warning "This does not appear to be a frequency calculation."
       warning "Only the first route section will be checked,"
@@ -159,7 +159,7 @@ process_one_file ()
 
     if (( printlevel > 2 )) ; then
       echo "The following route was extracted (first one encountered):"
-      fold -w80 -c -s <<< "$extracted_route"
+      fold -w80 -s <<< "$extracted_route"
       echo "----------"
     fi
 
@@ -346,8 +346,31 @@ print_energies_table ()
 
 print_energies_inline ()
 {
-    local element printstring 
-    local format="%s%-*s$values_separator"
+    local element printstring internal_values_separator
+    case $values_delimiter in
+      ''|[Ss][Pp][Aa][Cc][Ee])
+        internal_values_separator=" "
+        ;;
+      [Cc][Oo][Mm][Mm][Aa])
+        internal_values_separator=","
+        ;;
+      [Ss][Ee][Mm][Ii][Cc][Oo][Ll][Oo][Nn]|[Ss][Ee][Mm][Ii]-[Cc][Oo][Ll][Oo][Nn])
+        internal_values_separator=";"
+        ;;
+      [Cc][Oo][Ll][Oo][Nn])
+        internal_values_separator=":"
+        ;;
+      [Ss][Ll][Aa][Ss][Hh])
+        internal_values_separator="/"
+        ;;
+      [Pp][Ii][Pp][Ee])
+        internal_values_separator="|"
+        ;;
+      *)
+        internal_values_separator=" "
+        ;;
+    esac
+    local format="%s%-*s$internal_values_separator"
     for element in "$@" ; do
       # shellcheck disable=SC2059
       printf -v printstring "$format" "$printstring" ${#element} "$element" 
@@ -386,7 +409,7 @@ process_options ()
     local ignore_verbosity_switch=false
     local printlevel
     # Evaluate options
-    while getopts :vV:cf:sh options ; do
+    while getopts :vV:cC:f:sh options ; do
       #hlp   Usage: $scriptname [options] filenames(s)
       #hlp 
       #hlp   Options:
@@ -423,7 +446,14 @@ process_options ()
           #hlp     -c         Separate values with comma (only affects -V0, -V1)
           #hlp
           c) 
-            values_separator="," 
+            values_delimiter="comma"
+            ;;
+
+          #hlp     -C <ARG>   Separate values with <ARG> (only affects -V0, -V1)
+          #hlp                Arguments: space, comma, semicolon, colon, slash, pipe
+          #hlp
+          C) 
+            values_delimiter="$OPTARG"
             ;;
 
           #hlp     -f <ARG>   Write summary to file <ARG> instead of displaying it.
@@ -460,7 +490,7 @@ process_options ()
     shift $((OPTIND-1))
     
     file_list=( "$@" )
-    output_verbosity="$printlevel"
+    [[ -n "$printlevel" ]] && output_verbosity="$printlevel"
 }
 
 #
@@ -468,7 +498,11 @@ process_options ()
 #
 
 # If this script is sourced, return before executing anything
-(( ${#BASH_SOURCE[*]} > 1 )) && return 0
+if ( return 0 2>/dev/null ) ; then
+  # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
+  debug "Script is sourced. Return now."
+  return 0
+fi
 
 # Save how script was called
 printf -v script_invocation_spell "'%s' " "${0/#$HOME/<HOME>}" "$@"
@@ -505,10 +539,14 @@ debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 
 # Load custom settings from the rc
 
-if [[ ! -z $g16_tools_rc_loc ]] ; then
-  #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
+if [[ -n $g16_tools_rc_loc ]] ; then
+  #shellcheck source=./g16.tools.rc 
   . "$g16_tools_rc_loc"
   message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
+  if [[ "${configured_version}" =~ ^${version%.*} ]] ; then 
+    warning "Configured version was $configured_version ($configured_versiondate),"
+    warning "and probably needs an update to $version ($versiondate)."
+  fi
 else
   debug "No custom settings found."
 fi

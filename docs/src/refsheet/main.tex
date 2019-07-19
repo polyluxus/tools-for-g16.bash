@@ -37,7 +37,7 @@
 \newcommand\mybackslash{\char`\\}
 
 % What this is about
-\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.2.2, 2019-04-04)}
+\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.3.0, 2019-07-19)}
 \author{Martin C Schwarzer}
 \date{\today}
 
@@ -87,7 +87,8 @@ Every script will check four different directories in the order
 \end{enumerate*}
 It will load the last configuration file it finds.
 
-Setting files can be generated with the \texttt{configure/configure.sh} script.
+Setting files can be generated with the \texttt{configure/configure.sh} script,
+see the manual for more detailed information.
 
 \section{\texttt{g16.prepare.sh}}
 
@@ -247,9 +248,24 @@ Usage: \texttt{g16.spinput.sh [opt] <file>}
   \item[-h      ] Help file 
 \end{rslisttt}
 
+\section{\texttt{g16.testroute.sh}}
+
+This tool parses a Gaussian 16 inputfile and 
+tests the route section for syntax errors 
+with the Gaussian 16 utility \texttt{testrt}.
+
+Usage: \texttt{g16.testroute.sh [opt] <file>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[--      ] Close reading options
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
 \section{\texttt{g16.submit.sh}}
 
 This tool parses and then submits a Gaussian 16 inputfile to a queueing system.
+For details on the extended mail interface see the manual.
 
 Usage: \texttt{g16.submit.sh [opt] <file>}
 
@@ -278,15 +294,16 @@ Usage: \texttt{g16.submit.sh [opt] <file>}
   \item[-h      ] Help file 
 \end{rslisttt}
 
-\section{\texttt{g16.testroute.sh}}
+\section{\texttt{g16.wrapper.sh}}
 
-This tool parses a Gaussian 16 inputfile and 
-tests the route section for syntax errors 
-with the Gaussian 16 utility \texttt{testrt}.
+This tool provides a Gaussian 16 environment to execute utilities interactively.
+
+Usage: \texttt{g16.wrapper.sh [opt] <utility commandline>}
 
 \begin{rslisttt}{-m <ARG>}
+  \item[-m <INT>] Memory (megabyte)
+  \item[-p <INT>] Processors
   \item[--      ] Close reading options
-  \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
 \end{rslisttt}
 
@@ -301,7 +318,9 @@ If no files given, it finds energy statements from all log files in the current 
 \begin{rslisttt}{-m <ARG>}
   \item[-i <ARG>] Specify input suffix if processing directory
   \item[-o <ARG>] Specify output suffix if processing directory
+  \item[-R      ] Recurse into directories
   \item[-L      ] Print the full file and path name (seperated by newline)
+  \item[-1      ] Print only one line per file
   \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
@@ -317,6 +336,8 @@ Usage: \texttt{g16.getfreq.sh [opt] <file(s)>}
   \item[-v      ] Incrementally increase verbosity
   \item[-V <INT>] Set level of verbosity directly, (0-4)
   \item[-c      ] Separate values by comma (\texttt{-V0} or \texttt{-V1})
+  \item[-c <ARG>] Separate values by \texttt{ARG} (\texttt{-V0} or \texttt{-V1});
+    arguments: \texttt{space}, \texttt{comma}, \texttt{semicolon}, \texttt{colon}, \texttt{slash}, \texttt{pipe}, 
   \item[-f <ARG>] Write summary to file instead of screen
   \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
@@ -332,6 +353,10 @@ Usage: \texttt{g16.chk2xyz.sh [-s] -h | -a | <chk-file(s)>}
 
 \begin{rslisttt}{-m <ARG>}
   \item[-a      ] Formats all checkpointfiles that are found in the current directory
+  \item[-A      ] Formats almost all checkpointfiles that are found in the current directory (same as \texttt{-aS})
+  \item[-B      ] Create backup files in cases where it would overwrite them (default)
+  \item[-F      ] Forces files to be overwritten
+  \item[-S      ] Skips files in cases where it would overwrite them
   \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 

@@ -103,7 +103,7 @@ get_scriptpath_and_source_files ()
     fi
     
     # Import default variables
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/default_variables.sh
+    #shellcheck source=./resources/default_variables.sh
     source "$resourcespath/default_variables.sh" &> "$tmplog" || (( error_count++ ))
     
     # Set more default variables
@@ -114,15 +114,15 @@ get_scriptpath_and_source_files ()
     unset outputfile
     
     # Import other functions
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
+    #shellcheck source=./resources/messaging.sh
     source "$resourcespath/messaging.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/rcfiles.sh
+    #shellcheck source=./resources/rcfiles.sh
     source "$resourcespath/rcfiles.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
+    #shellcheck source=./resources/test_files.sh
     source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/process_gaussian.sh
+    #shellcheck source=./resources/process_gaussian.sh
     source "$resourcespath/process_gaussian.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/validate_numbers.sh
+    #shellcheck source=./resources/validate_numbers.sh
     source "$resourcespath/validate_numbers.sh" &> "$tmplog" || (( error_count++ ))
 
     if (( error_count > 0 )) ; then
@@ -199,7 +199,7 @@ write_jobscript ()
     debug "requested_memory=$requested_memory; g16_overhead=$g16_overhead"
     message "Request a total memory of $overhead_memory MB, including overhead for Gaussian."
     message "Request a walltime of $requested_walltime."
-    message "Request $requested_numCPU to run this job on."
+    message "Request $requested_numCPU cores to run this job on."
 
     # Add a shebang and a comment
     echo "#!/bin/bash" >&9
@@ -229,7 +229,6 @@ write_jobscript ()
 			#BSUB -M $overhead_memory
 			#BSUB -W ${requested_walltime%:*}
 			#BSUB -J ${jobname}
-			#BSUB -N 
 			#BSUB -o $submitscript.o%J
 			#BSUB -e $submitscript.e%J
 			EOF
@@ -269,6 +268,15 @@ write_jobscript ()
         fi
       fi
 
+      local qsys_email_pattern='^(|1|[Yy][Ee][Ss]|[Aa][Cc][Tt][Ii][Vv][Ee]|[Dd][Ee][Ff][Aa][Uu][Ll][Tt])$'
+      debug "qsys_email='$qsys_email'; pattern: $qsys_email_pattern"
+      if [[ "$qsys_email" =~ $qsys_email_pattern ]] ; then
+        debug "Standard slurm mail active."
+        echo "#BSUB -N" >&9
+      else
+        debug "Standard slurm mail inactive ($qsys_email)."
+      fi
+
       if [[ "$user_email" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
         message "No email address given, notifications will be sent to system default."
       else
@@ -286,7 +294,6 @@ write_jobscript ()
 			#SBATCH --cpus-per-task=$requested_numCPU
 			#SBATCH --mem-per-cpu=$(( overhead_memory / requested_numCPU ))
 			#SBATCH --time=${requested_walltime}
-			#SBATCH --mail-type=END,FAIL
 			EOF
       if [[ "$qsys_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
         warning "No project selected."
@@ -304,6 +311,14 @@ write_jobscript ()
         fi
         echo "#SBATCH --export=NONE" >&9
       fi
+      local qsys_email_pattern='^(|1|[Yy][Ee][Ss]|[Aa][Cc][Tt][Ii][Vv][Ee]|[Dd][Ee][Ff][Aa][Uu][Ll][Tt])$'
+      debug "qsys_email='$qsys_email'; pattern: $qsys_email_pattern"
+      if [[ "$qsys_email" =~ $qsys_email_pattern ]] ; then
+        debug "Standard slurm mail active."
+        echo "#SBATCH --mail-type=END,FAIL" >&9
+      else
+        debug "Standard slurm mail inactive ($qsys_email)."
+      fi
       if [[ "$user_email" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
         debug "No email address given, notifications will be sent to system default."
       else
@@ -315,6 +330,30 @@ write_jobscript ()
     fi
 
     echo "" >&9
+  
+    # Extra mail interface
+    local xmail_pattern='^(1|[Yy][Ee][Ss]|[Aa][Cc][Tt][Ii][Vv][Ee])$'
+    debug "xmail_interface='$xmail_interface'; xmail_cmd='$xmail_cmd'; pattern: $xmail_pattern"
+    if [[ "$xmail_interface" =~ $xmail_pattern ]] ; then
+      warning "The extra mail interface is still experimental."
+      debug "Pattern was found (${BASH_REMATCH[0]})."
+      cat >&9 <<-EOF
+				# Add the User's bin directory to PATH to be sure not to miss local commands
+				PATH="\$HOME/bin:\$PATH"
+				
+				sendmail () {
+				  local mail_subject='\\(^o^)/ COMPLETED, '
+				  (( joberror > 0 ))  && mail_subject='( ; __ ; ) FAILED, '
+				  mail_subject+="${queue_short^} Job_id=\$jobid Name=$jobname ended"
+				  echo "Sending mail with: $xmail_cmd -s \"\$mail_subject\""
+				  ${xmail_cmd:-mail} -s "\$mail_subject"
+				  sleep 10
+				}
+				
+				EOF
+    else
+      debug "Pattern was not found, extra mail interface inactive."
+    fi
 
     # Initialise variables, insert cleanup procedure, trap cleanup
     local tempdir_pattern='^(|[Tt][Ee]?[Mm][Pp]([Dd][Ii][Rr])?|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$'
@@ -343,8 +382,20 @@ write_jobscript ()
 			  find "\$g16_basescratch" -maxdepth 0 -empty -exec rmdir -v {} \\;
 			}
 			
-			trap cleanup EXIT SIGTERM
 			EOF
+
+    if [[ "$xmail_interface" =~ $xmail_pattern ]] ; then
+      cat >&9 <<-EOF
+				cleanup_and_sendmail () {
+				  sendmail
+				  cleanup
+				}
+				
+				trap cleanup_and_sendmail EXIT SIGTERM
+				EOF
+    else
+      echo "trap cleanup EXIT SIGTERM" >&9
+    fi
 
     echo "" >&9
 
@@ -673,7 +724,11 @@ process_options ()
 #
 
 # If this script is sourced, return before executing anything
-(( ${#BASH_SOURCE[*]} > 1 )) && return 0
+if ( return 0 2>/dev/null ) ; then
+  # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
+  debug "Script is sourced. Return now."
+  return 0
+fi
 
 # Save how script was called
 printf -v script_invocation_spell "'%s' " "${0/#$HOME/<HOME>}" "$@"
@@ -710,10 +765,14 @@ debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 
 # Load custom settings from the rc
 
-if [[ ! -z $g16_tools_rc_loc ]] ; then
-  #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
+if [[ -n $g16_tools_rc_loc ]] ; then
+  #shellcheck source=./g16.tools.rc 
   . "$g16_tools_rc_loc"
   message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
+  if [[ "${configured_version}" =~ ^${version%.*} ]] ; then 
+    warning "Configured version was $configured_version ($configured_versiondate),"
+    warning "and probably needs an update to $version ($versiondate)."
+  fi
 else
   debug "No custom settings found."
 fi

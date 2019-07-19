@@ -101,7 +101,7 @@ get_scriptpath_and_source_files ()
     fi
     
     # Import default variables
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/default_variables.sh
+    #shellcheck source=./resources/default_variables.sh
     source "$resourcespath/default_variables.sh" &> "$tmplog" || (( error_count++ ))
     
     # Set more default variables
@@ -112,15 +112,15 @@ get_scriptpath_and_source_files ()
     unset outputfile
     
     # Import other functions
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/messaging.sh
+    #shellcheck source=./resources/messaging.sh
     source "$resourcespath/messaging.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/rcfiles.sh
+    #shellcheck source=./resources/rcfiles.sh
     source "$resourcespath/rcfiles.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/test_files.sh
+    #shellcheck source=./resources/test_files.sh
     source "$resourcespath/test_files.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/process_gaussian.sh
+    #shellcheck source=./resources/process_gaussian.sh
     source "$resourcespath/process_gaussian.sh" &> "$tmplog" || (( error_count++ ))
-    #shellcheck source=/home/te768755/devel/tools-for-g16.bash/resources/validate_numbers.sh
+    #shellcheck source=./resources/validate_numbers.sh
     source "$resourcespath/validate_numbers.sh" &> "$tmplog" || (( error_count++ ))
 
     if (( error_count > 0 )) ; then
@@ -169,7 +169,7 @@ process_inputfile ()
     additional_keywords+=("guess(read)")
     message "Added '${additional_keywords[-1]}' to the route section."
     if check_allcheck_option "$modified_route" ; then 
-      : 
+      debug "Keyword 'AllCheck' detected in input stream."
     else 
       while ! modified_route=$(remove_geom_keyword     "$modified_route") ; do : ; done
       additional_keywords+=("geom(check)")
@@ -189,9 +189,9 @@ process_inputfile ()
       additional_keywords+=('ChkBasis')
       message "Added '${additional_keywords[-1]}' to the route section."
       if check_denfit_keyword "$modified_route" ; then
-        debug "No 'DenFit' present."
-      else
         warning "Please check density fitting settings are compatible with 'ChkBasis'."
+      else
+        debug "No 'DenFit' present."
       fi
     fi
 
@@ -201,11 +201,11 @@ process_inputfile ()
     else
       additional_keywords+=("${use_custom_route_keywords[@]}")
       debug "Added the following custom keywords to route section:"
-      debug "$(fold -w80 -c -s <<< "${use_custom_route_keywords[*]}")"
+      debug "$(fold -w80 -s <<< "${use_custom_route_keywords[*]}")"
     fi
 
     debug "Added the following keywords to route section:"
-    debug "$(fold -w80 -c -s <<< "${additional_keywords[*]}")"
+    debug "$(fold -w80 -s <<< "${additional_keywords[*]}")"
 
     # add the custom keywords
     modified_route="$modified_route ${additional_keywords[*]}"
@@ -387,7 +387,11 @@ process_options ()
 #
 
 # If this script is sourced, return before executing anything
-(( ${#BASH_SOURCE[*]} > 1 )) && return 0
+if ( return 0 2>/dev/null ) ; then
+  # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
+  debug "Script is sourced. Return now."
+  return 0
+fi
 
 # Save how script was called
 printf -v script_invocation_spell "'%s' " "${0/#$HOME/<HOME>}" "$@"
@@ -424,10 +428,14 @@ debug "g16_tools_rc_loc=$g16_tools_rc_loc"
 
 # Load custom settings from the rc
 
-if [[ ! -z $g16_tools_rc_loc ]] ; then
-  #shellcheck source=/home/te768755/devel/tools-for-g16.bash/g16.tools.rc 
+if [[ -n $g16_tools_rc_loc ]] ; then
+  #shellcheck source=./g16.tools.rc 
   . "$g16_tools_rc_loc"
   message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
+  if [[ "${configured_version}" =~ ^${version%.*} ]] ; then 
+    warning "Configured version was $configured_version ($configured_versiondate),"
+    warning "and probably needs an update to $version ($versiondate)."
+  fi
 else
   debug "No custom settings found."
 fi

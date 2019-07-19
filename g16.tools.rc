@@ -25,6 +25,10 @@
 #
   g16_overhead=2000
 
+# Save checkpoint files by default.
+#
+  g16_checkpoint_save="true"
+
 # If a modular software management is available, use it?
 # [Default: true]
 #
@@ -43,33 +47,35 @@
 
 # Set the commands or paths for utilities:
 #
+# - wrapper for all Gaussian commands
+#
+#   The wrapper will load the Gaussian environment before executing the below utilities
+#   This should be blank if the utilities are found in PATH, or the absolute paths are provided
+#   g16_wrapper_cmd="g16.wrapper.sh"
+    g16_wrapper_cmd=""
+#
 # - formatted checkpoint files
 #   
-#   Tools-for-g16 wrapper (if found in path)
-#   g16_formchk_cmd="g16.wrapper.sh formchk" # ( - TO DO - )
-#   Any command that executes formchk
-    g16_formchk_cmd="wrapper.g16 formchk" # ( Current workaround )
-#   Local install with formchk found in PATH
-#   g16_formchk_cmd="formchk" 
+#   The command that executes formchk 
+#   Local install with formchk found in PATH, or wrapped with above
+    g16_formchk_cmd="formchk" 
 #   The hard coded path to the binary works also.
-#   bin_formchk_cmd="/path/to/g16/formchk"
+#   g16_formchk_cmd="/path/to/g16/formchk"
 #
 #   No options should be included in the above, but can be set:
     g16_formchk_opts="-3"
-#   If no options should be given to fromchk, the leave set it to empty,
+#   If no options should be given to fromchk, then explicitly set it to empty,
 #   g16_formchk_opts=""
 #   otherwise the scripts will use '-3' as option.
 #
 # - checking the route section (this is similar to above)
 #   
-#   Tools-for-g16 wrapper (if found in path)
-#   g16_testrt_cmd="g16.wrapper.sh testrt" # ( - TO DO - )
-#   Any command that executes testrt
-    g16_testrt_cmd="wrapper.g16 testrt" # ( Current workaround )
-#   Local install with testrt found in PATH
-#   g16_testrt_cmd="testrt" 
+#   The command that executes testrt
+#   Local install with testrt found in PATH, or wrapped
+    g16_testrt_cmd="testrt" 
 #   The hard coded path to the binary works also.
-#   bin_testrt_cmd="/path/to/g16/testrt"
+#   g16_testrt_cmd="/path/to/g16/testrt"
+#   (There are no options for this utility.)
 #
 
 # This script requires an installation of Open Babel.
@@ -79,7 +85,7 @@
 #
   obabel_cmd="obabel"
 #
-# should be enough. (Or is you use a wrapper, enter the command here.)
+# should be enough. 
 #
 # Otherwise, provide the path to the binary
 # obabel_cmd="/path/to/openbabel/bin/obabel"
@@ -93,21 +99,49 @@
 # Predefined Route sections
 #
   g16_route_section_default="# B97D3/def2SVP"
+#
   g16_route_section_predefined[0]="# PM6"
+  g16_route_section_predefined_comment[0]="semi-empirical method (default route)"
+#
   g16_route_section_predefined[1]="#P B97D3/def2SVP/W06                            DenFit"
+  g16_route_section_predefined_comment[1]="pure DFT method with density-fitting, double zeta BS (default route)"
+#
   g16_route_section_predefined[2]="#P B97D3/def2TZVPP/W06                          DenFit"
+  g16_route_section_predefined_comment[2]="pure DFT method with density-fitting, triple zeta BS (default route)"
+#
   g16_route_section_predefined[3]="#P BP86/def2SVP/W06   EmpiricalDispersion=GD3BJ DenFit"
+  g16_route_section_predefined_comment[3]="pure DFT method with density-fitting and DFT-D3 with Becke-Johnson damping, double zeta BS (default route)"
+#
   g16_route_section_predefined[4]="#P BP86/def2TZVPP/W06 EmpiricalDispersion=GD3BJ DenFit"
+  g16_route_section_predefined_comment[4]="pure DFT method with density-fitting and DFT-D3 with Becke-Johnson damping, triple zeta BS (default route)"
+#
   g16_route_section_predefined[5]="#P PBE1PBE/def2SVP    EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined_comment[5]="hybrid DFT method with DFT-D3 with Becke-Johnson damping, double zeta BS (default route)"
+#
   g16_route_section_predefined[6]="#P PBE1PBE/def2TZVPP  EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined_comment[6]="hybrid DFT method with DFT-D3 with Becke-Johnson damping, triple zeta BS (default route)"
+#
   g16_route_section_predefined[7]="#P B3LYP/def2SVP      EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined_comment[7]="hybrid DFT method with DFT-D3 with Becke-Johnson damping, double zeta BS (default route)"
+#
   g16_route_section_predefined[8]="#P B3LYP/def2TZVPP    EmpiricalDispersion=GD3BJ"
+  g16_route_section_predefined_comment[8]="hybrid DFT method with DFT-D3 with Becke-Johnson damping, triple zeta BS (default route)"
 #
 
+#
 # Default options for printing and verbosity
 #
-  values_separator=" " # (space separated values)
+
+# Delimit values in the printout with "space" (default)/ "comma"/ "semicolon"/ "colon"/ "slash"/ "pipe" 
+#
+  values_delimiter="space" 
+
+# Corresponds to any switches '-v' (default: 0)
+#
   output_verbosity=0
+
+# Corresponds to any switches '-s' that silence the output (default: 0)
+#
   stay_quiet=0
 
 #
@@ -140,9 +174,26 @@
 #
 # qsys_project=default
 
+# Deliver the default queuing system email
+# Values are for using this "1/yes/active" (default) or not using it "0/no/disabled"
+#
+  qsys_email="active"
+
 # Sent notifications to the following email address 
 #
   user_email="default"
+
+# Activate/deactivate sending extra mail (this is a configuration file only option)
+# Values are for using this "1/yes/active" or not using it "0/no/disabled" (default)
+#
+  xmail_interface="disabled"
+#
+# Provide the interface command (this can be any script/binary)
+# The routine uses 'mail' as a template and sends
+# > mail -s 'a subject line' 
+# This defaults to mail if empty and therefore would send an empty email.
+#
+# xmail_cmd="mail"
 
 # Request a certain machine type (only for bsub)
 #
@@ -150,3 +201,9 @@
 
 # Calculations will be submitted to run (hold/keep)
   requested_submit_status="run"
+
+# Meta information:
+# This is to avoid unnecessary warnings, if the configuration has not been performed.
+configured_version="$version"
+configured_versiondate="$versiondate"
+

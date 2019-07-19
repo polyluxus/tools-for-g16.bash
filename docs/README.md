@@ -1,5 +1,5 @@
 This document is based on the Cheat-Sheet for `tools-for-g16.bash`
-and was last updated with version 0.2.2, 2019-04-04.
+and was last updated with version 0.3.0, 2019-07-19.
 
 Introduction
 ============
@@ -37,7 +37,8 @@ which always has precedence. Every script will check four different
 directories in the order (1.) installation directory, (2.) user's home, 
 (3.) `.config` in user's home, (4.) parent working directory.
 It will load the last configuration file it finds.
-Setting files can be generated with the `configure/configure.sh` script.
+Setting files can be generated with the `configure/configure.sh` script,
+see the manual for more detailed information.
 
 `g16.prepare.sh`
 ================
@@ -188,6 +189,20 @@ Usage: `g16.spinput.sh [opt] <file>`
 | `-s`       | silence script (incremental)
 | `-h`       | Help file
 
+`g16.testroute.sh`
+==================
+
+This tool parses a Gaussian 16 inputfile and tests the route section for
+syntax errors with the Gaussian 16 utility `testrt`.
+
+Usage: `g16.testroute.sh [opt] <file>`
+
+| option | description 
+| ------ | ---
+| `--`   | Close reading options
+| `-s`   | Silence script (incremental)
+| `-h`   | Help file
+
 `g16.submit.sh`
 ===============
 
@@ -217,16 +232,16 @@ Usage: `g16.submit.sh [opt] <file>`
 `g16.testroute.sh`
 ==================
 
-This tool parses a Gaussian 16 inputfile and tests the route section for
-syntax errors with the Gaussian 16 utility `testrt`.
+This tool provides a Gaussian 16 environment to execute utilities interactively. 
 
-Usage: `g16.testroute.sh [opt] <file>`
+Usage: `g16.wrapper.sh [opt] <utility (commandline)>`
 
-| option | description 
-| ------ | ---
-| `--`   | Close reading options
-| `-s`   | Silence script (incremental)
-| `-h`   | Help file
+| option     | description 
+| ---------- | -----------
+| `-m <INT>` | Memory (megabyte)
+| `-p <INT>` | Processors
+| `--`       | Close reading options
+| `-h`       | Help file
 
 `g16.getenergy.sh`
 ==================
@@ -242,7 +257,9 @@ current directory.
 | ---------- | -----------
 | `-i <ARG>` | Specify input suffix if processing directory
 | `-o <ARG>` | Specify output suffix if processing directory
+| `-R`       | Recurse into directories
 | `-L`       | Print the full file and path name (seperated by newline)
+| `-1`       | Print only one line per file
 | `--`       | Close reading options
 | `-s`       | silence script (incremental)
 | `-h`       | Help file
@@ -260,6 +277,7 @@ Usage: `g16.getfreq.sh [opt] <file(s)>`
 | `-v`       | Incrementally increase verbosity
 | `-V <INT>` | Set level of verbosity directly, (0-4)
 | `-c`       | Separate values by comma (`-V0` or `-V1`)
+| `-C <ARG>` | Separate values with `<ARG>` (`-V0` or `-V1`); arguments: `space`, `comma`, `semicolon`, `colon`, `slash`, `pipe`
 | `-f <ARG>` | Write summary to file instead of screen
 | `--`       | Close reading options
 | `-s`       | silence script (incremental)
@@ -276,6 +294,11 @@ Usage: `g16.chk2xyz.sh [-s] -h | -a | <chk-file(s)>`
 | option     | description 
 | ---------- | -----------
 | `-a`       | Formats all checkpointfiles that are found in the current directory
+| `-A`       | Formats almost all checkpointfiles that are found in the current directory (same as `-aS`)
+| `-B`       | Create backup files in cases where it would overwrite them (default)
+| `-F`       | Forces files to be overwritten
+| `-S`       | Skips files in cases where it would overwrite them
 | `--`       | Close reading options
 | `-s`       | silence script (incremental)
 | `-h`       | Help file
+
