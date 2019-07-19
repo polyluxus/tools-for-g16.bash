@@ -1,5 +1,5 @@
 This document is based on the Cheat-Sheet for `tools-for-g16.bash`
-and was last updated with version 0.3.0.dev, 2019-07-XX.
+and was last updated with version 0.3.0, 2019-07-19.
 
 Introduction
 ============
@@ -301,3 +301,4 @@ Usage: `g16.chk2xyz.sh [-s] -h | -a | <chk-file(s)>`
 | `--`       | Close reading options
 | `-s`       | silence script (incremental)
 | `-h`       | Help file
+
