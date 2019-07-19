@@ -34,7 +34,7 @@ In the next chapter the interplay of the utilities is further explained with exa
 This of course makes these files dependending on each other,
 more precisely the newly generated input relies on the successful creation
 of a checkpoint file of the previous job.
-The mechanism employed by the scripts was introduced in Gaussian 09 Rev. E.01,
+The mechanism employed by the scripts was introduced in Gaussian 09 Rev. D.01,
 with the \texttt{\%OldChk} directive, which essentially copies the checkpoint file
 of a completed calculation to the new location.
 The contents of which can then be read, or accessed, with the \texttt{geom}/\texttt{guess} keywords.
@@ -53,9 +53,11 @@ depending on what was done, the level of theory may actually vary.\footnote{%
 Second most important is that any of these steps may fail;
 if they do, you loose the fallback and with it results and calculation time.
 Another inconvenience is that some visualisation programs are not able to
-parse these kind of output files.
+parse these kind of output files, e.g. molden,
+for which you may have to split these files.
 
-Essentially the scripts emulate this process, but split it up and externalise the dependencies.
+Essentially the scripts emulate the multi-step process, 
+but divide it in parts, and externalise the dependencies.
 
 The second group of scripts are execution or submission scripts.
 Working with a queueing system often comes with some waiting time.
@@ -66,15 +68,16 @@ To further avoid failing in early stages, it is reasonable to check the route se
 for syntax errors before submission (see \lstinline`g16.testroute`, \ref{sec:g16.testroute}).
 Nothing is worse than waiting for a job to start, only to realise that a keyword is misspelt.
 
-In this category one crucial example is yet missing:
-A multipurpose wrapper (or shortcut) script, 
-to actually call the utilities without having them permanently accessible 
+In this category probably the most universal script is the multipurpose wrapper script
+(see \lstinline`g16.wrapper`, \ref{sec:g16.wrapper}). 
+It is used to actually call the utilities without having them permanently accessible 
 in the environment.
-The whole repository was intended to be based on this, 
-however, it is still the one thing that is missing.\footnote{%
-  For comparison, the wrapper script existed in the now deprecated
+Initially the whole repository was intended to be based on this, 
+however, its importance is now significantly scaled back.\footnote{%
+  For comparison, a more extensive wrapper script existed in the now deprecated
   \href{https://github.com/polyluxus/tools-for-g09.bash}{github.com/polyluxus/tools-for-g09.bash}
-  repository; and it may be implemented some time in the future.}
+  repository; and it made acessing certain utilities easier because of preset values.
+  The current version included here may be extended some time in the future.}
 
 The last category are post-processing scripts, 
 which help extract data, or transform data files into file formats,
