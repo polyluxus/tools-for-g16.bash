@@ -463,6 +463,12 @@ if [[ -n $g16_tools_rc_loc ]] ; then
   #shellcheck source=./g16.tools.rc 
   . "$g16_tools_rc_loc"
   message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
+  if [[ "${configured_version}" =~ ^${version%.*} ]] ; then 
+    debug "Config: $configured_version ($configured_versiondate); Current: $version ($versiondate)."
+  else
+    warning "Configured version was ${configured_version:-unset} (${configured_versiondate:-unset}),"
+    warning "and probably needs an update to $version ($versiondate)."
+  fi
 else
   debug "No custom settings found."
 fi
