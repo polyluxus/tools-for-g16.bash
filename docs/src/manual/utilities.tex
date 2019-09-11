@@ -578,6 +578,8 @@ Options:
   {\lstinline`-h`}       & Print a small help file. \\
 \end{tabular}
 
+Tips \& Tricks:
+
 If a table of all energies in a given directory tree is desired, 
 for example from a conformational scan, this can be accomplished by:
 
@@ -637,7 +639,7 @@ In the latter case it assumes \texttt{chk} as the suffix of the checkpoint files
 
 Usage: 
 
-\lstinline`g16.chk2xyz.sh [-s] -h | -a | <chk-file(s)>`
+\lstinline`g16.chk2xyz.sh [opt] [<chk-file(s)>]`
 
 Options:
 
@@ -653,10 +655,20 @@ Options:
     Only the last option amongst \lstinline`-B`, \lstinline`-F`, \lstinline`-S` will take affact.\\
   {\lstinline`-S`}       & Skips files in cases where it would overwrite them.
     Only the last option amongst \lstinline`-B`, \lstinline`-F`, \lstinline`-S` will take affact.\\
+  {\lstinline`-R`}       & Recurse through directories.\\
+  {\lstinline`-P`}       & Print a list of filenames which would be processed (dry run).\\
   {\lstinline`--`}       & Explicitly close reading script options. \\
   {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
   {\lstinline`-h`}       & Print a small help file. \\
 \end{tabular}
+
+Tips \& Tricks:
+
+At the wrap-up and archiving of a project, it might be desirable to format all checkpoint files,
+which have not yet been formatted. 
+An alternative to the recursive switch the following command achieves the same:
+
+\lstinline`find . -name '*.chk' | xargs g16.chk2xyz -S`
 
 \end{document}
 

@@ -119,4 +119,4 @@ See [LICENSE](LICENSE) to see the full text.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-Martin (0.3.0, 2019-07-19)
+Martin (0.3.1, 2019-09-11)
