@@ -1,8 +1,9 @@
 #!/bin/bash
 #
-#hlp A very quick script to transform a checkpointfile
-#hlp to a formatted checkpointfile and then to xyz 
-#hlp coordinates using Open Babel.
+#hlp ${0##*/} is a script to format a Gaussian 16 checkpointfile
+#hlp via the formchk utility and then create Cartesian coordinates 
+#hlp in (simple) xmol format using Open Babel.
+#hlp
 #hlp Usage: $scriptname [option] [--] <checkpointfile(s)>
 #hlp
 # 
@@ -233,6 +234,33 @@ format_list ()
     return $returncode
 }
 
+process_directory ()
+{
+  # Set the nullglob option to allow for empty globbing parameter
+  shopt -s nullglob
+  local checkpointfile
+  for checkpointfile in ./*.chk ; do
+    checkpoint_list+=( "$( get_absolute_location "$checkpointfile" )" )
+    debug "Adding to list: '${checkpoint_list[-1]}"
+  done
+}
+
+recurse_directories ()
+{
+  local directory_start="$1"
+  local directory_to_process
+  for directory_to_process in "$directory_start"/* ; do
+    debug "Processing: $directory_to_process"
+    if [[ -d "$directory_to_process" ]] ; then
+      push_directory_to_stack "$directory_to_process" || fatal "Switching to '$directory_to_process' failed."
+      recurse_directories "$PWD"
+      pop_directory_from_stack -- || fatal "Popping directory from stack failed."
+    fi
+  done
+  debug "Current location: $PWD"
+  process_directory
+}
+
 #
 # MAIN SCRIPT
 #
@@ -305,7 +333,7 @@ fi
 debug "Initialising option index."
 OPTIND="1"
 
-while getopts :aABFSsh options ; do
+while getopts :aABFSRPsh options ; do
   #hlp   Options:
   #hlp
   case $options in
@@ -349,6 +377,19 @@ while getopts :aABFSsh options ; do
       operation_write_mode="skip"
       debug "Setting modus to '${operation_write_mode}'."
       ;;
+    #hlp     -R         Recurse through directories.
+    #hlp
+    R)
+      debug "Recursing through directories."
+      operation_file_mode="recursive"
+      debug "Setting modus to '${operation_file_mode}'."
+      ;;
+    #hlp     -P         Print a list of filename which would be processed (dry run).
+    #hlp
+    P)
+      printonly="true"
+      debug "Only printing filenames."
+      ;;
     #hlp     -s         Suppress messages, warnings, and errors of this script
     #hlp                (May be specified multiple times.)
     #hlp
@@ -382,20 +423,22 @@ shift $(( OPTIND - 1 ))
 # needs work: vars etc
 case "$operation_file_mode" in
   single)
-    debug "Explicitly adding checkpoint files to process (file mode: $operation_file_mode)"
+    debug "Explicitly adding checkpoint files to process (file mode: $operation_file_mode)."
     # Assume all other arguments are filenames
     checkpoint_list+=("$@")
     debug "Processing: ${checkpoint_list[*]}"
     ;;
   all)
     debug "Executing for directory; looking for all checkpoint files."
-    # Set the nullglob option to allow for empty globbing parameter
-    shopt -s nullglob
     (( ${#checkpoint_list[*]} == 0 )) || warning "File list already contains ${#checkpoint_list[*]} elements, they will be unset."
-    checkpoint_list=( ./*.chk )
+    process_directory
     debug "Found: ${checkpoint_list[*]}"
     (( ${#checkpoint_list[*]} == 0 )) &&  warning "No checkpoint files found in this directory."
     warn_additional_args "$@"
+    ;;
+  recursive)
+    debug "Recursing through directories (file mode: $operation_file_mode)."
+    recurse_directories "$PWD"
     ;;
   *)
     fatal "Unrecognised operation mode: '$operation_file_mode'."
@@ -405,6 +448,9 @@ esac
 if (( ${#checkpoint_list[*]} == 0 )) ; then
   warning "No checkpoint files to operate on."
   (( exit_status++ ))
+elif [[ "$printonly" == "true" ]] ; then
+  printf '%s\n' "${checkpoint_list[@]}"
+  exit_status=0
 else
   format_list "${checkpoint_list[@]}" || exit_status=$?
 fi
