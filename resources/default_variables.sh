@@ -1,5 +1,30 @@
 #!/bin/bash
 
+###
+#
+# tools-for-g16.bash -- 
+#   A collection of tools for the help with Gaussian 16.
+# Copyright (C) 2019 Martin C Schwarzer
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# Please see the license file distributed alongside this repository,
+# which is available when you type 'g16.tools-info.sh -L',
+# or at <https://github.com/polyluxus/tools-for-g16.bash>.
+#
+###
+
 # The following script gives default values to any of the scripts within the package.
 # They can (or should) be set in the rc file, too.
 
@@ -16,8 +41,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-g16.bash"
-version="0.3.0"
-versiondate="2019-07-19"
+version="0.3.1"
+versiondate="2019-09-11"
 
 #
 # Standard commands for external software:

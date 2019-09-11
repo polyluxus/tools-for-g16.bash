@@ -1,5 +1,5 @@
 This document is based on the Cheat-Sheet for `tools-for-g16.bash`
-and was last updated with version 0.3.0, 2019-07-19.
+and was last updated with version 0.3.1, 2019-09-11.
 
 Introduction
 ============
@@ -14,7 +14,7 @@ Preliminary notes
 -----------------
 
 The notation in brackets `[ ]` indicate optional arguments/inputs;
-arguments in angles `< >` require human input; a bar `|` indicates
+arguments in angles `< >` require human input; a slash `/` indicates
 alternatives.
 
 The following abbreviations will be used:
@@ -26,7 +26,7 @@ The following abbreviations will be used:
 | `INT`        | Positive integer (including zero)
 | `NUM`        | Whole number (including zero)
 | `FLT`        | Floating point number
-| `DUR`        | Duration in format `[[HH:]MM:]SS` or `INT[D|H|M]`
+| `DUR`        | Duration in format `[[HH:]MM:]SS` or `INT[D/H/M]`
 
 Installation & Configuration
 ----------------------------
@@ -289,7 +289,7 @@ Usage: `g16.getfreq.sh [opt] <file(s)>`
 A tool to convert a checkpoint file to an `xyz` file. This formats the
 `chk` first to a `fchk`.
 
-Usage: `g16.chk2xyz.sh [-s] -h | -a | <chk-file(s)>`
+Usage: `g16.chk2xyz.sh [opt] [<chk-file(s)>]`
 
 | option     | description 
 | ---------- | -----------
@@ -298,6 +298,8 @@ Usage: `g16.chk2xyz.sh [-s] -h | -a | <chk-file(s)>`
 | `-B`       | Create backup files in cases where it would overwrite them (default)
 | `-F`       | Forces files to be overwritten
 | `-S`       | Skips files in cases where it would overwrite them
+| `-R`       | Recurse through directories
+| `-P`       | Print; dry run
 | `--`       | Close reading options
 | `-s`       | silence script (incremental)
 | `-h`       | Help file

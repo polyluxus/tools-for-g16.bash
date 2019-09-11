@@ -21,9 +21,8 @@
 #
 ###
 
-#hlp   This is a wrapper script to set the Gaussian 16 environemt, 
-#hlp   so that available utilities can be used interactively.
-#hlp   See http://gaussian.com/utils/ for more information.
+#
+#hlp   ${0##*/} is a script to print information related to the repository
 #hlp
 #hlp   tools-for-g16.bash  Copyright (C) 2019  Martin C Schwarzer
 #hlp   This program comes with ABSOLUTELY NO WARRANTY; this is free software, 
@@ -31,8 +30,8 @@
 #hlp   please see the license file distributed alongside this repository,
 #hlp   which is available when you type 'g16.tools-info.sh -L',
 #hlp   or at <https://github.com/polyluxus/tools-for-g16.bash>.
-#hlp 
-#hlp   Usage: $scriptname [option] [--] <commands>
+#hlp
+#hlp   Usage: $scriptname [option] 
 #hlp
 # 
 
@@ -156,56 +155,67 @@ get_scriptpath_and_source_files ()
 # Specific functions for this script only
 #
 
-# Create a scratch directory for temporary files
-cleanup_scratch () {
-  message "Looking for files with filesize zero and delete them in '$g16_scratch'."
-  debug "$( find "$g16_scratch" -type f -size 0 -exec rm -v -- {} \; )"
-  message "Deleting scratch '$g16_scratch' if empty."
-  debug "$( find "$g16_scratch" -maxdepth 0 -empty -exec rmdir -v -- {} \; )"
-  [[ -e "$g16_scratch" ]] && warning "Scratch directory ($g16_scratch) is not empty, please check whether you need the files."
+print_license ()
+{
+  [[ -r "$scriptpath/LICENSE" ]] || fatal "No license file found. Your copy of the repository might be corrupted."
+  if command -v less &> /dev/null ; then
+    less "$scriptpath/LICENSE"
+  else
+    cat "$scriptpath/LICENSE"
+  fi
 }
 
-make_scratch ()
+print_settings ()
 {
-  debug "Creating new scratch directory."
-  local tempdir_pattern='^(|[Tt][Ee]?[Mm][Pp]([Dd][Ii][Rr])?|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$'
-  debug "g16_scratch='$g16_scratch'; pattern: $tempdir_pattern"
-  if [[ "$g16_scratch" =~ $tempdir_pattern ]] ; then
-    debug "Pattern was found."
-    #shellcheck disable=SC2016
-    g16_scratch=$( mktemp --directory --tmpdir )
-  else
-    debug "Pattern was not found."
-    g16_scratch=$( mktemp --directory --tmpdir="$g16_scratch" g16-interactive-XXXXXX )
-  fi
-  [[ -e "$g16_scratch" ]] || return 1
-  trap cleanup_scratch EXIT SIGTERM
-}
-
-# How Gaussian is loaded
-load_gaussian ()
-{
-  if [[ "$load_modules" =~ [Tt][Rr][Uu][Ee] ]] ; then
-    (( ${#g16_modules[*]} == 0 )) && fatal "No modules to load."
-    # assume that in the interactive session everything is set alright already
-    module load ${g16_modules[*]} 
-  else
-    [[ -z "$g16_installpath" ]] && fatal "Gaussian path is unset."
-    [[ -e "$g16_installpath/g16/bsd/g16.profile" ]] && fatal "Gaussian profile does not exist."
-    # Gaussian needs the g16root variable
-    g16root="$g16_installpath"
-    export g16root
-    #shellcheck disable=SC1090
-    . "${g16root}"/g16/bsd/g16.profile
-  fi
-  make_scratch || fatal "Setting scratch failed."
-  GAUSS_SCRDIR="$g16_scratch"
-  message "Using scratch '$g16_scratch'."
-  GAUSS_MEMDEF="${requested_memory}MB"
-  GAUSS_MDEF="${requested_memory}MB"
-  GAUSS_PDEF=$requested_numCPU
-  debug "$(declare -p g16root GAUSS_SCRDIR GAUSS_MEMDEF GAUSS_MDEF GAUSS_PDEF)"
-  export GAUSS_SCRDIR GAUSS_MEMDEF GAUSS_MDEF GAUSS_PDEF
+  cat <<-EOF
+  g16_installpath=             ${g16_installpath:-<undefined>}
+  g16_scratch=                 ${g16_scratch:-<undefined>}
+  g16_overhead=                ${g16_overhead:-<undefined>}
+  g16_checkpoint_save=         ${g16_checkpoint_save:-<undefined>}
+  load_modules=                ${load_modules:-<undefined>}
+  g16_wrapper_cmd=             ${g16_wrapper_cmd:-<undefined>}
+  g16_testrt_cmd=              ${g16_testrt_cmd:-<undefined>}
+  g16_formchk_cmd=             ${g16_formchk_cmd:-<undefined>}
+  g16_formchk_opts=            ${g16_formchk_opts:-<undefined>}
+  obabel_cmd=                  ${obabel_cmd:-<undefined>}
+  g16_input_suffix=            ${g16_input_suffix:-<undefined>}
+  g16_output_suffix=           ${g16_output_suffix:-<undefined>}
+  stay_quiet=                  ${stay_quiet:-<undefined>}
+  output_verbosity=            ${output_verbosity:-<undefined>}
+  values_delimiter=            ${values_delimiter:-<undefined>}
+  request_qsys=                ${request_qsys:-<undefined>}
+  qsys_project=                ${qsys_project:-<undefined>}
+  user_email=                  ${user_email:-<undefined>}
+  bsub_machinetype=            ${bsub_machinetype:-<undefined>}
+  qsys_email=                  ${qsys_email:-<undefined>}
+  xmail_interface=             ${xmail_interface:-<undefined>}
+  xmail_cmd=                   ${xmail_cmd:-<undefined>}
+  requested_walltime=          ${requested_walltime:-<undefined>}
+  requested_memory=            ${requested_memory:-<undefined>}
+  requested_numCPU=            ${requested_numCPU:-<undefined>}
+  requested_maxdisk=           ${requested_maxdisk:-<undefined>}
+  requested_submit_status=     ${requested_submit_status:-<undefined>}
+  g16_route_section_default=   ${g16_route_section_default:-<undefined>}
+  Predefined route sections:
+	EOF
+  for array_index in "${!g16_route_section_predefined[@]}" ; do
+    (( array_index > 0 )) && printf '\n'
+    printf '%3d       : ' "$array_index" 
+    local printvar printline=0
+    while read -r printvar || [[ -n "$printvar" ]] ; do
+      if (( printline == 0 )) ; then
+        printf '%-80s\n' "$printvar"
+      else
+        printf '            %-80s\n' "$printvar"
+      fi
+      (( printline++ ))
+    done <<< "$( fold -w80 -s <<< "${g16_route_section_predefined[$array_index]}" )"
+    unset printvar 
+    while read -r printvar || [[ -n "$printvar" ]] ; do
+      [[ -z "$printvar" ]] && printvar="no comment"
+      printf '%3d(cmt.) : %-80s\n' "$array_index" "$printvar"
+    done <<< "$( fold -w80 -s <<< "${g16_route_section_predefined_comment[$array_index]}" )"
+  done
 }
 
 #
@@ -213,7 +223,7 @@ load_gaussian ()
 #
 
 # If this script is sourced, return before executing anything
-if ( return 0 2> /dev/null ) ; then
+if ( return 0 2>/dev/null ) ; then
   # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
   debug "Script is sourced. Return now."
   return 0
@@ -246,11 +256,8 @@ get_scriptpath_and_source_files || exit 1
 # Check whether we have the right numeric format (set it if not)
 warn_and_set_locale
 
-# Warn if neither options nor a command is given
-(( $# == 0 )) && warning "There is nothing to do."
-
-# Check for settings in four default locations (increasing priority):
-#   install path of the script, user's home directory, .config in user's home, current directory
+# Check for settings in three default locations (increasing priority):
+#   install path of the script, user's home directory, current directory
 g16_tools_rc_searchlocations=( "$scriptpath" "$HOME" "$HOME/.config" "$PWD" )
 g16_tools_rc_loc="$( get_rc "${g16_tools_rc_searchlocations[@]}" )"
 debug "g16_tools_rc_loc=$g16_tools_rc_loc"
@@ -275,39 +282,27 @@ fi
 debug "Initialising option index."
 OPTIND="1"
 
-while getopts :m:p:sh options ; do
+while getopts :PLh options ; do
   #hlp   Options:
   #hlp
   case $options in
-    #hlp     -m <ARG>   Define the total memory to be used in megabyte.
-    #hlp                (Default: $requested_memory)
-    #hlp
-      m) 
-         validate_integer "$OPTARG" "the memory"
-         if (( OPTARG == 0 )) ; then
-           fatal "Memory limit must not be zero."
-         fi
-         requested_memory="$OPTARG" 
-         ;;
-
-    #hlp     -p <ARG>   Define number of professors to be used. 
-    #hlp                (Default: $requested_numCPU)
-    #hlp
-      p) 
-         validate_integer "$OPTARG" "the number of threads"
-         if (( OPTARG == 0 )) ; then
-           fatal "Number of threads must not be zero."
-         fi
-         requested_numCPU="$OPTARG" 
-         ;;
-
-    s) 
-      (( stay_quiet++ )) 
-      ;; 
-
-    #hlp     -h         Prints this help text
-    #hlp
+    P)
+      #hlp     -P         Prints all settings.
+      #hlp
+      if command -v less &> /dev/null ; then
+        print_settings | less
+      else
+        print_settings
+      fi
+      ;;
+    L)
+      #hlp     -L         Show the license.
+      #hlp
+      print_license
+      ;;
     h) 
+      #hlp     -h         Prints this help text
+      #hlp
       helpme 
       ;; 
 
@@ -328,15 +323,6 @@ done
 debug "Reading options completed."
 
 shift $(( OPTIND - 1 ))
-
-# Assume all other arguments are part of the wrapped command
-g16_commandline=("$@")
-debug "Processing: ${g16_commandline[*]}"
-
-#Now load gaussian here
-load_gaussian || fatal "Loading Gaussian failed."
-
-"${g16_commandline[@]}" || exit_status=$?
 
 #hlp   $scriptname is part of $softwarename $version ($versiondate) 
 message "$scriptname is part of $softwarename $version ($versiondate)"

@@ -1,9 +1,38 @@
 #!/bin/bash
+
+###
 #
-#hlp A very quick script to transform a checkpointfile
-#hlp to a formatted checkpointfile and then to xyz 
-#hlp coordinates using Open Babel.
-#hlp Usage: $scriptname [option] [--] <checkpointfile(s)>
+# tools-for-g16.bash -- 
+#   A collection of tools for the help with Gaussian 16.
+# Copyright (C) 2019 Martin C Schwarzer
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+###
+
+#hlp   ${0##*/} is a script to format a Gaussian 16 checkpointfile
+#hlp   via the formchk utility and then create Cartesian coordinates 
+#hlp   in (simple) xmol format using Open Babel.
+#hlp
+#hlp   tools-for-g16.bash  Copyright (C) 2019  Martin C Schwarzer
+#hlp   This program comes with ABSOLUTELY NO WARRANTY; this is free software, 
+#hlp   and you are welcome to redistribute it under certain conditions; 
+#hlp   please see the license file distributed alongside this repository,
+#hlp   which is available when you type 'g16.tools-info.sh -L',
+#hlp   or at <https://github.com/polyluxus/tools-for-g16.bash>.
+#hlp
+#hlp   Usage: $scriptname [option] [--] <checkpointfile(s)>
 #hlp
 # 
 
@@ -233,6 +262,33 @@ format_list ()
     return $returncode
 }
 
+process_directory ()
+{
+  # Set the nullglob option to allow for empty globbing parameter
+  shopt -s nullglob
+  local checkpointfile
+  for checkpointfile in ./*.chk ; do
+    checkpoint_list+=( "$( get_absolute_location "$checkpointfile" )" )
+    debug "Adding to list: '${checkpoint_list[-1]}"
+  done
+}
+
+recurse_directories ()
+{
+  local directory_start="$1"
+  local directory_to_process
+  for directory_to_process in "$directory_start"/* ; do
+    debug "Processing: $directory_to_process"
+    if [[ -d "$directory_to_process" ]] ; then
+      push_directory_to_stack "$directory_to_process" || fatal "Switching to '$directory_to_process' failed."
+      recurse_directories "$PWD"
+      pop_directory_from_stack -- || fatal "Popping directory from stack failed."
+    fi
+  done
+  debug "Current location: $PWD"
+  process_directory
+}
+
 #
 # MAIN SCRIPT
 #
@@ -292,7 +348,9 @@ if [[ -n $g16_tools_rc_loc ]] ; then
   . "$g16_tools_rc_loc"
   message "Configuration file '${g16_tools_rc_loc/*$HOME/<HOME>}' applied."
   if [[ "${configured_version}" =~ ^${version%.*} ]] ; then 
-    warning "Configured version was $configured_version ($configured_versiondate),"
+    debug "Config: $configured_version ($configured_versiondate); Current: $version ($versiondate)."
+  else
+    warning "Configured version was ${configured_version:-unset} (${configured_versiondate:-unset}),"
     warning "and probably needs an update to $version ($versiondate)."
   fi
 else
@@ -303,7 +361,7 @@ fi
 debug "Initialising option index."
 OPTIND="1"
 
-while getopts :aABFSsh options ; do
+while getopts :aABFSRPsh options ; do
   #hlp   Options:
   #hlp
   case $options in
@@ -347,6 +405,19 @@ while getopts :aABFSsh options ; do
       operation_write_mode="skip"
       debug "Setting modus to '${operation_write_mode}'."
       ;;
+    #hlp     -R         Recurse through directories.
+    #hlp
+    R)
+      debug "Recursing through directories."
+      operation_file_mode="recursive"
+      debug "Setting modus to '${operation_file_mode}'."
+      ;;
+    #hlp     -P         Print a list of filename which would be processed (dry run).
+    #hlp
+    P)
+      printonly="true"
+      debug "Only printing filenames."
+      ;;
     #hlp     -s         Suppress messages, warnings, and errors of this script
     #hlp                (May be specified multiple times.)
     #hlp
@@ -380,20 +451,22 @@ shift $(( OPTIND - 1 ))
 # needs work: vars etc
 case "$operation_file_mode" in
   single)
-    debug "Explicitly adding checkpoint files to process (file mode: $operation_file_mode)"
+    debug "Explicitly adding checkpoint files to process (file mode: $operation_file_mode)."
     # Assume all other arguments are filenames
     checkpoint_list+=("$@")
     debug "Processing: ${checkpoint_list[*]}"
     ;;
   all)
     debug "Executing for directory; looking for all checkpoint files."
-    # Set the nullglob option to allow for empty globbing parameter
-    shopt -s nullglob
     (( ${#checkpoint_list[*]} == 0 )) || warning "File list already contains ${#checkpoint_list[*]} elements, they will be unset."
-    checkpoint_list=( ./*.chk )
+    process_directory
     debug "Found: ${checkpoint_list[*]}"
     (( ${#checkpoint_list[*]} == 0 )) &&  warning "No checkpoint files found in this directory."
     warn_additional_args "$@"
+    ;;
+  recursive)
+    debug "Recursing through directories (file mode: $operation_file_mode)."
+    recurse_directories "$PWD"
     ;;
   *)
     fatal "Unrecognised operation mode: '$operation_file_mode'."
@@ -403,6 +476,9 @@ esac
 if (( ${#checkpoint_list[*]} == 0 )) ; then
   warning "No checkpoint files to operate on."
   (( exit_status++ ))
+elif [[ "$printonly" == "true" ]] ; then
+  printf '%s\n' "${checkpoint_list[@]}"
+  exit_status=0
 else
   format_list "${checkpoint_list[@]}" || exit_status=$?
 fi
