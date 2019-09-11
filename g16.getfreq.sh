@@ -1,11 +1,37 @@
 #!/bin/bash
 
+###
+#
+# tools-for-g16.bash -- 
+#   A collection of tools for the help with Gaussian 16.
+# Copyright (C) 2019 Martin C Schwarzer
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+###
+
 #hlp   This tool creates a summary for a single (or more) frequency calculation(s)
 #hlp   of the quantum chemical software suite Gaussian16.
 #hlp   It will, however, not fail if it is not one. 
 #hlp   It looks for a defined set of keywords and writes them to the screen.
 #hlp
-#hlp   This software comes with absolutely no warrenty. None. Nada.
+#hlp   tools-for-g16.bash  Copyright (C) 2019  Martin C Schwarzer
+#hlp   This program comes with ABSOLUTELY NO WARRANTY; this is free software, 
+#hlp   and you are welcome to redistribute it under certain conditions; 
+#hlp   please see the license file distributed alongside this repository,
+#hlp   which is available when you type 'g16.tools-info.sh -L',
+#hlp   or at <https://github.com/polyluxus/tools-for-g16.bash>.
 #hlp
 
 # An old version of this script was reviewed:

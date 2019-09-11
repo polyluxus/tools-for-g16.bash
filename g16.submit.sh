@@ -1,21 +1,39 @@
-#! /bin/bash
+#!/bin/bash
 
-# Gaussian 16 submission script
+###
 #
-# You might not want to make modifications here.
-# If you do improve it, I would be happy to learn about it.
+# tools-for-g16.bash -- 
+#   A collection of tools for the help with Gaussian 16.
+# Copyright (C) 2019 Martin C Schwarzer
 #
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+###
 
 # 
 # The help lines are distributed throughout the script and grepped for
 #
 #hlp   This script will sumbit a Gaussian input file to the queueing system.
-#hlp   It is designed to work on the RWTH compute cluster in 
-#hlp   combination with the bsub queue.
+#hlp   It is designed to work on the RWTH compute cluster (CLAIX18)
+#hlp   in combination with the slurm queueing system.
 #hlp
-#hlp   Work in progress: Adapt setting to new CLAIX18 and slurm.
-#hlp
-#hlp   This software comes with absolutely no warrenty. None. Nada.
+#hlp   tools-for-g16.bash  Copyright (C) 2019  Martin C Schwarzer
+#hlp   This program comes with ABSOLUTELY NO WARRANTY; this is free software, 
+#hlp   and you are welcome to redistribute it under certain conditions; 
+#hlp   please see the license file distributed alongside this repository,
+#hlp   which is available when you type 'g16.tools-info.sh -L',
+#hlp   or at <https://github.com/polyluxus/tools-for-g16.bash>.
 #hlp
 #hlp   Usage: $scriptname [options] [--] <INPUT_FILE>
 #hlp

@@ -99,4 +99,24 @@ All of the scripts come with a `-h` switch to give a summary of the available op
 A reference card (or cheat-sheet) with a summary can be found as a
 pdf-file in the [docs](./docs) directory.
 
+## License (GNU General Public License v3.0)
+
+tools-for-g16.bash - A collection of tools for the help with Gaussian 16.
+Copyright (C) 2019 Martin C Schwarzer
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+See [LICENSE](LICENSE) to see the full text.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 Martin (0.3.0, 2019-07-19)
