@@ -812,7 +812,7 @@ translate_conf_settings_to_internal ()
   use_load_modules="$load_modules"
   use_g16_modules=( "${g16_modules[@]}" )
   debug "use_load_modules=$use_load_modules"
-  use_g16_wrapper_cmd="$use_g16_wrapper_cmd"
+  use_g16_wrapper_cmd="$g16_wrapper_cmd"
   use_g16_formchk_cmd="$g16_formchk_cmd"
   use_g16_formchk_opts="$g16_formchk_opts"
   use_g16_testrt_cmd="$g16_testrt_cmd"
