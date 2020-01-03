@@ -191,7 +191,7 @@ load_gaussian ()
     module load ${g16_modules[*]} 
   else
     [[ -z "$g16_installpath" ]] && fatal "Gaussian path is unset."
-    [[ -e "$g16_installpath/g16/bsd/g16.profile" ]] && fatal "Gaussian profile does not exist."
+    [[ -e "$g16_installpath/g16/bsd/g16.profile" ]] || fatal "Gaussian profile does not exist."
     # Gaussian needs the g16root variable
     g16root="$g16_installpath"
     export g16root
