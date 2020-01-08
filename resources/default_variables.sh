@@ -85,6 +85,10 @@ g16_testrt_cmd="testrt"
 # Options related to use open babel
 obabel_cmd="obabel"
 
+# Options related to the external use of NBO6
+nbo6_interface=active
+nbo6_installpath="/path/is/not/set/"
+
 #
 # Default files, suffixes, options for Gaussian 16
 #

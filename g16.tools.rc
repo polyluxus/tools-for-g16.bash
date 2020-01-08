@@ -116,6 +116,20 @@
 # obabel_cmd="/path/to/openbabel/bin/obabel"
 #
 
+# This script provides an interface to the external program NBO6.
+# The interface does not have to be activated, if NBO6 is loaded
+# with the Gaussian modules (or as its own module), or if it already
+# is part of the Gaussian installation, or if it is found in PATH.
+# 
+  nbo6_interface=disabled
+#
+# To activate, set the above to 'active'.
+# If the interface is active, the path to the NBO6 root directory
+# must be set (not including the 'bin' directory):
+#
+# nbo6_installpath="/path/to/nbo6"
+#
+
 # Default files, suffixes, and other for Gaussian 16
 # 
   g16_input_suffix="com"

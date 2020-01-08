@@ -19,19 +19,22 @@ The scripts of this repository are not self-contained,
 they each need access to the resources directory 
 and it has to be called like that.
 
-The easiest way to install the script is to clone the git repository from GitHub:\newline
-\href{https://github.com/polyluxus/tools-for-g16.bash}{github.com/polyluxus/tools-for-g16.bash}.
-Alternatively you can download the tarball archive of the latest release from there, too:\newline
+The easiest way to install the script is to download the tarball archive of the latest release from GitHub:
 \href{https://github.com/polyluxus/tools-for-g16.bash/releases/latest}{github.com/polyluxus/tools-for-g16.bash/releases/latest}.
+Alternatively you can clone the git repository from GitHub:
+\href{https://github.com/polyluxus/tools-for-g16.bash}{github.com/polyluxus/tools-for-g16.bash}.
+In the latter case you will also be able to obtain unstable development features,
+or contribute yourself to the code base.
 
-After unpacking it only needs to be configured.
-There are a two kinds of file names recognised:
+After unpacking or cloning the scripts only need to be configured.
+There are a two kinds of file names recognised as configuration files:
 \lstinline`g16.tools.rc` and the hidden \lstinline`.g16.toolsrc`.
 The repository comes with an example of the former, 
-therefore updating the repository will (probably) overwrite the file.
-The latter file is excluded from this process,
-and therefore has always precedence, 
-so it is generally a safer option to configure.
+therefore updating the repository by pulling the latest version from GitHub will (probably) overwrite the file,
+or warn you about uncommitted changes.
+If you chose this option, you most likely already know how to deal with this situation.
+The hidden file is excluded (via \texttt{.gitignore}) from this process,
+and therefore has always precedence, so it is generally a safer option to configure.
 
 The scripts will search for these configuration settings in the following order of directories:
 \begin{enumerate}
@@ -41,10 +44,11 @@ The scripts will search for these configuration settings in the following order 
   \item the current working directory, i.e. from where the script is called.
 \end{enumerate}
 Only the last found file will be applied.
+This way it is ensured, that later found settings do always overwrite preconfigured values.
 
 To make the scripts accessible from anywhere, the directory where they have been stored
 must be found in the \texttt{PATH} variable.
-Alternatively, you can create softlinks to them in a directory, 
+Alternatively, you can create symbolic (or soft) links to them in a directory, 
 which is already recognised by \texttt{PATH}.
 A common setting for this is the local \texttt{\$HOME/bin}.
 
@@ -71,7 +75,7 @@ Options:
     Load a (specified) configuration file, run the configuration routine to update settings.
     This will replace the loaded configuration file.\\
   {\lstinline`-T`}       & Translate mode.
-    Load the default cofiguration file (possibly from an earlier version), 
+    Load the default configuration file (possibly from an earlier version), 
     and translate the settings to the most recent version and use default settings for everything unspecified.
     Depending on the configuration file loaded, this may or may not work well.
     This will replace the loaded default configuration file.\\
@@ -79,13 +83,13 @@ Options:
   {\lstinline`-h`}       & Print a small help file. \\
 \end{tabular}
 
-The configure script will also, if desired, try to create softlinks to the scripts (omitting the \texttt{sh} suffix),
+The configure script will also, if desired, try to create soft links to the scripts (omitting the \texttt{sh} suffix),
 in the \texttt{\$HOME/bin} directory.
 
 In the \texttt{configure} directory is a second script, \lstinline`routebuilder.sh`,
 which is not designed to be executed on its own.
 Instead it interfaces to the \lstinline`configure.sh` script to update the route sections within the configuration files.
-However, it can be run by itself, creating an overwiew for the predefined routes and also manipulate them.
+However, it can be run by itself, creating an overview for the predefined routes and also manipulate them.
 If no target file is specified, then they will be written to a temporary file.
 
 Usage: 
@@ -108,28 +112,23 @@ Options:
 
 For displaying the help files, the command line utility \texttt{grep} is required.
 
-Some scripts need access to an istallation of Open Babel;\footnote{%
-  For more information see \href{http://openbabel.org/}{http://openbabel.org/}.}
-it is mainly used to interface to the TurboMole \texttt{coord} file format,
+Some scripts need access to an installation of Open Babel;\footnote{%
+  For more information see \href{http://openbabel.org}{http://openbabel.org}.}
+it is mainly used to interface to the Turbomole \texttt{coord} file format,
 and the post-processing scripts.
 
 It should be no surprise that an installation of Gaussian 16 is necessary for
 some of the scripts, currently used are the utilities \texttt{testrt} and \texttt{formchk}.
 They can either be specified via paths to the respective binaries or directories,
-or as modules which may be loaed at runtime via the \texttt{module} command.
+or as modules which may be loaded at runtime via the \texttt{module} command.
 A wrapper to set a suitable environment is included within this repository (see next chapter).
- % While a main wrapper (see next chapter) is still not included in the repository,
- % the scripts will accept these.
- % Otherwise the Gaussian environment has to be set up, 
- % and the utilities must be found in the \texttt{PATH} directories.
- % The direct path to these utilities might work, too.
- % 
- % The following example is a very simple wrapper script when using software modules. 
- % \begin{lstlisting}[language=bash]
- % #!/bin/bash
- % module load gaussian
- % "$@"
- % \end{lstlisting}
+
+The suite comes now with an interface to an external installation of NBO6.\footnote{%
+  For more information visit \href{https://nbo6.chem.wisc.edu}{https://nbo6.chem.wisc.edu}.}
+It has to be activated and the path to the installation directory needs to be provided.
+If the NBO6 installation is contained within the Gaussian installation,
+loaded via a module environment, or otherwise already found via \texttt{PATH},
+it should remain deactivated.
 
 For the RWTH clusters, which have a modular environment installed, 
 there is a separate repository with some more scripts, 

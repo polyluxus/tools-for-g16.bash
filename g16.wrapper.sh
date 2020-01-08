@@ -182,6 +182,19 @@ make_scratch ()
   trap cleanup_scratch EXIT SIGTERM
 }
 
+# Loading external NBO6 interface
+load_nbo ()
+{
+  [[ "$nbo6_interface" =~ [Aa][Cc][Tt][Ii][Vv][Ee] ]] || { debug "Manual NBO6 interface inactive." ; return 0 ; }
+  [[ -z "$nbo6_installpath" ]] && fatal "Tried loading NBO6 manually, but failed (installation path unset)."
+  [[ -e "$nbo6_installpath/bin" ]] || fatal "Failed locating NBO6 bin directory in '$nbo6_installpath'."
+  debug "Adding '$nbo6_installpath/bin' to PATH."
+  PATH="$nbo6_installpath/bin:$PATH"
+  export PATH
+  debug "PATH=$PATH"
+  debug "$(command -v gaunbo6)"
+}
+
 # How Gaussian is loaded
 load_gaussian ()
 {
@@ -197,6 +210,8 @@ load_gaussian ()
     export g16root
     #shellcheck disable=SC1090
     . "${g16root}"/g16/bsd/g16.profile
+    # load NBO6 manually
+    load_nbo
   fi
   make_scratch || fatal "Setting scratch failed."
   GAUSS_SCRDIR="$g16_scratch"

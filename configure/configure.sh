@@ -468,6 +468,39 @@ ask_other_utilities ()
   # Maybe some more are necessary later
 }
 
+ask_nbo6_interface ()
+{
+  ask "Would you like to activate the external NBO6 interface?"
+  message "The interface does not have to be activated, if NBO6 is loaded with the"
+  message "Gaussian modules (or as its own module), or if it already is part of the"
+  message "Gaussian installation, or if it is found in PATH."
+  message "The path to the installation of NBO6 must be set when this option is activated."
+  if read_boolean ; then 
+    use_nbo6_interface="active"
+    ask "Where is the NBO6 root directory? Please specify the full path."
+    use_nbo6_installpath=$(read_human_input)
+    # Will be empty if skipped; can return without assigning/testing empty values
+    if [[ -z $use_nbo6_installpath ]] ; then
+      warning "No path for NBO6 specified. Deactivating interface."
+      use_nbo6_interface="disabled"
+      return
+    fi
+    use_nbo6_installpath=$(expand_tilde "$use_nbo6_installpath")
+    if check_exist_directory "$use_nbo6_installpath" ; then
+      use_nbo6_installpath=$(get_absolute_dirname "$use_nbo6_installpath" "NBO6")
+    else
+      warning "Problem locating NBO6 directory, unsetting variable and deactivating interface."
+      unset use_nbo6_installpath
+      use_nbo6_interface="disabled"
+    fi
+    debug "use_nbo6_installpath=$use_nbo6_installpath"
+  else
+    use_nbo6_interface="disabled"
+    use_nbo6_installpath="" 
+  fi
+  debug "use_nbo6_interface=$use_nbo6_interface"
+}
+
 ask_g16_default_extensions ()
 {
   ask "What is the default extension you use for Gaussian input files?"
@@ -822,6 +855,10 @@ translate_conf_settings_to_internal ()
   debug "use_g16_formchk_opts=$use_g16_formchk_opts"
   use_obabel_cmd="$obabel_cmd"
   debug "use_obabel_cmd=$use_obabel_cmd"
+  use_nbo6_interface="$nbo6_interface"
+  use_nbo6_installpath="$nbo6_installpath"
+  debug "use_nbo6_interface=$use_nbo6_interface"
+  debug "use_nbo6_installpath=$use_nbo6_installpath"
   use_g16_input_suffix="$g16_input_suffix"
   use_g16_output_suffix="$g16_output_suffix"
   debug "use_g16_input_suffix=$use_g16_input_suffix"
@@ -951,7 +988,7 @@ get_configuration_interactive ()
   fi
   debug "use_load_modules=$use_load_modules"
 
-  use_g16_wrapper_cmd="$use_g16_wrapper_cmd"
+  use_g16_wrapper_cmd="$g16_wrapper_cmd"
   use_g16_formchk_cmd="$g16_formchk_cmd"
   use_g16_formchk_opts="$g16_formchk_opts"
   use_g16_testrt_cmd="$g16_testrt_cmd"
@@ -979,6 +1016,19 @@ get_configuration_interactive ()
     if read_boolean ; then ask_other_utilities ; fi
   fi
   debug "use_obabel_cmd=$use_obabel_cmd"
+
+  use_nbo6_interface="$nbo6_interface"
+  use_nbo6_installpath="$nbo6_installpath"
+  if [[ -z $use_nbo6_interface ]] ; then
+    ask_nbo6_interface
+  else
+    message "Recovered setting: 'nbo6_interface=$use_nbo6_interface'"
+    message "Recovered setting: 'nbo6_installpath=$use_nbo6_installpath'"
+    ask "Would you like to change this setting?"
+    if read_boolean ; then ask_nbo6_interface ; fi
+  fi
+  debug "use_nbo6_interface=$use_nbo6_interface"
+  debug "use_nbo6_installpath=$use_nbo6_installpath"
 
   use_g16_input_suffix="$g16_input_suffix"
   use_g16_output_suffix="$g16_output_suffix"
@@ -1294,6 +1344,25 @@ print_configuration ()
   echo "#"
   echo ""
 
+  echo "# This script provides an interface to the external program NBO6."
+  echo "# The interface does not have to be activated, if NBO6 is loaded"
+  echo "# with the Gaussian modules (or as its own module), or if it already"
+  echo "# is part of the Gaussian installation, or if it is found in PATH."
+  echo "# "
+  echo "  nbo6_interface=\"${use_nbo6_interface:-disabled}\""
+  echo "#"
+  echo "# To activate, set the above to 'active'."
+  echo "# If the interface is active, the path to the NBO6 root directory"
+  echo "# must be set (not including the 'bin' directory):"
+  echo "#"
+  if [[ -z $use_nbo6_installpath ]] ; then
+    echo "# nbo6_installpath=\"/path/to/nbo6\""
+  else
+    echo "  nbo6_installpath=\"$use_nbo6_installpath\""
+  fi
+  echo "#"
+  echo ""
+
   echo "# Default files, suffixes, and other for Gaussian 16"
   echo "# "
   if [[ -z $use_g16_input_suffix ]] ; then
@@ -1456,8 +1525,8 @@ print_configuration ()
   echo "# Meta information "
   echo "#"
   echo "# Created with $scriptname, which is part of $softwarename"
-  echo "configured_version=$version"
-  echo "configured_versiondate=$versiondate"
+  echo "  configured_version=$version"
+  echo "  configured_versiondate=$versiondate"
   echo "# End of automatic configuration, $(date)."
 }
 

@@ -437,9 +437,18 @@ write_jobscript ()
 			export g16root
 			. \$g16root/g16/bsd/g16.profile
 			EOF
-    fi
 
-    # NBO6 ?
+      if [[ "$nbo6_interface" =~ [Aa][Cc][Tt][Ii][Vv][Ee] ]] ; then
+        [[ -z "$nbo6_installpath" ]] && fatal "NBO6 path is unset."
+        [[ -e "$nbo6_installpath/bin" ]] || fatal "NBO6 bin directory does not exist."
+        cat >&9 <<-EOF
+				PATH="$nbo6_installpath/bin:$PATH"
+				export PATH
+				EOF
+      else
+        debug "External NBO6 interface is inactive."
+      fi
+    fi
 
     # Most of the body is the same for all queues 
     cat >&9 <<-EOF
@@ -487,19 +496,38 @@ write_jobscript ()
 
 submit_jobscript_hold ()
 {
-    local queue="$1" submit_id submit_message
+    local queue="$1" submit_id submit_message queue_cmd
     if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
-      submit_id="$(qsub -h "$submitscript")" || exit_status="$?"
-      submit_message="
-        Submitted as $submit_id.
-        Use 'qrls $submit_id' to release the job."
+      if queue_cmd=$( command -v qsub ) ; then
+        submit_id="$( $queue_cmd -h "$submitscript")" || exit_status="$?"
+        submit_message="
+          Submitted as $submit_id.
+          Use 'qrls $submit_id' to release the job."
+      else
+        exit_status=1
+        submit_message="Command 'qsub' not found."
+      fi
     elif [[ "$queue" =~ [Bb][Ss][Uu][Bb] ]] ; then
-      submit_message="$(bsub -H < "$submitscript" 2>&1 )" || exit_status="$?"
+      if queue_cmd=$( command -v bsub ) ; then
+        submit_message="$( $queue_cmd -H < "$submitscript" 2>&1 )" || exit_status="$?"
+      else
+        exit_status=1
+        submit_message="Command 'bsub' not found."
+      fi
     elif [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
-      submit_message="$( sbatch --hold "$submitscript" 2>&1 )" || exit_status="$?"
+      if queue_cmd=$( command -v sbatch ) ; then
+        submit_message="$( $queue_cmd --hold "$submitscript" 2>&1 )" || exit_status="$?"
+      else
+        exit_status=1
+        submit_message="Command 'sbatch' not found."
+      fi
     fi
-    (( exit_status > 0 )) && warning "Submission went wrong."
-    message "$submit_message"
+    if (( exit_status > 0 )) ; then
+      warning "Submission went wrong."
+      warning "$submit_message"
+    else
+      message "$submit_message"
+    fi
     return $exit_status
 }
 
@@ -519,19 +547,38 @@ submit_jobscript_keep ()
 
 submit_jobscript_run  ()
 {
-    local queue="$1" submit_message
+    local queue="$1" submit_message queue_cmd
     debug "queue=$queue; submitscript=$submitscript"
     if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
-      submit_message="Submitted as $(qsub "$submitscript")" || exit_status="$?"
+      if queue_cmd=$( command -v qsub ) ; then
+        submit_message="Submitted as $( qsub "$submitscript" )" || exit_status="$?"
+      else
+        exit_status=1
+        submit_message="Command 'qsub' not found."
+      fi
     elif [[ "$queue" =~ [Bb][Ss][Uu][Bb]-[Rr][Ww][Tt][Hh] ]] ; then
-      submit_message="$(bsub < "$submitscript" 2>&1 )" || exit_status="$?"
+      if queue_cmd=$( command -v bsub ) ; then
+        submit_message="$( $queue_cmd < "$submitscript" 2>&1 )" || exit_status="$?"
+      else
+        exit_status=1
+        submit_message="Command 'bsub' not found."
+      fi
     elif [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
-      submit_message="$( sbatch "$submitscript" 2>&1 )" || exit_status="$?"
+      if queue_cmd=$( command -v sbatch ) ; then
+      submit_message="$( $queue_cmd "$submitscript" 2>&1 )" || exit_status="$?"
+      else
+        exit_status=1
+        submit_message="Command 'sbatch' not found."
+      fi
     else
       fatal "Unrecognised queueing system '$queue'."
     fi
-    (( exit_status > 0 )) && warning "Submission went wrong."
-    message "$submit_message"
+    if (( exit_status > 0 )) ; then
+      warning "Submission went wrong."
+      warning "$submit_message"
+    else
+      message "$submit_message"
+    fi
     return $exit_status
 }
 
