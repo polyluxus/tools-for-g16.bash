@@ -4,7 +4,7 @@
 #
 # tools-for-g16.bash -- 
 #   A collection of tools for the help with Gaussian 16.
-# Copyright (C) 2019 Martin C Schwarzer
+# Copyright (C) 2019-2020 Martin C Schwarzer
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -158,6 +158,8 @@ get_scriptpath_and_source_files ()
 
 # Create a scratch directory for temporary files
 cleanup_scratch () {
+  debug "What is the content currently?"
+  debug "$( ls -l "$g16_scratch" )"
   message "Looking for files with filesize zero and delete them in '$g16_scratch'."
   debug "$( find "$g16_scratch" -type f -size 0 -exec rm -v -- {} \; )"
   message "Deleting scratch '$g16_scratch' if empty."
@@ -182,6 +184,19 @@ make_scratch ()
   trap cleanup_scratch EXIT SIGTERM
 }
 
+# Loading external NBO6 interface
+load_nbo ()
+{
+  [[ "$nbo6_interface" =~ [Aa][Cc][Tt][Ii][Vv][Ee] ]] || { debug "Manual NBO6 interface inactive." ; return 0 ; }
+  [[ -z "$nbo6_installpath" ]] && fatal "Tried loading NBO6 manually, but failed (installation path unset)."
+  [[ -e "$nbo6_installpath/bin" ]] || fatal "Failed locating NBO6 bin directory in '$nbo6_installpath'."
+  debug "Adding '$nbo6_installpath/bin' to PATH."
+  PATH="$nbo6_installpath/bin:$PATH"
+  export PATH
+  debug "PATH=$PATH"
+  debug "$(command -v gaunbo6)"
+}
+
 # How Gaussian is loaded
 load_gaussian ()
 {
@@ -191,12 +206,14 @@ load_gaussian ()
     module load ${g16_modules[*]} 
   else
     [[ -z "$g16_installpath" ]] && fatal "Gaussian path is unset."
-    [[ -e "$g16_installpath/g16/bsd/g16.profile" ]] && fatal "Gaussian profile does not exist."
+    [[ -e "$g16_installpath/g16/bsd/g16.profile" ]] || fatal "Gaussian profile does not exist."
     # Gaussian needs the g16root variable
     g16root="$g16_installpath"
     export g16root
     #shellcheck disable=SC1090
     . "${g16root}"/g16/bsd/g16.profile
+    # load NBO6 manually
+    load_nbo
   fi
   make_scratch || fatal "Setting scratch failed."
   GAUSS_SCRDIR="$g16_scratch"

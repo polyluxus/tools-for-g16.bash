@@ -4,7 +4,7 @@
 #
 # tools-for-g16.bash -- 
 #   A collection of tools for the help with Gaussian 16.
-# Copyright (C) 2019 Martin C Schwarzer
+# Copyright (C) 2019-2020 Martin C Schwarzer
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -187,7 +187,6 @@ process_inputfile ()
       message "Discarding read route section and using specified one instead."
       modified_route="$overwrite_route_section"
     fi
-    local -a additional_keywords
     # The new input should be a single point calculation, therefore remove opt
     while ! modified_route=$(remove_opt_keyword      "$modified_route") ; do : ; done
     # To avoid compound jobs, the freq keyword is also removed

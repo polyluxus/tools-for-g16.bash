@@ -62,6 +62,20 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
   obabel_cmd="obabel"
 #
 
+# This script provides an interface to the external program NBO6.
+# The interface does not have to be activated, if NBO6 is loaded
+# with the Gaussian modules (or as its own module), or if it already
+# is part of the Gaussian installation, or if it is found in PATH.
+# 
+  nbo6_interface="disabled"
+#
+# To activate, set the above to 'active'.
+# If the interface is active, the path to the NBO6 root directory
+# must be set (not including the 'bin' directory):
+#
+# nbo6_installpath="/path/to/nbo6"
+#
+
 # Default files, suffixes, and other for Gaussian 16
 # 
   g16_input_suffix="com"
@@ -162,4 +176,9 @@ declare -a g16_modules='([0]="CHEMISTRY" [1]="gaussian/16.b01_bin")'
   requested_submit_status="run"
 
 #
-# End of automatic configuration, Mon May 20 15:15:01 CEST 2019.
+# Meta information 
+#
+# Created with configure.sh, which is part of tools-for-g16.bash
+  configured_version=0.3.2
+  configured_versiondate=2020-01-16
+# End of automatic configuration, Do 16. Jan 22:23:24 CET 2020.

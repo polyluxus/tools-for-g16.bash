@@ -388,6 +388,68 @@ Options:
   {\lstinline`-h`}       & Print a small help file. \\
 \end{longtable}
 
+\subsection{Input preparation: \texorpdfstring{{\lstinline`g16.nbo6prop.sh`}}{g16.nbo6prop.sh}}
+\label{sec:g16.nbo6prop}
+
+This tool reads in a Gaussian 16 inputfile and writes a new inputfile for a subsequent NBO6 
+property calculation. This utilises the \texttt{geom(check)} and \texttt{guess(only,read)} keywords
+via the \texttt{\%OldChk} directive and does not actually perform a new Gaussian calculation.
+It does not save a new checkpoint file as this would be redundant to the one, which was supplied.
+This requires the additional software NBO6.
+
+The NBO keywords \texttt{file=name} and \texttt{archive} will always be included in the 
+input stack, where \texttt{name} is derived from the guessed or supplied file name.
+Therfore an \texttt{.47} input stach for the external \texttt{gennbo} will be produced
+by default.
+
+As a positive side effect, when the \texttt{plot} keyword is given, the produced files
+will have the same basename as the calculation itself.
+
+If a different input section than the \texttt{\$NBO <...> \$END} is desired, the first stack 
+has to be closed first. See the NBO manual and an example below.
+
+While it is possible, it is not recommended to amend or overwrite the existing route section.
+
+Usage: 
+
+\lstinline`g16.nbo6prop.sh [opt] <file>`
+
+Options:
+
+\begin{longtable}{p{0.1\linewidth}p{0.8\linewidth}}
+  {\lstinline`-o <ARG>`} & Add {\lstinline`ARG`} to the NBO6 input stack.
+    This keyword may be used to add any keyword to the NBO6 section, 
+    where it will go on a new line every time it was invoked; 
+    it can be specified multiple times.\\
+  {\lstinline`-r <ARG>`} & Add {\lstinline`ARG`} to route section. 
+    This keyword may be used to add any keyword to the route section; 
+    it can be specified multiple times.\\
+  {\lstinline`-R <ARG>`} & Specific route section {\lstinline`ARG`}. 
+    With this option, you can specify a complete route section. 
+    It will be checked for syntax errors, and it can further be modified with {\lstinline`-r <ARG>`}. \\
+  {\lstinline`-t <ARG>`} & Adds {\lstinline`ARG`} to end of file. 
+    This will cause the NBO6 stack (set with \lstinline`-o` to be ignored.
+    Instead one can specify a completely manual input stack.
+    This switch functions the same way as in the prepare script. \\
+  {\lstinline`-f <ARG>`} & Filename of generated input. \\
+  {\lstinline`-m <INT>`} & Memory (megabyte). This will add \texttt{\%Mem={\lstinline`INT`}MB} to the input file. \\
+  {\lstinline`-p <INT>`} & Processors. This will add \texttt{\%NProcShared={\lstinline`INT`}} to the input file. \\
+  {\lstinline`-d <INT>`} & Disksize (megabyte). This will add the \texttt{MaxDisk} keyword to the input file. \\
+  {\lstinline`--`}       & Explicitly close reading script options. \\
+  {\lstinline`-s`}       & Silence script (incremental) to supress messages, warnings, errors. \\
+  {\lstinline`-h`}       & Print a small help file. \\
+\end{longtable}
+
+Tips \& Tricks:
+
+To suppress the creation of an archive file, unset the NBO6 input stack:
+
+\lstinline`g16.nbo6prop.sh -t '' -- <file>`
+
+To request the calculation for an alternative Lewis structure:
+
+\lstinline`g16.nbo6prop.sh -o '\$END' -o '\$CHOOSE' -o '  lone ... end' -o '  bond ... end' -- <file>`
+
 \subsection{Pre-processing: \texorpdfstring{{\lstinline`g16.testroute.sh`}}{g16.testroute.sh}}
 \label{sec:g16.testroute}
 

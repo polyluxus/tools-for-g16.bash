@@ -4,7 +4,7 @@
 #
 # tools-for-g16.bash -- 
 #   A collection of tools for the help with Gaussian 16.
-# Copyright (C) 2019 Martin C Schwarzer
+# Copyright (C) 2019-2020 Martin C Schwarzer
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -168,7 +168,9 @@ warn_and_set_locale ()
   if ! check_locale ; then
     warning "Formatting might not properly work for current locale."
     warning "Setting locale POSIX compliant."
-    unset LANG LC_ALL LC_NUMERIC
+    # [Temporarily change language for terminal messages/warnings/errors](https://askubuntu.com/a/844455/220129)
+    unset LANG LANGUAGE LC_ALL LC_NUMERIC
+    export LC_ALL=C 
     local -a locale_settings
     mapfile -t locale_settings < <(locale)
     debug "New locale settings:"

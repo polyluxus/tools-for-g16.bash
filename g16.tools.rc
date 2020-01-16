@@ -4,7 +4,7 @@
 #
 # tools-for-g16.bash -- 
 #   A collection of tools for the help with Gaussian 16.
-# Copyright (C) 2019 Martin C Schwarzer
+# Copyright (C) 2019-2020 Martin C Schwarzer
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -114,6 +114,20 @@
 #
 # Otherwise, provide the path to the binary
 # obabel_cmd="/path/to/openbabel/bin/obabel"
+#
+
+# This script provides an interface to the external program NBO6.
+# The interface does not have to be activated, if NBO6 is loaded
+# with the Gaussian modules (or as its own module), or if it already
+# is part of the Gaussian installation, or if it is found in PATH.
+# 
+  nbo6_interface=disabled
+#
+# To activate, set the above to 'active'.
+# If the interface is active, the path to the NBO6 root directory
+# must be set (not including the 'bin' directory):
+#
+# nbo6_installpath="/path/to/nbo6"
 #
 
 # Default files, suffixes, and other for Gaussian 16
