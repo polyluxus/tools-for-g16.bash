@@ -5,6 +5,7 @@
   % letterpaper   % (etc. pp.)
   rscols=3,       % this is the default
   margin=1.0cm,   % default, or
+  10pt
 ]{refsheet}
 
 % Typesetting codeprettier
@@ -36,8 +37,11 @@
 % https://tex.stackexchange.com/a/9366/33413
 \newcommand\mybackslash{\char`\\}
 
+% Make footnotes referable
+\newcommand*{\footnoteref}[1]{\textsuperscript{\ref{#1}}}
+
 % What this is about
-\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.3.1, 2019-09-11)}
+\title{Cheat-Sheet for \texttt{tools-for-g16.bash} (0.3.2, 2020-01-16)}
 \author{Martin C Schwarzer}
 \date{\today}
 
@@ -90,12 +94,25 @@ It will load the last configuration file it finds.
 Setting files can be generated with the \texttt{configure/configure.sh} script,
 see the manual for more detailed information.
 
+\section{Options for all scripts}
+
+All scripts have the following options available:
+
+\begin{rslisttt}{-m <ARG>}
+  \item[--      ] Close reading options
+  \item[-s      ] Silence script (incremental)
+  \item[-h      ] Help file 
+\end{rslisttt}
+
 \section{\texttt{g16.prepare.sh}}
 
-This tool reads in a file containing a set of cartesian coordinates and
-writes a Gaussian inputfile with predefined keywords. 
-The script interfaces to Xmol format, 
-Turbomole/ GFN-xTB \texttt{coord} format, too.
+%This tool reads in a file containing a set of cartesian coordinates and
+%writes a Gaussian inputfile with predefined keywords. 
+%The script interfaces to Xmol format, 
+%Turbomole/ GFN-xTB \texttt{coord} format, too.
+
+This tool reads a file with cartesian coordinates (Xmol, gjf, or Turbomole \texttt{coord}
+and writes a Gaussian inputfile with predefined keywords. 
 
 Usage: \texttt{g16.prepare.sh [opt] <file>}
 
@@ -128,16 +145,17 @@ Usage: \texttt{g16.prepare.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
-  \item[--      ] Close reading options
-  \item[-s      ] Silence script (incremental)
-  \item[-h      ] Help file 
+%%  \item[--      ] Close reading options
+%%  \item[-s      ] Silence script (incremental)
+%%  \item[-h      ] Help file 
 \end{rslisttt}
 
 \section{\texttt{g16.dissolve.sh}}
 
-This tool reads in a Gaussian 16 inputfile (of a preferably completed calculation)
-and adds relevant keywords for solvent corrections.
-(Utilises the \texttt{\%OldChk} directive and the \texttt{geom}/ \texttt{guess} keywords.)
+This tool reads a Gaussian 16 inputfile (of a preferably completed calculation)
+and adds relevant keywords for solvent corrections.\footnote{\label{fn:oldchk}%
+Utilises the \texttt{\%OldChk} directive and (if not specified otherwise) 
+the \texttt{geom(check)}/ \texttt{guess(read)} keywords.}
 
 Usage: \texttt{g16.dissolve.sh [opt] <file>}
 
@@ -151,16 +169,15 @@ Usage: \texttt{g16.dissolve.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
-  \item[--      ] Close reading options
-  \item[-s      ] Silence script (incremental)
-  \item[-h      ] Help file 
+%%  \item[--      ] Close reading options
+%%  \item[-s      ] Silence script (incremental)
+%%  \item[-h      ] Help file 
 \end{rslisttt}
 
 \section{\texttt{g16.freqinput.sh}}
 
 This tool reads in a Gaussian 16 inputfile (of a preferably completed calculation)
-and adds relevant keywords for a frequency calculation.
-(Utilises the \texttt{\%OldChk} directive and the \texttt{geom}/ \texttt{guess} keywords.)
+and adds relevant keywords for a frequency calculation.\footnoteref{fn:oldchk}
 
 Usage: \texttt{g16.freqinput.sh [opt] <file>}
 
@@ -175,16 +192,15 @@ Usage: \texttt{g16.freqinput.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
-  \item[--      ] Close reading options
-  \item[-s      ] Silence script (incremental)
-  \item[-h      ] Help file 
+%%  \item[--      ] Close reading options
+%%  \item[-s      ] Silence script (incremental)
+%%  \item[-h      ] Help file 
 \end{rslisttt}
 
 \section{\texttt{g16.ircinput.sh}}
 
 This tool reads in a Gaussian 16 inputfile from a (previously completed) frequency run and 
-adds relevant keywords for two separate irc calculations.
-(Utilises the \texttt{\%OldChk} directive and the \texttt{geom}/ \texttt{guess} keywords.)
+adds relevant keywords for two separate irc calculations.\footnoteref{fn:oldchk}
 
 Usage: \texttt{g16.ircinput.sh [opt] <file>}
 
@@ -197,18 +213,17 @@ Usage: \texttt{g16.ircinput.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
-  \item[--      ] Close reading options
-  \item[-s      ] Silence script (incremental)
-  \item[-h      ] Help file 
+%%  \item[--      ] Close reading options
+%%  \item[-s      ] Silence script (incremental)
+%%  \item[-h      ] Help file 
 \end{rslisttt}
 
-\newpage
+%\newpage
 
 \section{\texttt{g16.optinput.sh}}
 
 This tool reads in a Gaussian 16 inputfile preferably from a (previously completed) IRC run and 
-writes and inputfile for a subsequent structure optimisation.
-(Utilises the \texttt{\%OldChk} directive and the \texttt{geom}/ \texttt{guess} keywords.)
+writes and inputfile for a subsequent structure optimisation.\footnoteref{fn:oldchk}
 
 Usage: \texttt{g16.optinput.sh [opt] <file>}
 
@@ -220,9 +235,9 @@ Usage: \texttt{g16.optinput.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
-  \item[--      ] Close reading options
-  \item[-s      ] Silence script (incremental)
-  \item[-h      ] Help file 
+%%  \item[--      ] Close reading options
+%%  \item[-s      ] Silence script (incremental)
+%%  \item[-h      ] Help file 
 \end{rslisttt}
 
 \section{\texttt{g16.spinput.sh}}
@@ -230,8 +245,7 @@ Usage: \texttt{g16.optinput.sh [opt] <file>}
 This tool reads in a Gaussian 16 inputfile and 
 writes and inputfile for a subsequent calculation.
 It is possible to overwrite the existing route section, but still
-add the \texttt{geom}/\texttt{guess} directives to base it on.
-(Utilises the \texttt{\%OldChk} directive.)
+add the \texttt{geom}/\texttt{guess} directives to base it on.\footnoteref{fn:oldchk}
 
 Usage: \texttt{g16.spinput.sh [opt] <file>}
 
@@ -243,9 +257,32 @@ Usage: \texttt{g16.spinput.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
-  \item[--      ] Close reading options
-  \item[-s      ] Silence script (incremental)
-  \item[-h      ] Help file 
+%%  \item[--      ] Close reading options
+%%  \item[-s      ] Silence script (incremental)
+%%  \item[-h      ] Help file 
+\end{rslisttt}
+
+\section{\texttt{g16.nbo6prop.sh}}
+
+This tool reads in a Gaussian 16 inputfile and 
+writes a new inputfile for a subsequent NBO6 property calculation.
+It is not recommended to amend or overwrite the existing route section.
+This requires NBO6 to be installed additionally.\footnoteref{fn:oldchk}
+
+Usage: \texttt{g16.nbo6prop.sh [opt] <file>}
+
+\begin{rslisttt}{-m <ARG>}
+  \item[-o <ARG>] Add \texttt{ARG} to the NBO6 input stack
+  \item[-r <ARG>] Add \texttt{ARG} to route section
+  \item[-R <ARG>] Overwites route section with \texttt{ARG}
+  \item[-t <ARG>] Adds \texttt{ARG} to end of file (overwrites \texttt{-o})
+  \item[-f <ARG>] Filename of generated input
+  \item[-m <INT>] Memory (megabyte)
+  \item[-p <INT>] Processors
+  \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
+%%  \item[--      ] Close reading options
+%%  \item[-s      ] Silence script (incremental)
+%%  \item[-h      ] Help file 
 \end{rslisttt}
 
 \section{\texttt{g16.testroute.sh}}
@@ -256,11 +293,13 @@ with the Gaussian 16 utility \texttt{testrt}.
 
 Usage: \texttt{g16.testroute.sh [opt] <file>}
 
-\begin{rslisttt}{-m <ARG>}
-  \item[--      ] Close reading options
-  \item[-s      ] Silence script (incremental)
-  \item[-h      ] Help file 
-\end{rslisttt}
+This script has only the common options available.
+
+%%\begin{rslisttt}{-m <ARG>}
+%%  \item[--      ] Close reading options
+%%  \item[-s      ] Silence script (incremental)
+%%  \item[-h      ] Help file 
+%%\end{rslisttt}
 
 \section{\texttt{g16.submit.sh}}
 
@@ -283,15 +322,15 @@ Usage: \texttt{g16.submit.sh [opt] <file>}
     (\texttt{<queue>}: \texttt{pbs}, \texttt{slurm}, \texttt{bsub};
      \texttt{<special>}: \texttt{gen} [generic], \texttt{rwth})
     %\item[-q <ARG>] Specify queue (TODO)
-   \item[-P <ARG>] Account to project (BSUB) or account (SLURM);
+  \item[-P <ARG>] Account to project (BSUB) or account (SLURM);
     if \texttt{ARG} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
   \item[-M <ARG>] Specify a machine type (only \texttt{bsub-rwth});
     if \texttt{ARG} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
   \item[-u <ARG>] set user email address (SLURM, BSUB);
     if \texttt{ARG} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
-  \item[--      ] Close reading options
-  \item[-s      ] Silence script (incremental)
-  \item[-h      ] Help file 
+%%  \item[--      ] Close reading options
+%%  \item[-s      ] Silence script (incremental)
+%%  \item[-h      ] Help file 
 \end{rslisttt}
 
 \section{\texttt{g16.wrapper.sh}}
@@ -303,9 +342,11 @@ Usage: \texttt{g16.wrapper.sh [opt] <utility commandline>}
 \begin{rslisttt}{-m <ARG>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
-  \item[--      ] Close reading options
-  \item[-h      ] Help file 
+%%  \item[--      ] Close reading options
+%%  \item[-s      ] Silence script (incremental)
+%%  \item[-h      ] Help file 
 \end{rslisttt}
+
 
 \section{\texttt{g16.getenergy.sh}}
 
@@ -321,9 +362,9 @@ If no files given, it finds energy statements from all log files in the current 
   \item[-R      ] Recurse into directories
   \item[-L      ] Print the full file and path name (seperated by newline)
   \item[-1      ] Print only one line per file
-  \item[--      ] Close reading options
-  \item[-s      ] Silence script (incremental)
-  \item[-h      ] Help file 
+%%  \item[--      ] Close reading options
+%%  \item[-s      ] Silence script (incremental)
+%%  \item[-h      ] Help file 
 \end{rslisttt}
 
 \section{\texttt{g16.getfreq.sh}}
@@ -339,9 +380,9 @@ Usage: \texttt{g16.getfreq.sh [opt] <file(s)>}
   \item[-c <ARG>] Separate values by \texttt{ARG} (\texttt{-V0} or \texttt{-V1});
     arguments: \texttt{space}, \texttt{comma}, \texttt{semicolon}, \texttt{colon}, \texttt{slash}, \texttt{pipe}, 
   \item[-f <ARG>] Write summary to file instead of screen
-  \item[--      ] Close reading options
-  \item[-s      ] Silence script (incremental)
-  \item[-h      ] Help file 
+%%  \item[--      ] Close reading options
+%%  \item[-s      ] Silence script (incremental)
+%%  \item[-h      ] Help file 
 \end{rslisttt}
 
 \section{\texttt{g16.chk2xyz.sh}}
@@ -359,9 +400,9 @@ Usage: \texttt{g16.chk2xyz.sh [opt] [<chk-file(s)>]}
   \item[-S      ] Skips files in cases where it would overwrite them
   \item[-R      ] Recurse through directories
   \item[-P      ] Print; dry run
-  \item[--      ] Close reading options
-  \item[-s      ] Silence script (incremental)
-  \item[-h      ] Help file 
+%%  \item[--      ] Close reading options
+%%  \item[-s      ] Silence script (incremental)
+%%  \item[-h      ] Help file 
 \end{rslisttt}
 
 % move to end

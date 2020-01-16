@@ -4,7 +4,7 @@
 #
 # tools-for-g16.bash -- 
 #   A collection of tools for the help with Gaussian 16.
-# Copyright (C) 2019 Martin C Schwarzer
+# Copyright (C) 2019-2020 Martin C Schwarzer
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,8 +41,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-g16.bash"
-version="0.3.1"
-versiondate="2019-09-11"
+version="0.3.2"
+versiondate="2020-01-16"
 
 #
 # Standard commands for external software:

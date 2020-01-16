@@ -189,6 +189,31 @@ Usage: `g16.spinput.sh [opt] <file>`
 | `-s`       | silence script (incremental)
 | `-h`       | Help file
 
+`g16.nbo6prop.sh`
+================
+
+This tool reads in a Gaussian 16 inputfile and 
+writes a new inputfile for a subsequent NBO6 property calculation.
+It is not recommended to amend or overwrite the existing route section.
+This requires NBO6 to be installed additionally.
+(Utilises the `%OldChk` directive and the `geom`/`guess` keywords.)
+
+Usage: `g16.nbo6prop.sh [opt] <file>`
+
+| option     | description 
+| ---------- | -----------
+| `-o <ARG>` | Add `ARG` to the NBO6 input stack
+| `-r <ARG>` | Add `ARG` to route section
+| `-R <ARG>` | Overwites route section with `ARG`
+| `-t <ARG>` | Adds `ARG` to end of file (overwrites `-o`)
+| `-f <ARG>` | Filename of generated input
+| `-m <INT>` | Memory (megabyte)
+| `-p <INT>` | Processors
+| `-d <INT>` | disksize via `MaxDisk` (megabyte)
+| `--`       | Close reading options
+| `-s`       | silence script (incremental)
+| `-h`       | Help file
+
 `g16.testroute.sh`
 ==================
 

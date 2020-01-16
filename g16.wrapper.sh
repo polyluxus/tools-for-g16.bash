@@ -4,7 +4,7 @@
 #
 # tools-for-g16.bash -- 
 #   A collection of tools for the help with Gaussian 16.
-# Copyright (C) 2019 Martin C Schwarzer
+# Copyright (C) 2019-2020 Martin C Schwarzer
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -158,6 +158,8 @@ get_scriptpath_and_source_files ()
 
 # Create a scratch directory for temporary files
 cleanup_scratch () {
+  debug "What is the content currently?"
+  debug "$( ls -l "$g16_scratch" )"
   message "Looking for files with filesize zero and delete them in '$g16_scratch'."
   debug "$( find "$g16_scratch" -type f -size 0 -exec rm -v -- {} \; )"
   message "Deleting scratch '$g16_scratch' if empty."

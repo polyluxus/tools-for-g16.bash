@@ -86,10 +86,15 @@ This reposity comes with the following scripts (and files):
    The script can now interface to Turbomole and GFN-xTB coord files, too.
 
  * `g16.wrapper.sh`
-   This tool provides  Gaussian environment at runtime to execute Gaussian utilities interactively.
+   This tool provides Gaussian environment at runtime to execute Gaussian utilities interactively.
 
  * `g16.dissolve.sh`
-   This tool parses a Gaussian input file and adds keywords for solvent corrections.
+   This tool parses a Gaussian 16 input file and adds keywords for solvent corrections.
+
+ * `g16.nbo6prop.sh`
+   This tool parses a Gaussian 16 input file and prepares a new input file for an NBO6 property run.
+   Apart from Gaussian, this requires an istallation of NBO6. 
+   (I do not have access to NBO7, so I cannot test whether this will still work with that version.)
 
  * `g16.tools.rc`
    This file contains the settings for the scripts.
@@ -102,7 +107,7 @@ pdf-file in the [docs](./docs) directory.
 ## License (GNU General Public License v3.0)
 
 tools-for-g16.bash - A collection of tools for the help with Gaussian 16.
-Copyright (C) 2019 Martin C Schwarzer
+Copyright (C) 2019-2020 Martin C Schwarzer
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -119,4 +124,4 @@ See [LICENSE](LICENSE) to see the full text.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-Martin (0.3.1, 2019-09-11)
+Martin (0.3.2, 2020-01-16)
