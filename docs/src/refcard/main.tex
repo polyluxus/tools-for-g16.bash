@@ -1,27 +1,5 @@
-\documentclass[   % inherits article
-  final,          % or
-  % draft,
-  a4paper,        % or
-  % letterpaper   % (etc. pp.)
-  rscols=3,       % this is the default
-  margin=1.0cm,   % default, or
-  10pt
-]{refsheet}
-
-% Typesetting codeprettier
-\usepackage[dvipsnames]{xcolor}
-\definecolor{lightgray}{gray}{0.95}
-\usepackage{listings}
-\lstdefinestyle{mytex}{
-  language=[LaTeX]TeX,%
-  backgroundcolor=\color{lightgray},%
-  basicstyle=\footnotesize\ttfamily,%
-  keywordstyle=\bfseries,%
-  breaklines=true,%
-  morekeywords={part,chapter,subsection,subsubsection,paragraph,subparagraph}%
-}
-
-\lstset{style=mytex}
+\documentclass[final, a4paper, columns=3, margin=1.0cm, 10pt]{refcard}
+% https://github.com/polyluxus/refcard
 
 % Symbols for SE and GH
 \usepackage{fontawesome} 
@@ -60,15 +38,15 @@ The notation in brackets \texttt{[ ]} indicate optional arguments/inputs;
 arguments in angles \texttt{< >} require human input;
 a bar \texttt{|} indicates alternatives.
 
-The following abbreviations will be used:
-\begin{rslisttt}{ARG}
+:The following abbreviations will be used:
+\begin{refcardlist}[labelfont=\ttfamily]
   \item[opt] Short for option(s)
   \item[ARG] String type argument
   \item[INT] Positive integer (including zero)
   \item[NUM] Whole number (including zero)
   \item[FLT] Floating point number
   \item[DUR] Duration in format \texttt{[[HH:]MM:]SS} \emph{or} \texttt{INT[D|H|M]}
-\end{rslisttt}
+\end{refcardlist}
 
 \subsection{General notes on the processed files}
 
@@ -94,29 +72,38 @@ It will load the last configuration file it finds.
 Setting files can be generated with the \texttt{configure/configure.sh} script,
 see the manual for more detailed information.
 
+
 \section{Options for all scripts}
 
 All scripts have the following options available:
 
-\begin{rslisttt}{-m <ARG>}
+\begin{refcardlist}[labelfont=\ttfamily]
   \item[--      ] Close reading options
   \item[-s      ] Silence script (incremental)
   \item[-h      ] Help file 
-\end{rslisttt}
+\end{refcardlist}
 
 \section{\texttt{g16.prepare.sh}}
-
-%This tool reads in a file containing a set of cartesian coordinates and
-%writes a Gaussian inputfile with predefined keywords. 
-%The script interfaces to Xmol format, 
-%Turbomole/ GFN-xTB \texttt{coord} format, too.
 
 This tool reads a file with cartesian coordinates (Xmol, gjf, or Turbomole \texttt{coord}
 and writes a Gaussian inputfile with predefined keywords. 
 
 Usage: \texttt{g16.prepare.sh [opt] <file>}
 
-\begin{rslisttt}{-m <ARG>}
+%Workaround
+\newsavebox{\replacements}
+\savebox{\replacements}{%
+  \parbox{0.28\textwidth}{%
+    \begin{refcardinline}[labelfont=\ttfamily]
+      \item[\%F] input filename
+      \item[\%f] input filename without \texttt{.xyz}
+      \item[\%s] like \texttt{\%f}, also filtering \texttt{start}
+      \item[\%j] jobname%
+      \item[\%c] charge (with indicator \texttt{chrg})
+      \item[\%M] multiplicity (with indicator \texttt{mult})
+      \item[\%U] unpaired electrons (with indicator \texttt{uhf})%
+    \end{refcardinline}}}
+\begin{refcardlist}[labelfont=\ttfamily]
   \item[-T <FLT>] Temperature (kelvin)
   \item[-P <FLT>] Pressure (atmosphere)
   \item[-r <ARG>] Add \texttt{ARG} to route section
@@ -124,16 +111,7 @@ Usage: \texttt{g16.prepare.sh [opt] <file>}
   \item[-l <INT>] Load predefined route section 
   \item[-l list ] Show all predefined route sections
   \item[-t <ARG>] Adds \texttt{ARG} to end of file
-  \item[-C <ARG>] Specify caption/title of job;\\ Replacements:
-  \begin{rsinline} 
-    \item[\%F] input filename
-    \item[\%f] input filename without \texttt{.xyz}
-    \item[\%s] like \texttt{\%f}, also filtering \texttt{start}
-    \item[\%j] jobname%
-    \item[\%c] charge (with indicator \texttt{chrg})
-    \item[\%M] multiplicity (with indicator \texttt{mult})
-    \item[\%U] unpaired electrons (with indicator \texttt{uhf})%
-  \end{rsinline}
+  \item[-C <ARG>] Specify caption/title of job; Replacements:\\ \usebox{\replacements}
   \item[-j <ARG>] Jobname %
     (derives filename of generated input; default: \texttt{<file>})
   \item[-j \%f  ] Jobname is \texttt{<file>} filtering \texttt{.xyz}
@@ -145,10 +123,7 @@ Usage: \texttt{g16.prepare.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
-%%  \item[--      ] Close reading options
-%%  \item[-s      ] Silence script (incremental)
-%%  \item[-h      ] Help file 
-\end{rslisttt}
+\end{refcardlist}
 
 \section{\texttt{g16.dissolve.sh}}
 
@@ -159,7 +134,7 @@ the \texttt{geom(check)}/ \texttt{guess(read)} keywords.}
 
 Usage: \texttt{g16.dissolve.sh [opt] <file>}
 
-\begin{rslisttt}{-m <ARG>}
+\begin{refcardlist}[labelfont=\ttfamily]
   \item[-o <ARG>] Adds option \texttt{ARG} to the \texttt{scrf} keyword.
   \item[-S <ARG>] Adds option \texttt{solvent=ARG} to the \texttt{scrf} option list.
   \item[-O      ] Runs an optimisation (preserves or adds \texttt{OPT})
@@ -169,10 +144,7 @@ Usage: \texttt{g16.dissolve.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
-%%  \item[--      ] Close reading options
-%%  \item[-s      ] Silence script (incremental)
-%%  \item[-h      ] Help file 
-\end{rslisttt}
+\end{refcardlist}
 
 \section{\texttt{g16.freqinput.sh}}
 
@@ -181,7 +153,7 @@ and adds relevant keywords for a frequency calculation.\footnoteref{fn:oldchk}
 
 Usage: \texttt{g16.freqinput.sh [opt] <file>}
 
-\begin{rslisttt}{-m <ARG>}
+\begin{refcardlist}[labelfont=\ttfamily]
   \item[-o <ARG>] Adds option \texttt{ARG} to the \texttt{freq} keyword.
   \item[-R      ] Adds option \texttt{ReadFC} to the \texttt{freq} option list.
   \item[-T <FLT>] Temperature (kelvin)
@@ -192,10 +164,7 @@ Usage: \texttt{g16.freqinput.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
-%%  \item[--      ] Close reading options
-%%  \item[-s      ] Silence script (incremental)
-%%  \item[-h      ] Help file 
-\end{rslisttt}
+\end{refcardlist}
 
 \section{\texttt{g16.ircinput.sh}}
 
@@ -204,7 +173,7 @@ adds relevant keywords for two separate irc calculations.\footnoteref{fn:oldchk}
 
 Usage: \texttt{g16.ircinput.sh [opt] <file>}
 
-\begin{rslisttt}{-m <ARG>}
+\begin{refcardlist}[labelfont=\ttfamily]
   \item[-o <ARG>] Adds option \texttt{ARG} to the \texttt{irc} keyword.
   \item[-r <ARG>] Add \texttt{ARG} to route section
   \item[-t <ARG>] Adds \texttt{ARG} to end of file
@@ -213,12 +182,7 @@ Usage: \texttt{g16.ircinput.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
-%%  \item[--      ] Close reading options
-%%  \item[-s      ] Silence script (incremental)
-%%  \item[-h      ] Help file 
-\end{rslisttt}
-
-%\newpage
+\end{refcardlist}
 
 \section{\texttt{g16.optinput.sh}}
 
@@ -227,7 +191,7 @@ writes and inputfile for a subsequent structure optimisation.\footnoteref{fn:old
 
 Usage: \texttt{g16.optinput.sh [opt] <file>}
 
-\begin{rslisttt}{-m <ARG>}
+\begin{refcardlist}[labelfont=\ttfamily]
   \item[-o <ARG>] Adds option \texttt{ARG} to the \texttt{opt} keyword.
   \item[-r <ARG>] Add \texttt{ARG} to route section
   \item[-t <ARG>] Adds \texttt{ARG} to end of file
@@ -235,10 +199,7 @@ Usage: \texttt{g16.optinput.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
-%%  \item[--      ] Close reading options
-%%  \item[-s      ] Silence script (incremental)
-%%  \item[-h      ] Help file 
-\end{rslisttt}
+\end{refcardlist}
 
 \section{\texttt{g16.spinput.sh}}
 
@@ -249,7 +210,7 @@ add the \texttt{geom}/\texttt{guess} directives to base it on.\footnoteref{fn:ol
 
 Usage: \texttt{g16.spinput.sh [opt] <file>}
 
-\begin{rslisttt}{-m <ARG>}
+\begin{refcardlist}[labelfont=\ttfamily]
   \item[-r <ARG>] Add \texttt{ARG} to route section
   \item[-R <ARG>] Overwites route section with \texttt{ARG}
   \item[-t <ARG>] Adds \texttt{ARG} to end of file
@@ -257,10 +218,7 @@ Usage: \texttt{g16.spinput.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
-%%  \item[--      ] Close reading options
-%%  \item[-s      ] Silence script (incremental)
-%%  \item[-h      ] Help file 
-\end{rslisttt}
+\end{refcardlist}
 
 \section{\texttt{g16.nbo6prop.sh}}
 
@@ -271,7 +229,7 @@ This requires NBO6 to be installed additionally.\footnoteref{fn:oldchk}
 
 Usage: \texttt{g16.nbo6prop.sh [opt] <file>}
 
-\begin{rslisttt}{-m <ARG>}
+\begin{refcardlist}[labelfont=\ttfamily]
   \item[-o <ARG>] Add \texttt{ARG} to the NBO6 input stack
   \item[-r <ARG>] Add \texttt{ARG} to route section
   \item[-R <ARG>] Overwites route section with \texttt{ARG}
@@ -280,10 +238,7 @@ Usage: \texttt{g16.nbo6prop.sh [opt] <file>}
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
-%%  \item[--      ] Close reading options
-%%  \item[-s      ] Silence script (incremental)
-%%  \item[-h      ] Help file 
-\end{rslisttt}
+\end{refcardlist}
 
 \section{\texttt{g16.testroute.sh}}
 
@@ -295,12 +250,6 @@ Usage: \texttt{g16.testroute.sh [opt] <file>}
 
 This script has only the common options available.
 
-%%\begin{rslisttt}{-m <ARG>}
-%%  \item[--      ] Close reading options
-%%  \item[-s      ] Silence script (incremental)
-%%  \item[-h      ] Help file 
-%%\end{rslisttt}
-
 \section{\texttt{g16.submit.sh}}
 
 This tool parses and then submits a Gaussian 16 inputfile to a queueing system.
@@ -308,7 +257,7 @@ For details on the extended mail interface see the manual.
 
 Usage: \texttt{g16.submit.sh [opt] <file>}
 
-\begin{rslisttt}{-m <ARG>}
+\begin{refcardlist}[labelfont=\ttfamily]
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
   \item[-d <INT>] disksize via \texttt{MaxDisk} (megabyte)
@@ -328,10 +277,7 @@ Usage: \texttt{g16.submit.sh [opt] <file>}
     if \texttt{ARG} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
   \item[-u <ARG>] set user email address (SLURM, BSUB);
     if \texttt{ARG} is \texttt{default}/\texttt{0}/\texttt{''} presets are overwritten.
-%%  \item[--      ] Close reading options
-%%  \item[-s      ] Silence script (incremental)
-%%  \item[-h      ] Help file 
-\end{rslisttt}
+\end{refcardlist}
 
 \section{\texttt{g16.wrapper.sh}}
 
@@ -339,13 +285,10 @@ This tool provides a Gaussian 16 environment to execute utilities interactively.
 
 Usage: \texttt{g16.wrapper.sh [opt] <utility commandline>}
 
-\begin{rslisttt}{-m <ARG>}
+\begin{refcardlist}[labelfont=\ttfamily]
   \item[-m <INT>] Memory (megabyte)
   \item[-p <INT>] Processors
-%%  \item[--      ] Close reading options
-%%  \item[-s      ] Silence script (incremental)
-%%  \item[-h      ] Help file 
-\end{rslisttt}
+\end{refcardlist}
 
 
 \section{\texttt{g16.getenergy.sh}}
@@ -356,16 +299,13 @@ Usage: \texttt{g16.getenergy.sh [opt] [<file(s)>]}
 
 If no files given, it finds energy statements from all log files in the current directory.
 
-\begin{rslisttt}{-m <ARG>}
+\begin{refcardlist}[labelfont=\ttfamily]
   \item[-i <ARG>] Specify input suffix if processing directory
   \item[-o <ARG>] Specify output suffix if processing directory
   \item[-R      ] Recurse into directories
   \item[-L      ] Print the full file and path name (seperated by newline)
   \item[-1      ] Print only one line per file
-%%  \item[--      ] Close reading options
-%%  \item[-s      ] Silence script (incremental)
-%%  \item[-h      ] Help file 
-\end{rslisttt}
+\end{refcardlist}
 
 \section{\texttt{g16.getfreq.sh}}
 
@@ -373,17 +313,14 @@ This tool summarises a frequency calculation and extracts the thermochemistry da
 
 Usage: \texttt{g16.getfreq.sh [opt] <file(s)>}
 
-\begin{rslisttt}{-m <ARG>}
+\begin{refcardlist}[labelfont=\ttfamily]
   \item[-v      ] Incrementally increase verbosity
   \item[-V <INT>] Set level of verbosity directly, (0-4)
   \item[-c      ] Separate values by comma (\texttt{-V0} or \texttt{-V1})
   \item[-c <ARG>] Separate values by \texttt{ARG} (\texttt{-V0} or \texttt{-V1});
     arguments: \texttt{space}, \texttt{comma}, \texttt{semicolon}, \texttt{colon}, \texttt{slash}, \texttt{pipe}, 
   \item[-f <ARG>] Write summary to file instead of screen
-%%  \item[--      ] Close reading options
-%%  \item[-s      ] Silence script (incremental)
-%%  \item[-h      ] Help file 
-\end{rslisttt}
+\end{refcardlist}
 
 \section{\texttt{g16.chk2xyz.sh}}
 
@@ -392,7 +329,7 @@ This formats the \texttt{chk} first to a \texttt{fchk}.
 
 Usage: \texttt{g16.chk2xyz.sh [opt] [<chk-file(s)>]}
 
-\begin{rslisttt}{-m <ARG>}
+\begin{refcardlist}[labelfont=\ttfamily]
   \item[-a      ] Formats all checkpointfiles that are found in the current directory
   \item[-A      ] Formats almost all checkpointfiles that are found in the current directory (same as \texttt{-aS})
   \item[-B      ] Create backup files in cases where it would overwrite them (default)
@@ -400,10 +337,7 @@ Usage: \texttt{g16.chk2xyz.sh [opt] [<chk-file(s)>]}
   \item[-S      ] Skips files in cases where it would overwrite them
   \item[-R      ] Recurse through directories
   \item[-P      ] Print; dry run
-%%  \item[--      ] Close reading options
-%%  \item[-s      ] Silence script (incremental)
-%%  \item[-h      ] Help file 
-\end{rslisttt}
+\end{refcardlist}
 
 % move to end
 \vfill
